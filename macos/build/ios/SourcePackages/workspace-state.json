@@ -1,0 +1,66 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "app_links-7.1.1",
+          "kind" : "fileSystem",
+          "location" : "/Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/ios/Flutter/ephemeral/Packages/.packages/app_links-7.1.1",
+          "name" : "app_links"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/ios/Flutter/ephemeral/Packages/.packages/app_links-7.1.1"
+        },
+        "subpath" : "app_links-7.1.1"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "flutterframework",
+          "kind" : "fileSystem",
+          "location" : "/Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework",
+          "name" : "FlutterFramework"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework"
+        },
+        "subpath" : "flutterframework"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "shared_preferences_foundation-2.5.6",
+          "kind" : "fileSystem",
+          "location" : "/Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/ios/Flutter/ephemeral/Packages/.packages/shared_preferences_foundation-2.5.6",
+          "name" : "shared_preferences_foundation"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/ios/Flutter/ephemeral/Packages/.packages/shared_preferences_foundation-2.5.6"
+        },
+        "subpath" : "shared_preferences_foundation-2.5.6"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "url_launcher_ios-6.4.1",
+          "kind" : "fileSystem",
+          "location" : "/Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/ios/Flutter/ephemeral/Packages/.packages/url_launcher_ios-6.4.1",
+          "name" : "url_launcher_ios"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/ios/Flutter/ephemeral/Packages/.packages/url_launcher_ios-6.4.1"
+        },
+        "subpath" : "url_launcher_ios-6.4.1"
+      }
+    ]
+  },
+  "version" : 6
+}
