@@ -111,7 +111,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> sendPasswordResetEmail(String email) async {
     try {
-      await KumoSupabaseClient.auth.resetPasswordForEmail(email);
+      await KumoSupabaseClient.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'kumo://reset-password',
+      );
     } on sb.AuthException catch (e) {
       throw AuthException(message: e.message);
     } catch (e) {

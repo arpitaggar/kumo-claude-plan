@@ -17,6 +17,8 @@ class ItineraryModel extends TravelItinerary {
     required super.updatedAt,
     super.description,
     super.status,
+    super.isPublic,
+    super.notes,
   });
 
   factory ItineraryModel.fromJson(Map<String, dynamic> json) => ItineraryModel(
@@ -44,6 +46,8 @@ class ItineraryModel extends TravelItinerary {
       (s) => s.name == (json['status'] as String? ?? 'draft'),
       orElse: () => ItineraryStatusEnum.draft,
     ),
+    isPublic: json['is_public'] as bool? ?? false,
+    notes: json['notes'] as String?,
   );
 
   factory ItineraryModel.fromEntity(TravelItinerary e) => ItineraryModel(
@@ -61,6 +65,8 @@ class ItineraryModel extends TravelItinerary {
     updatedAt: e.updatedAt,
     description: e.description,
     status: e.status,
+    isPublic: e.isPublic,
+    notes: e.notes,
   );
 
   Map<String, dynamic> toJson() => {
@@ -82,6 +88,8 @@ class ItineraryModel extends TravelItinerary {
     'updated_at': updatedAt.toIso8601String(),
     'description': description,
     'status': status.name,
+    'is_public': isPublic,
+    if (notes != null) 'notes': notes,
   };
 }
 

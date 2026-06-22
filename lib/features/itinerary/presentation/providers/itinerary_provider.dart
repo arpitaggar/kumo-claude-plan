@@ -133,6 +133,7 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
     required double totalBudget,
     required String currencyCode,
     String? description,
+    List<ItineraryItem>? items,
   }) async {
     final result = await createUseCase(
       title: title,
@@ -143,6 +144,7 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
       totalBudget: totalBudget,
       currencyCode: currencyCode,
       description: description,
+      items: items,
     );
     return result.fold(
       (failure) {

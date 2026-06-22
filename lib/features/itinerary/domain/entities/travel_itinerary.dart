@@ -65,6 +65,8 @@ class TravelItinerary extends Equatable {
     required this.updatedAt,
     this.description,
     this.status = ItineraryStatusEnum.draft,
+    this.isPublic = false,
+    this.notes,
   });
 
   /// Unique identifier for this itinerary (UUID format).
@@ -163,6 +165,12 @@ class TravelItinerary extends Equatable {
   /// @see [ItineraryStatusEnum]
   final ItineraryStatusEnum status;
 
+  /// Whether this itinerary is publicly visible on the Discover feed.
+  final bool isPublic;
+
+  /// Collaborative trip notes shared among all members.
+  final String? notes;
+
   /// Creates a copy of this [TravelItinerary] with optionally replaced fields.
   ///
   /// Useful for immutable updates without modifying original.
@@ -192,6 +200,8 @@ class TravelItinerary extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     ItineraryStatusEnum? status,
+    bool? isPublic,
+    String? notes,
   }) => TravelItinerary(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -207,6 +217,8 @@ class TravelItinerary extends Equatable {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     status: status ?? this.status,
+    isPublic: isPublic ?? this.isPublic,
+    notes: notes ?? this.notes,
   );
 
   @override
@@ -225,6 +237,8 @@ class TravelItinerary extends Equatable {
     createdAt,
     updatedAt,
     status,
+    isPublic,
+    notes,
   ];
 }
 

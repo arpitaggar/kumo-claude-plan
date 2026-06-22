@@ -8,11 +8,13 @@ import '../features/auth/presentation/pages/signup_page.dart';
 import '../features/auth/presentation/pages/update_password_page.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/chat/presentation/pages/chat_page.dart';
+import '../features/expense_split/presentation/pages/add_expense_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/itinerary/presentation/pages/add_edit_item_page.dart';
 import '../features/itinerary/presentation/pages/create_itinerary_page.dart';
 import '../features/itinerary/presentation/pages/invite_member_page.dart';
 import '../features/itinerary/presentation/pages/itinerary_detail_page.dart';
+import '../features/profile/presentation/pages/edit_profile_page.dart';
 import '../features/settings/presentation/pages/privacy_settings_page.dart';
 import '../features/shell/discover_page.dart';
 import '../features/shell/inbox_page.dart';
@@ -107,6 +109,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             const MaterialPage(child: CreateItineraryPage()),
       ),
       GoRoute(
+        path: '/profile/edit',
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: EditProfilePage()),
+      ),
+      GoRoute(
         path: '/settings/privacy',
         pageBuilder: (context, state) =>
             const MaterialPage(child: PrivacySettingsPage()),
@@ -144,6 +151,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'invite',
             pageBuilder: (context, state) => MaterialPage(
               child: InviteMemberPage(
+                itineraryId: state.pathParameters['id']!,
+              ),
+            ),
+          ),
+          GoRoute(
+            path: 'expense/new',
+            pageBuilder: (context, state) => MaterialPage(
+              child: AddExpensePage(
                 itineraryId: state.pathParameters['id']!,
               ),
             ),

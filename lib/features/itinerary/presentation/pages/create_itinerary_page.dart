@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../config/theme.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../ai_generation/presentation/widgets/ai_generate_sheet.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../domain/entities/travel_itinerary.dart';
 import '../providers/itinerary_provider.dart';
 
 class CreateItineraryPage extends ConsumerStatefulWidget {
@@ -27,6 +30,7 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
   DateTime? _endDate;
   String _currency = AppConstants.defaultCurrency;
   bool _isSubmitting = false;
+  List<ItineraryItem> _generatedItems = const [];
 
   static const _currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'SGD'];
 
@@ -65,6 +69,21 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
     });
   }
 
+  Future<void> _openAiSheet() async {
+    if (_startDate == null || _endDate == null) {
+      context.showSnackBar('Select trip dates first', isError: true);
+      return;
+    }
+    final items = await showAiGenerateSheet(
+      context,
+      startDate: _startDate!,
+      endDate: _endDate!,
+    );
+    if (items != null && mounted) {
+      setState(() => _generatedItems = items);
+    }
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
@@ -92,6 +111,7 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
+      items: _generatedItems.isEmpty ? null : _generatedItems,
     );
 
     if (!mounted) {
@@ -220,7 +240,13 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 24),
+                _AiSection(
+                  generatedItems: _generatedItems,
+                  onGenerate: _openAiSheet,
+                  onClear: () => setState(() => _generatedItems = const []),
+                ),
+                const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _submit,
                   child: const Text('Create Trip'),
@@ -264,4 +290,129 @@ class _DatePickerField extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _AiSection extends StatelessWidget {
+  const _AiSection({
+    required this.generatedItems,
+    required this.onGenerate,
+    required this.onClear,
+  });
+
+  final List<ItineraryItem> generatedItems;
+  final VoidCallback onGenerate;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    if (generatedItems.isEmpty) {
+      return OutlinedButton.icon(
+        onPressed: onGenerate,
+        icon: const Icon(Icons.auto_awesome, size: 18),
+        label: const Text('Generate with AI'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppTheme.softCoral,
+          side: const BorderSide(color: AppTheme.softCoral),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                gradient: AppTheme.featuredGradient,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_awesome,
+                      size: 13, color: AppTheme.cloudWhite),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${generatedItems.length} activities',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.cloudWhite,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'AI itinerary attached',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.darkEspresso,
+              ),
+            ),
+            const Spacer(),
+            TextButton(
+              onPressed: onClear,
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.earthBrown,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+              child: const Text('Remove', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.warmOatmeal,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < generatedItems.length && i < 3; i++)
+                Padding(
+                  padding: EdgeInsets.only(
+                      bottom: i < 2 && i < generatedItems.length - 1 ? 6 : 0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.circle,
+                          size: 6, color: AppTheme.softCoral),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          generatedItems[i].title,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.darkEspresso,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (generatedItems.length > 3)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '+ ${generatedItems.length - 3} more',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.earthBrown,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

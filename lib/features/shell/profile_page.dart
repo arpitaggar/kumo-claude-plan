@@ -34,16 +34,21 @@ class ProfilePage extends ConsumerWidget {
                 CircleAvatar(
                   radius: 44,
                   backgroundColor: AppTheme.cherryBlossom,
-                  child: Text(
-                    user?.displayName?.isNotEmpty == true
-                        ? user!.displayName![0].toUpperCase()
-                        : user?.email[0].toUpperCase() ?? '?',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.softCoral,
-                    ),
-                  ),
+                  backgroundImage: user?.avatarUrl != null
+                      ? NetworkImage(user!.avatarUrl!)
+                      : null,
+                  child: user?.avatarUrl == null
+                      ? Text(
+                          user?.displayName?.isNotEmpty == true
+                              ? user!.displayName![0].toUpperCase()
+                              : user?.email[0].toUpperCase() ?? '?',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.softCoral,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -68,6 +73,12 @@ class ProfilePage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 32),
+          _tile(
+            icon: Icons.edit_outlined,
+            label: 'Edit Profile',
+            onTap: () => context.push('/profile/edit'),
+          ),
+          const SizedBox(height: 8),
           _tile(
             icon: Icons.lock_outline,
             label: 'Privacy Settings',

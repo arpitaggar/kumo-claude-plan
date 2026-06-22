@@ -24,6 +24,26 @@ class ChatRepositoryImpl implements ChatRepository {
           );
 
   @override
+  Future<Either<Failure, List<Message>>> fetchMessagesBefore({
+    required String itineraryId,
+    required DateTime before,
+    int limit = 50,
+  }) async {
+    try {
+      final models = await remoteDataSource.fetchMessagesBefore(
+        itineraryId: itineraryId,
+        before: before,
+        limit: limit,
+      );
+      return Right(models);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> sendMessage({
     required String itineraryId,
     required String senderId,

@@ -21,6 +21,7 @@ class CreateItineraryUseCase {
     required double totalBudget,
     required String currencyCode,
     String? description,
+    List<ItineraryItem>? items,
   }) async {
     try {
       Validators.validateNonEmpty(title, 'Title');
@@ -47,7 +48,7 @@ class CreateItineraryUseCase {
           joinedAt: now,
         ),
       ],
-      items: const [],
+      items: items ?? const [],
       expenseSummary: const ExpenseSummary(
         totalSpent: 0,
         spentByCategory: {},

@@ -8,6 +8,7 @@ import 'config/theme.dart';
 import 'core/network/supabase_client.dart';
 import 'core/utils/logger.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
+import 'features/chat/presentation/providers/chat_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,11 +29,14 @@ Future<void> main() async {
   }
 
   final sharedPreferences = await SharedPreferences.getInstance();
+  final lastInboxVisitMs =
+      sharedPreferences.getInt('inbox_last_visit_ms') ?? 0;
 
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        inboxLastVisitProvider.overrideWith((_) => lastInboxVisitMs),
       ],
       child: const KumoApp(),
     ),

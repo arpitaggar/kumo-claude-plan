@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../config/theme.dart';
+import '../../features/chat/presentation/providers/chat_provider.dart';
 
-class KumoShell extends StatelessWidget {
+class KumoShell extends ConsumerWidget {
   const KumoShell({required this.child, super.key});
 
   final Widget child;
@@ -16,8 +18,10 @@ class KumoShell extends StatelessWidget {
     _NavDest('/profile',  Icons.person_outline,        Icons.person,      'Profile'),
   ];
 
+  static const _inboxIndex = 2;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).matchedLocation;
     var activeIndex = 0;
     for (var i = 0; i < _destinations.length; i++) {
@@ -26,6 +30,8 @@ class KumoShell extends StatelessWidget {
         break;
       }
     }
+
+    final hasUnread = ref.watch(inboxHasUnreadProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.warmOatmeal,
@@ -48,17 +54,50 @@ class KumoShell extends StatelessWidget {
           elevation: 0,
           height: 64,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: _destinations
-              .map((d) => NavigationDestination(
-                    icon: Icon(d.icon),
-                    selectedIcon: Icon(d.activeIcon),
-                    label: d.label,
-                  ))
-              .toList(),
+          destinations: List.generate(_destinations.length, (i) {
+            final d = _destinations[i];
+            final icon = i == _inboxIndex && hasUnread
+                ? _BadgedIcon(icon: d.icon)
+                : Icon(d.icon);
+            final selectedIcon = i == _inboxIndex && hasUnread
+                ? _BadgedIcon(icon: d.activeIcon)
+                : Icon(d.activeIcon);
+            return NavigationDestination(
+              icon: icon,
+              selectedIcon: selectedIcon,
+              label: d.label,
+            );
+          }),
         ),
       ),
     );
   }
+}
+
+class _BadgedIcon extends StatelessWidget {
+  const _BadgedIcon({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(icon),
+          Positioned(
+            top: -2,
+            right: -4,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: AppTheme.softCoral,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
+      );
 }
 
 class _NavDest {

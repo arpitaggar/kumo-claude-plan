@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
+import '../../../../core/error/failure.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -174,6 +176,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = const AuthUnauthenticated();
       },
     );
+  }
+
+  Future<Either<Failure, User>> updateProfile({
+    String? displayName,
+    String? avatarUrl,
+  }) async {
+    final result = await repository.updateProfile(
+      displayName: displayName,
+      avatarUrl: avatarUrl,
+    );
+    result.fold(
+      (_) {},
+      (user) => state = AuthAuthenticated(user),
+    );
+    return result;
   }
 
   void clearError() {

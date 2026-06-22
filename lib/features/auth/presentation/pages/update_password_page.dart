@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../config/theme.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../providers/auth_provider.dart';
@@ -31,7 +32,9 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    await ref.read(authNotifierProvider.notifier).updatePassword(_passwordController.text);
+    await ref
+        .read(authNotifierProvider.notifier)
+        .updatePassword(_passwordController.text);
   }
 
   @override
@@ -49,13 +52,20 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
     final authState = ref.watch(authNotifierProvider);
 
     if (authState is AuthLoading) {
-      return const Scaffold(body: LoadingWidget(message: 'Updating password…'));
+      return const Scaffold(
+        backgroundColor: AppTheme.warmOatmeal,
+        body: LoadingWidget(message: 'Updating password…'),
+      );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Set New Password')),
+      backgroundColor: AppTheme.warmOatmeal,
+      appBar: AppBar(
+        title: const Text('Set New Password'),
+        backgroundColor: AppTheme.warmOatmeal,
+      ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
@@ -63,17 +73,20 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   'Create a new password',
-                  style: context.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.darkEspresso,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Your new password must be at least ${AppConstants.minPasswordLength} characters.',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
+                const Text(
+                  'Must be at least ${AppConstants.minPasswordLength} characters.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.earthBrown,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -86,12 +99,12 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                       return 'Password is required';
                     }
                     if (value.length < AppConstants.minPasswordLength) {
-                      return 'Password must be at least ${AppConstants.minPasswordLength} characters';
+                      return 'At least ${AppConstants.minPasswordLength} characters';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 PasswordInputField(
                   controller: _confirmController,
                   labelText: 'Confirm new password',
@@ -103,7 +116,7 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: _submit,
                   child: const Text('Update Password'),

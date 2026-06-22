@@ -7,6 +7,11 @@ import '../models/message_model.dart';
 
 abstract class ChatRemoteDataSource {
   Stream<List<MessageModel>> watchMessages(String itineraryId);
+  Future<List<MessageModel>> fetchMessagesBefore({
+    required String itineraryId,
+    required DateTime before,
+    int limit = 50,
+  });
   Future<void> sendMessage({
     required String itineraryId,
     required String senderId,
@@ -18,6 +23,8 @@ abstract class ChatRemoteDataSource {
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   const ChatRemoteDataSourceImpl();
 
+  static const _streamLimit = 100;
+
   @override
   Stream<List<MessageModel>> watchMessages(String itineraryId) =>
       KumoSupabaseClient.client
@@ -25,7 +32,35 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           .stream(primaryKey: ['id'])
           .eq('itinerary_id', itineraryId)
           .order('created_at')
+          .limit(_streamLimit)
           .map((rows) => rows.map(MessageModel.fromJson).toList());
+
+  @override
+  Future<List<MessageModel>> fetchMessagesBefore({
+    required String itineraryId,
+    required DateTime before,
+    int limit = 50,
+  }) async {
+    try {
+      final rows = await KumoSupabaseClient.client
+          .from('messages')
+          .select()
+          .eq('itinerary_id', itineraryId)
+          .lt('created_at', before.toUtc().toIso8601String())
+          .order('created_at', ascending: false)
+          .limit(limit);
+      final models = (rows as List)
+          .map((r) => MessageModel.fromJson(r as Map<String, dynamic>))
+          .toList()
+          .reversed
+          .toList();
+      return models;
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
 
   @override
   Future<void> sendMessage({
