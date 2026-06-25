@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/itinerary_local_datasource.dart';
 import '../../data/datasources/itinerary_remote_datasource.dart';
 import '../../data/repositories/itinerary_repository_impl.dart';
 import '../../domain/entities/travel_itinerary.dart';
@@ -16,9 +17,13 @@ import '../../domain/usecases/update_itinerary_usecase.dart';
 final itineraryRemoteDataSourceProvider =
     Provider<ItineraryRemoteDataSource>((_) => const ItineraryRemoteDataSourceImpl());
 
+final itineraryLocalDataSourceProvider =
+    Provider<ItineraryLocalDataSource>((_) => ItineraryLocalDataSource());
+
 final itineraryRepositoryProvider = Provider<ItineraryRepositoryImpl>(
   (ref) => ItineraryRepositoryImpl(
     remoteDataSource: ref.watch(itineraryRemoteDataSourceProvider),
+    localDataSource: ref.watch(itineraryLocalDataSourceProvider),
   ),
 );
 
@@ -134,6 +139,7 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
     required String currencyCode,
     String? description,
     List<ItineraryItem>? items,
+    String themeKey = 'classic',
   }) async {
     final result = await createUseCase(
       title: title,
@@ -145,6 +151,7 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
       currencyCode: currencyCode,
       description: description,
       items: items,
+      themeKey: themeKey,
     );
     return result.fold(
       (failure) {

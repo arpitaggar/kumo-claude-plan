@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../config/theme.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -72,7 +73,9 @@ class ProfilePage extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          const _StatsCard(),
+          const SizedBox(height: 24),
           _tile(
             icon: Icons.edit_outlined,
             label: 'Edit Profile',
@@ -101,7 +104,8 @@ class ProfilePage extends ConsumerWidget {
     required String label,
     required VoidCallback onTap,
     Color color = AppTheme.darkEspresso,
-  }) => Material(
+  }) =>
+      Material(
         color: AppTheme.cloudWhite,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
@@ -128,5 +132,68 @@ class ProfilePage extends ConsumerWidget {
             ),
           ),
         ),
+      );
+}
+
+class _StatsCard extends ConsumerWidget {
+  const _StatsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listState = ref.watch(itineraryListProvider);
+    if (listState is! ItineraryListLoaded) {
+      return const SizedBox.shrink();
+    }
+
+    final trips = listState.itineraries;
+    final now = DateTime.now();
+    final upcoming = trips.where((t) => t.startDate.isAfter(now)).length;
+    final daysTraveled = trips
+        .where((t) => t.endDate.isBefore(now))
+        .fold(0, (sum, t) => sum + t.endDate.difference(t.startDate).inDays + 1);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: AppTheme.cloudWhite,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _StatPill(value: '${trips.length}', label: 'Trips'),
+          Container(width: 1, height: 32, color: AppTheme.sakuraStone),
+          _StatPill(value: '$upcoming', label: 'Upcoming'),
+          Container(width: 1, height: 32, color: AppTheme.sakuraStone),
+          _StatPill(value: '$daysTraveled', label: 'Days traveled'),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  const _StatPill({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.softCoral,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: AppTheme.earthBrown),
+          ),
+        ],
       );
 }

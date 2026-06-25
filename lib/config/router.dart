@@ -14,6 +14,8 @@ import '../features/itinerary/presentation/pages/add_edit_item_page.dart';
 import '../features/itinerary/presentation/pages/create_itinerary_page.dart';
 import '../features/itinerary/presentation/pages/invite_member_page.dart';
 import '../features/itinerary/presentation/pages/itinerary_detail_page.dart';
+import '../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../features/profile/presentation/pages/edit_profile_page.dart';
 import '../features/settings/presentation/pages/privacy_settings_page.dart';
 import '../features/shell/discover_page.dart';
@@ -24,6 +26,7 @@ import '../shared/widgets/kumo_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authNotifierProvider);
+  final onboardingState = ref.watch(onboardingProvider);
 
   return GoRouter(
     initialLocation: '/login',
@@ -43,7 +46,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
       if (isAuthenticated && isOnAuthRoute) {
-        return '/home';
+        // null = still loading prefs; true = already seen — both go to /home
+        return onboardingState == false ? '/onboarding' : '/home';
+      }
+      // Gate authenticated users on first launch
+      if (isAuthenticated &&
+          onboardingState == false &&
+          loc != '/onboarding') {
+        return '/onboarding';
       }
       return null;
     },
@@ -68,6 +78,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/reset-password',
         pageBuilder: (context, state) =>
             const MaterialPage(child: UpdatePasswordPage()),
+      ),
+
+      // ── Onboarding (no shell) ──────────────────────────────────────────────
+      GoRoute(
+        path: '/onboarding',
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: OnboardingPage()),
       ),
 
       // ── Main app shell (bottom nav) ────────────────────────────────────────

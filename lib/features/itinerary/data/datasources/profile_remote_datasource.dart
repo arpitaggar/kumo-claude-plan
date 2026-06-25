@@ -171,5 +171,19 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     } catch (e) {
       throw UnexpectedException(message: e.toString());
     }
+
+    // Best-effort email — failure here does not fail the invite.
+    try {
+      await KumoSupabaseClient.client.functions.invoke(
+        'invite-email',
+        body: {
+          'itinerary_id': itineraryId,
+          'invited_email': invitedEmail.trim().toLowerCase(),
+          'role': role,
+        },
+      );
+    } catch (_) {
+      // Edge function not deployed or Resend not configured — silently skip.
+    }
   }
 }

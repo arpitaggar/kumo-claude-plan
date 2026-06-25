@@ -1,9 +1,14 @@
 -- Stage 4: Expense Splitting
 -- Run this in the Supabase SQL editor after stage2b_invite_and_privacy.sql
 
+-- ─── Clean up any artifacts from previous failed runs ─────────────────────────
+-- Safe to run even on a fresh database; CASCADE drops dependent policies/indexes.
+
+drop table if exists public.expenses cascade;
+
 -- ─── Table ────────────────────────────────────────────────────────────────────
 
-create table if not exists public.expenses (
+create table public.expenses (
   id            uuid primary key default gen_random_uuid(),
   itinerary_id  uuid not null references public.itineraries(id) on delete cascade,
   title         text not null,
@@ -19,61 +24,52 @@ create table if not exists public.expenses (
 
 -- ─── Indexes ──────────────────────────────────────────────────────────────────
 
-create index if not exists expenses_itinerary_id_idx
+create index expenses_itinerary_id_idx
   on public.expenses (itinerary_id, created_at desc);
 
 -- ─── RLS ──────────────────────────────────────────────────────────────────────
 
 alter table public.expenses enable row level security;
 
--- Helper: is the calling user a member of the itinerary?
-create or replace function public.is_itinerary_member(p_itinerary_id uuid)
-returns boolean
-language sql stable security definer
-as $$
-  select exists (
-    select 1
-    from public.itinerary_members
-    where itinerary_id = p_itinerary_id
-      and user_id = auth.uid()
-  );
-$$;
+-- Use IN (subquery) so that `itinerary_id` sits in the outer USING expression
+-- and unambiguously refers to the expenses row being evaluated.  Avoids the
+-- correlated-subquery column-resolution issue seen with EXISTS in some Supabase
+-- versions.
 
--- Helper: is the calling user the owner of the itinerary?
-create or replace function public.is_itinerary_owner(p_itinerary_id uuid)
-returns boolean
-language sql stable security definer
-as $$
-  select exists (
-    select 1
-    from public.itineraries
-    where id = p_itinerary_id
-      and owner_id = auth.uid()
-  );
-$$;
-
--- SELECT: any member of the itinerary can read its expenses
+-- SELECT: trip owner or any member can view expenses
 create policy "Members can view expenses"
   on public.expenses for select
-  using (public.is_itinerary_member(itinerary_id));
+  using (
+    itinerary_id in (
+      select id from public.itineraries
+      where owner_id = auth.uid()
+         or members @> ('[{"userId":"' || auth.uid()::text || '"}]')::jsonb
+    )
+  );
 
--- INSERT: any member can add an expense
+-- INSERT: trip owner or any member can add an expense (must be the declared payer)
 create policy "Members can add expenses"
   on public.expenses for insert
   with check (
-    auth.uid() = payer_id
-    and public.is_itinerary_member(itinerary_id)
+    payer_id = auth.uid()
+    and itinerary_id in (
+      select id from public.itineraries
+      where owner_id = auth.uid()
+         or members @> ('[{"userId":"' || auth.uid()::text || '"}]')::jsonb
+    )
   );
 
--- DELETE: only the payer or the itinerary owner can delete an expense
+-- DELETE: only the payer or the trip owner can delete an expense
 create policy "Payer or owner can delete expense"
   on public.expenses for delete
   using (
-    auth.uid() = payer_id
-    or public.is_itinerary_owner(itinerary_id)
+    payer_id = auth.uid()
+    or itinerary_id in (
+      select id from public.itineraries
+      where owner_id = auth.uid()
+    )
   );
 
 -- ─── Realtime ─────────────────────────────────────────────────────────────────
 
--- Allow the expenses table to be streamed via Supabase Realtime.
 alter publication supabase_realtime add table public.expenses;

@@ -22,6 +22,7 @@ class CreateItineraryUseCase {
     required String currencyCode,
     String? description,
     List<ItineraryItem>? items,
+    String themeKey = 'classic',
   }) async {
     try {
       Validators.validateNonEmpty(title, 'Title');
@@ -57,6 +58,7 @@ class CreateItineraryUseCase {
       createdAt: now,
       updatedAt: now,
       description: description,
+      themeKey: themeKey,
     );
 
     return _repository.createItinerary(itinerary);

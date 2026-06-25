@@ -1305,4 +1305,302 @@ Originally scoped for Stage 6. Deferred to Stage 7 — they require platform-spe
 
 ---
 
-> Next: **Chapter 8 — Stage 7: Deep Links, Push Notifications & Offline Mode** *(not yet started)*
+---
+
+## Chapter 8 — Stage 7: Connectivity, Offline Cache & Home Search
+
+### 8.1 Goals
+
+Stage 7 adds resilience and quality-of-life improvements to the app's core loop:
+
+1. **Offline awareness** — detect network state and surface it in the UI.
+2. **Itinerary cache** — fall back to locally cached trips when the network is unavailable.
+3. **Functional home search** — replace the decorative search bar with a real, filterable one.
+4. **Avatar tap destination fix** — tap the avatar on Home to reach the Profile page, not Settings → Privacy.
+
+---
+
+### 8.2 Connectivity Service
+
+**`lib/core/services/connectivity_service.dart`**
+
+`ConnectivityService` wraps `connectivity_plus` v6's `Connectivity` singleton:
+
+- `onConnectivityChanged` — `Stream<bool>` derived from the package's `List<ConnectivityResult>` stream; emits `true` when any result is not `ConnectivityResult.none`.
+- `isOnline()` — one-shot async check using `checkConnectivity()`.
+
+Two Riverpod providers hang off the service:
+
+```dart
+// Streams live changes
+final connectivityStreamProvider = StreamProvider<bool>(
+  (_) => ConnectivityService.onConnectivityChanged,
+);
+
+// Synchronous bool for widgets — defaults true while stream initialises
+final isOnlineProvider = Provider<bool>(
+  (ref) => ref.watch(connectivityStreamProvider).maybeWhen(
+        data: (online) => online,
+        orElse: () => true,
+      ),
+);
+```
+
+The `orElse: () => true` default means widgets never go into an "unknown offline" state during the brief startup window before the first connectivity event arrives.
+
+---
+
+### 8.3 Offline Banner
+
+**`lib/shared/widgets/offline_banner.dart`**
+
+`OfflineBanner` is a `ConsumerWidget` that watches `isOnlineProvider`. When online it returns `SizedBox.shrink()` — zero cost. When offline it renders a slim dark bar at the top of the shell.
+
+`SafeArea(bottom: false)` is applied inside the banner so it sits flush against the status bar area without double-padding the sides.
+
+**`lib/shared/widgets/kumo_shell.dart`** wraps its body in a `Column`:
+
+```dart
+body: Column(
+  children: [
+    const OfflineBanner(),
+    Expanded(child: child),
+  ],
+),
+```
+
+This means every shell page gets the banner for free — no per-page wiring needed.
+
+---
+
+### 8.4 Itinerary Offline Cache
+
+**`lib/features/itinerary/data/datasources/itinerary_local_datasource.dart`**
+
+`ItineraryLocalDataSource` uses `SharedPreferences` (already in `pubspec.yaml`) to persist the itinerary list as JSON:
+
+- `saveItineraries(userId, list)` — serialises via `ItineraryModel.fromEntity().toJson()`, stores under key `itinerary_cache_{userId}`.
+- `loadCached(userId)` — deserialises via `ItineraryModel.fromJson()`, returns `null` if no cache exists.
+
+**`lib/features/itinerary/data/repositories/itinerary_repository_impl.dart`** gains a `localDataSource` field. The cache strategy in `fetchItineraries`:
+
+1. Try remote → on success, save to cache, return `Right(list)`.
+2. On `ServerException`, `NetworkException`, or any other error → try `localDataSource.loadCached(userId)`.
+3. If cache exists, return `Right(cached)` — the offline banner tells the user they're on stale data.
+4. If no cache exists, propagate the original `Left(failure)`.
+
+Only `fetchItineraries` has cache fallback — single-itinerary fetches and mutations (create, update, delete) always hit the network.
+
+**`lib/features/itinerary/presentation/providers/itinerary_provider.dart`** adds:
+
+```dart
+final itineraryLocalDataSourceProvider =
+    Provider<ItineraryLocalDataSource>((_) => ItineraryLocalDataSource());
+```
+
+and passes it into `ItineraryRepositoryImpl`.
+
+---
+
+### 8.5 Home Search
+
+**`lib/features/home/presentation/pages/home_page.dart`**
+
+The non-functional `GestureDetector + Container` mock was replaced with a real `TextField` backed by `_searchController`:
+
+- `_searchQuery` state is updated via a listener on the controller.
+- The search field shows a clear (`✕`) button when text is present.
+- Filtering is client-side: case-insensitive substring match on `title` and `description`.
+- When the filter produces no results (but there are trips), a "no results" empty state is shown in place of the list.
+- When no query is active, the section header reads "My Trips" with a "+ New" action. When filtering, it reads "Results" with no action.
+
+Avatar tap destination fixed: `context.push('/settings/privacy')` → `context.push('/profile')`.
+
+---
+
+### 8.6 Trade-offs & Known Gaps
+
+**Cache is per-user, not per-trip**
+
+The cache stores the full itinerary list for a given user ID. It does not cache individual trip details (`fetchItinerary`) or associated data (messages, expenses, packing items). Offline, users can see the list but cannot open a trip that hasn't been cached separately.
+
+**Last write wins on cache**
+
+A successful remote fetch always overwrites the cache. There is no merge strategy — if the user edits a trip offline, those changes are lost when the next successful fetch overwrites the cache. Offline mutations are out of scope.
+
+**Search is client-side only**
+
+The search bar filters the already-loaded list. It does not issue a new network query. For large trip counts this is fine; at scale a server-side `ilike` query would be needed.
+
+**Push notifications & deep links deferred again**
+
+Originally planned for Stage 6, then re-scoped to Stage 7, they remain out of scope. They require platform-specific entitlements (iOS Universal Links, APNs certificates, Firebase Cloud Messaging) that are best handled after the core feature set stabilises for a release candidate.
+
+---
+
+*End of Chapter 8 — Stage 7: Connectivity, Offline Cache & Home Search*
+
+---
+
+---
+
+## Chapter 9 — Stage 8: AI Itinerary Generation (Integration)
+
+### 9.1 Goals
+
+The AI generation data and domain layers (datasource, repository, usecase, provider) and the `AiGenerateSheet` bottom sheet were built as part of an earlier stage. What was missing was integration into the existing-trip flow:
+
+1. **"AI" button in the Itinerary tab** — owners and editors can generate and append AI items to any existing trip, not just at creation time.
+2. **Profile stats card** — show total trips, upcoming trips, and days traveled on the Profile page.
+
+---
+
+### 9.2 AI Generation in the Itinerary Detail Page
+
+**`lib/features/itinerary/presentation/pages/itinerary_detail_page.dart`**
+
+`_DetailScaffoldState` gained:
+
+- `_addAiItems()` — opens `showAiGenerateSheet` with the trip's start/end dates, waits for the result, merges the generated `List<ItineraryItem>` into the existing `itinerary.items`, and calls `UpdateItineraryUseCase`. Shows a snackbar on success or error.
+
+```dart
+final updated = it.copyWith(items: [...it.items, ...items]);
+final result = await ref.read(updateItineraryUseCaseProvider).call(updated);
+```
+
+`_ItineraryTab` gained an optional `onAddAiItems: VoidCallback?` parameter. The Schedule header now renders an "AI" button (with `Icons.auto_awesome`) immediately to the left of the manual "Add" button when `onAddAiItems != null`.
+
+`canEdit` is computed in `build`:
+
+```dart
+final member = it.members.where((m) => m.userId == currentUserId).firstOrNull;
+final canEdit = member != null && member.role != GroupMemberRole.viewer;
+```
+
+`onAddAiItems: canEdit ? _addAiItems : null` — so viewers never see the AI button, and the callback fires only from the owner/editor path.
+
+---
+
+### 9.3 Profile Stats Card
+
+**`lib/features/shell/profile_page.dart`**
+
+`_StatsCard` (a `ConsumerWidget`) watches `itineraryListProvider` and derives three numbers from the loaded list:
+
+| Stat | Logic |
+|------|-------|
+| Trips | `itineraries.length` |
+| Upcoming | trips where `startDate.isAfter(DateTime.now())` |
+| Days traveled | sum of `(endDate − startDate + 1).inDays` for trips where `endDate.isBefore(now)` |
+
+When the list is not yet loaded (`ItineraryListInitial` / `ItineraryListLoading`) the card returns `SizedBox.shrink()` — no layout shift.
+
+The card sits between the avatar section and the settings tiles, so it's visible immediately when opening the Profile page without scrolling.
+
+---
+
+### 9.4 Trade-offs & Known Gaps
+
+**Merged items are not de-duplicated**
+
+`_addAiItems` appends generated items unconditionally. If the user taps "AI" twice they get duplicate activities. A future improvement would diff by `title + startTime` and skip items that already exist.
+
+**Items generated against trip dates, not remaining days**
+
+The prompt sends the full trip start/end dates regardless of how many days have already passed. For an ongoing trip, a better prompt would say "generate items for days 3–7 of this trip" (remaining days only).
+
+**Stats are client-only**
+
+The stats card reads from the in-memory `ItineraryListLoaded` state, which is the user's own trips loaded in this session. It does not query the database directly. If the list is stale (offline, not yet loaded), the card hides itself rather than showing wrong numbers.
+
+---
+
+*End of Chapter 9 — Stage 8: AI Itinerary Generation (Integration)*
+
+---
+
+> Next: **Chapter 10 — Stage 9: Polish, Onboarding & Release Prep** *(not yet started)*
+
+---
+
+## Chapter 10 — Stage 9: Polish, Onboarding & Release Prep
+
+**Date:** June 2026  
+**Branch:** `main`  
+**Status:** Complete ✅
+
+---
+
+### What Was Built
+
+Stage 9 closed the remaining gaps before a public beta: first-run onboarding, router gating, CSV expense export, and a domain-layer unit test suite.
+
+---
+
+### Onboarding Flow
+
+**Provider — `lib/features/onboarding/presentation/providers/onboarding_provider.dart`**
+
+`OnboardingNotifier extends StateNotifier<bool?>` reads `SharedPreferences` on init and exposes a `markComplete()` method. The tri-state (`null` / `false` / `true`) avoids a redirect race: while SharedPreferences is still loading the state is `null` and the router ignores it; only `false` (confirmed not seen) triggers the redirect to `/onboarding`.
+
+**Page — `lib/features/onboarding/presentation/pages/onboarding_page.dart`**
+
+Three-screen walkthrough (`PageView`) with animated expanding-pill dot indicator. Skip button top-right exits early; Next / Get Started CTA at bottom advances or finishes. Both paths call `markComplete()` and `context.go('/home')`.
+
+**Router update — `lib/config/router.dart`**
+
+`onboardingProvider` is now watched alongside `authNotifierProvider`. The redirect adds two rules:
+- Authenticated user landing on an auth route → goes to `/onboarding` if `onboardingState == false`, otherwise `/home`.
+- Authenticated user on any non-onboarding route → redirected to `/onboarding` if `onboardingState == false`.
+
+The `/onboarding` route is registered as a full-screen route (outside the shell) so there is no bottom nav bar during the walkthrough.
+
+---
+
+### CSV Expense Export
+
+An "Export CSV" button (`TextButton.icon` with `Icons.download_outlined`) was added to the `_ExpensesTab` expenses section header. It is visible only when there is at least one expense (the button lives inside the `data:` branch of the stream). Tapping it calls `_exportCsv(expenses)` which builds a six-column CSV (`Date,Title,Category,Amount,Currency,Paid By`) and calls `Share.share(...)` via the existing `share_plus` dependency. No new package was needed.
+
+---
+
+### Unit Test Suite
+
+Four test files covering all itinerary domain use cases:
+
+| File | Tests | Groups |
+|------|-------|--------|
+| `create_itinerary_usecase_test.dart` | 9 | validation, entity construction, repository delegation |
+| `fetch_itineraries_usecase_test.dart` | 5 | delegation, success, empty list, NetworkFailure, ServerFailure |
+| `update_itinerary_usecase_test.dart` | 6 | validation (3), updatedAt UTC stamp, success, ServerFailure |
+| `delete_itinerary_usecase_test.dart` | 4 | delegation, success, ServerFailure, NetworkFailure |
+
+All 25 tests pass (`flutter test test/features/itinerary/domain/usecases/`).
+
+Key patterns used:
+- `MockItineraryRepository extends Mock implements ItineraryRepository` (mocktail)
+- `setUpAll(() { registerFallbackValue(...); })` for `TravelItinerary` fallback in tests that use `any()`
+- `registerFallbackValue` in `setUp` (per-test) for tests that override `when()` per-test
+
+---
+
+### Known Limitations
+
+**Onboarding shown once globally, not per account**
+
+`onboarding_complete` is stored in `SharedPreferences` keyed to the device, not the user. If two users share a device, the second user skips onboarding. Acceptable for beta; fix before multi-user device support is needed.
+
+**CSV date is in local time**
+
+`e.createdAt.toLocal()` is used for the date column. For trips spanning time zones this may be off by a day. A future improvement would let the user choose the timezone or always export UTC.
+
+**No test for onboarding provider**
+
+`OnboardingNotifier` was not unit tested in this stage — it requires mocking `SharedPreferences`. The existing pattern (mock `SharedPreferences.setMockInitialValues(...)` in Flutter test) would work; left for a follow-up.
+
+---
+
+*End of Chapter 10 — Stage 9: Polish, Onboarding & Release Prep*
+
+---
+
+> **Kumo v1.0 beta is ready for internal testing.** All 9 stages are complete. See `docs/DEVELOPMENT_ROADMAP.md` for the full feature inventory and deferred items list.

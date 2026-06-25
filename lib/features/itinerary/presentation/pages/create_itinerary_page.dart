@@ -10,7 +10,9 @@ import '../../../../shared/widgets/loading_widget.dart';
 import '../../../ai_generation/presentation/widgets/ai_generate_sheet.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/travel_itinerary.dart';
+import '../../domain/entities/trip_theme.dart';
 import '../providers/itinerary_provider.dart';
+import '../widgets/trip_theme_picker.dart';
 
 class CreateItineraryPage extends ConsumerStatefulWidget {
   const CreateItineraryPage({super.key});
@@ -29,10 +31,28 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
   DateTime? _startDate;
   DateTime? _endDate;
   String _currency = AppConstants.defaultCurrency;
+  String _themeKey = TripTheme.classic.key;
+  bool _autoTheme = true;
   bool _isSubmitting = false;
   List<ItineraryItem> _generatedItems = const [];
 
   static const _currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'SGD'];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.addListener(_autoSuggestTheme);
+  }
+
+  void _autoSuggestTheme() {
+    if (!_autoTheme) return;
+    final suggested = TripTheme.resolve(_titleController.text).key;
+    if (suggested != _themeKey) {
+      setState(() {
+        _themeKey = suggested;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -112,6 +132,7 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
           ? null
           : _descriptionController.text.trim(),
       items: _generatedItems.isEmpty ? null : _generatedItems,
+      themeKey: _themeKey,
     );
 
     if (!mounted) {
@@ -239,6 +260,16 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 24),
+                Text('Trip Theme', style: context.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                TripThemePicker(
+                  selectedKey: _themeKey,
+                  onSelected: (key) => setState(() {
+                    _themeKey = key;
+                    _autoTheme = false;
+                  }),
                 ),
                 const SizedBox(height: 24),
                 _AiSection(

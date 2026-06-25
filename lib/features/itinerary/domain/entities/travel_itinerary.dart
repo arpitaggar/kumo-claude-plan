@@ -67,6 +67,7 @@ class TravelItinerary extends Equatable {
     this.status = ItineraryStatusEnum.draft,
     this.isPublic = false,
     this.notes,
+    this.themeKey = 'classic',
   });
 
   /// Unique identifier for this itinerary (UUID format).
@@ -171,6 +172,9 @@ class TravelItinerary extends Equatable {
   /// Collaborative trip notes shared among all members.
   final String? notes;
 
+  /// Key identifying the destination-based visual theme (e.g. 'sakura', 'alpine').
+  final String themeKey;
+
   /// Creates a copy of this [TravelItinerary] with optionally replaced fields.
   ///
   /// Useful for immutable updates without modifying original.
@@ -202,6 +206,7 @@ class TravelItinerary extends Equatable {
     ItineraryStatusEnum? status,
     bool? isPublic,
     String? notes,
+    String? themeKey,
   }) => TravelItinerary(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -219,6 +224,7 @@ class TravelItinerary extends Equatable {
     status: status ?? this.status,
     isPublic: isPublic ?? this.isPublic,
     notes: notes ?? this.notes,
+    themeKey: themeKey ?? this.themeKey,
   );
 
   @override
@@ -239,6 +245,7 @@ class TravelItinerary extends Equatable {
     status,
     isPublic,
     notes,
+    themeKey,
   ];
 }
 

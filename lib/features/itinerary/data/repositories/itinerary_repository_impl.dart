@@ -4,13 +4,18 @@ import '../../../../core/error/exception.dart';
 import '../../../../core/error/failure.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/repositories/itinerary_repository.dart';
+import '../datasources/itinerary_local_datasource.dart';
 import '../datasources/itinerary_remote_datasource.dart';
 import '../models/itinerary_model.dart';
 
 class ItineraryRepositoryImpl implements ItineraryRepository {
-  const ItineraryRepositoryImpl({required this.remoteDataSource});
+  const ItineraryRepositoryImpl({
+    required this.remoteDataSource,
+    required this.localDataSource,
+  });
 
   final ItineraryRemoteDataSource remoteDataSource;
+  final ItineraryLocalDataSource localDataSource;
 
   @override
   Future<Either<Failure, List<TravelItinerary>>> fetchItineraries(
@@ -18,12 +23,25 @@ class ItineraryRepositoryImpl implements ItineraryRepository {
   ) async {
     try {
       final result = await remoteDataSource.fetchItineraries(userId);
+      await localDataSource.saveItineraries(userId, result);
       return Right(result);
     } on ServerException catch (e) {
+      final cached = await localDataSource.loadCached(userId);
+      if (cached != null) {
+        return Right(cached);
+      }
       return Left(ServerFailure(e.message));
     } on NetworkException catch (e) {
+      final cached = await localDataSource.loadCached(userId);
+      if (cached != null) {
+        return Right(cached);
+      }
       return Left(NetworkFailure(e.message));
     } catch (e) {
+      final cached = await localDataSource.loadCached(userId);
+      if (cached != null) {
+        return Right(cached);
+      }
       return Left(UnexpectedFailure(e.toString()));
     }
   }

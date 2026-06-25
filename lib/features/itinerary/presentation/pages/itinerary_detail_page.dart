@@ -9,6 +9,7 @@ import '../../../../config/theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../ai_generation/presentation/widgets/ai_generate_sheet.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../expense_split/domain/entities/expense.dart';
 import '../../../expense_split/presentation/providers/expense_provider.dart';
@@ -18,6 +19,7 @@ import '../../../ratings/domain/entities/rating.dart';
 import '../../../ratings/presentation/providers/rating_provider.dart';
 import '../../../ratings/presentation/widgets/add_rating_sheet.dart';
 import '../../domain/entities/travel_itinerary.dart';
+import '../../domain/entities/trip_theme.dart';
 import '../providers/itinerary_provider.dart';
 
 class ItineraryDetailPage extends ConsumerWidget {
@@ -122,6 +124,31 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
     }
   }
 
+  Future<void> _addAiItems() async {
+    final items = await showAiGenerateSheet(
+      context,
+      startDate: it.startDate,
+      endDate: it.endDate,
+    );
+    if (items == null || items.isEmpty || !mounted) {
+      return;
+    }
+    final updated = it.copyWith(items: [...it.items, ...items]);
+    final result = await ref.read(updateItineraryUseCaseProvider).call(updated);
+    result.fold(
+      (f) {
+        if (mounted) {
+          context.showSnackBar(f.message, isError: true);
+        }
+      },
+      (_) {
+        if (mounted) {
+          context.showSnackBar('${items.length} activities added!');
+        }
+      },
+    );
+  }
+
   Future<void> _deleteItem(String itemId) async {
     final updated = it.copyWith(
       items: it.items.where((i) => i.id != itemId).toList(),
@@ -144,12 +171,20 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
     final currentUserId =
         authState is AuthAuthenticated ? authState.user.id : '';
 
+    final member = it.members
+        .where((m) => m.userId == currentUserId)
+        .firstOrNull;
+    final canEdit =
+        member != null && member.role != GroupMemberRole.viewer;
+
+    final tripTheme = TripTheme.forKey(it.themeKey);
+
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: tripTheme.backgroundTint,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            backgroundColor: AppTheme.warmOatmeal,
+            backgroundColor: tripTheme.backgroundTint,
             foregroundColor: AppTheme.darkEspresso,
             pinned: true,
             expandedHeight: 140,
@@ -186,12 +221,8 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
                 overflow: TextOverflow.ellipsis,
               ),
               background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppTheme.warmOatmeal, AppTheme.cherryBlossom],
-                  ),
+                decoration: BoxDecoration(
+                  gradient: tripTheme.headerGradient,
                 ),
               ),
             ),
@@ -201,9 +232,9 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
                 color: AppTheme.cloudWhite,
                 child: TabBar(
                   controller: _tabs,
-                  labelColor: AppTheme.softCoral,
+                  labelColor: tripTheme.primary,
                   unselectedLabelColor: AppTheme.earthBrown,
-                  indicatorColor: AppTheme.softCoral,
+                  indicatorColor: tripTheme.primary,
                   labelStyle: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 13,
@@ -233,6 +264,7 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
               itinerary: it,
               duration: duration,
               onDeleteItem: _deleteItem,
+              onAddAiItems: canEdit ? _addAiItems : null,
               currentUserId: currentUserId,
             ),
 
@@ -262,12 +294,14 @@ class _ItineraryTab extends ConsumerWidget {
     required this.duration,
     required this.onDeleteItem,
     required this.currentUserId,
+    this.onAddAiItems,
   });
 
   final TravelItinerary itinerary;
   final int duration;
   final Future<void> Function(String itemId) onDeleteItem;
   final String currentUserId;
+  final VoidCallback? onAddAiItems;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => ListView(
@@ -344,6 +378,18 @@ class _ItineraryTab extends ConsumerWidget {
               ),
             ),
             const Spacer(),
+            if (onAddAiItems != null) ...[
+              TextButton.icon(
+                onPressed: onAddAiItems,
+                icon: const Icon(Icons.auto_awesome, size: 15),
+                label: const Text('AI'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.softCoral,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              const SizedBox(width: 2),
+            ],
             TextButton.icon(
               onPressed: () =>
                   context.push('/trip/${itinerary.id}/item'),
@@ -536,13 +582,31 @@ class _ExpensesTab extends ConsumerWidget {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Expenses',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.darkEspresso,
-                          ),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Expenses',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.darkEspresso,
+                                ),
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () => _exportCsv(expenses),
+                              icon: const Icon(
+                                Icons.download_outlined,
+                                size: 15,
+                              ),
+                              label: const Text('CSV'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppTheme.earthBrown,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 10),
                         ...expenses.map((e) => _ExpenseTile(
@@ -644,6 +708,19 @@ class _ExpensesTab extends ConsumerWidget {
             );
       },
     );
+  }
+
+  void _exportCsv(List<Expense> expenses) {
+    final buf = StringBuffer()
+      ..writeln('Date,Title,Category,Amount,Currency,Paid By');
+    for (final e in expenses) {
+      final date = e.createdAt.toLocal().toString().split(' ').first;
+      final title = e.title.replaceAll(',', ' ');
+      buf.writeln(
+        '$date,$title,${e.category.name},${e.amount.toStringAsFixed(2)},${e.currencyCode},${e.payerName}',
+      );
+    }
+    Share.share(buf.toString(), subject: 'Expenses — ${itinerary.title}');
   }
 }
 

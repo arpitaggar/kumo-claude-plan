@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../config/theme.dart';
 import '../../features/chat/presentation/providers/chat_provider.dart';
+import 'offline_banner.dart';
 
 class KumoShell extends ConsumerWidget {
   const KumoShell({required this.child, super.key});
@@ -35,7 +36,12 @@ class KumoShell extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.warmOatmeal,
-      body: child,
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: child),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppTheme.cloudWhite,

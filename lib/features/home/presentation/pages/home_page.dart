@@ -6,6 +6,7 @@ import '../../../../config/theme.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../itinerary/domain/entities/travel_itinerary.dart';
 import '../../../itinerary/presentation/providers/itinerary_provider.dart';
 import '../../../itinerary/presentation/widgets/itinerary_card.dart';
 
@@ -18,10 +19,15 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   ProviderSubscription<AuthState>? _authSub;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _load();
@@ -39,6 +45,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _authSub?.close();
     super.dispose();
   }
@@ -50,6 +57,81 @@ class _HomePageState extends ConsumerState<HomePage> {
           .read(itineraryListProvider.notifier)
           .loadItineraries(authState.user.id);
     }
+  }
+
+  Widget _buildTripList(
+    BuildContext context,
+    WidgetRef ref,
+    List<TravelItinerary> trips,
+  ) {
+    if (trips.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.search_off,
+                  size: 48,
+                  color: AppTheme.earthBrown,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No trips match "$_searchQuery"',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.darkEspresso,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+      sliver: SliverList.separated(
+        itemCount: trips.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, i) {
+          if (i == 0) {
+            return _SectionHeader(
+              label: _searchQuery.isEmpty ? 'My Trips' : 'Results',
+              trailing: _searchQuery.isEmpty
+                  ? TextButton(
+                      onPressed: () async {
+                        await context.push('/create-trip');
+                        if (!mounted) {
+                          return;
+                        }
+                        final auth = ref.read(authNotifierProvider);
+                        if (auth is AuthAuthenticated) {
+                          await ref
+                              .read(itineraryListProvider.notifier)
+                              .softRefresh(auth.user.id);
+                        }
+                      },
+                      child: const Text('+ New'),
+                    )
+                  : null,
+            );
+          }
+          final trip = trips[i - 1];
+          return ItineraryCard(
+            itinerary: trip,
+            onTap: () => context.push('/trip/${trip.id}'),
+            onDelete: () => ref
+                .read(itineraryListProvider.notifier)
+                .deleteItinerary(trip.id),
+          );
+        },
+      ),
+    );
   }
 
   String get _greeting {
@@ -106,7 +188,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => context.push('/settings/privacy'),
+                      onTap: () => context.push('/profile'),
                       child: CircleAvatar(
                         radius: 22,
                         backgroundColor: AppTheme.cherryBlossom,
@@ -131,28 +213,45 @@ class _HomePageState extends ConsumerState<HomePage> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                child: GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.cloudWhite,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppTheme.sakuraStone),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.darkEspresso,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Where to next?',
+                    hintStyle: const TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.earthBrown,
                     ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.search, color: AppTheme.earthBrown, size: 20),
-                        SizedBox(width: 10),
-                        Text(
-                          'Where to next?',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppTheme.earthBrown,
-                          ),
-                        ),
-                      ],
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: AppTheme.earthBrown,
+                      size: 20,
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: _searchController.clear,
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppTheme.cloudWhite,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppTheme.sakuraStone),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppTheme.sakuraStone),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: AppTheme.softCoral.withValues(alpha: 0.6),
+                      ),
                     ),
                   ),
                 ),
@@ -185,43 +284,23 @@ class _HomePageState extends ConsumerState<HomePage> {
                     },
                   ),
                 ),
-              ItineraryListLoaded(:final itineraries) =>
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
-                  sliver: SliverList.separated(
-                    itemCount: itineraries.length + 1,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) {
-                      if (i == 0) {
-                        return _SectionHeader(
-                          label: 'My Trips',
-                          trailing: TextButton(
-                            onPressed: () async {
-                              await context.push('/create-trip');
-                              if (!mounted) {
-                        return;
-                      }
-                              final auth = ref.read(authNotifierProvider);
-                              if (auth is AuthAuthenticated) {
-                                await ref
-                                    .read(itineraryListProvider.notifier)
-                                    .softRefresh(auth.user.id);
-                              }
-                            },
-                            child: const Text('+ New'),
-                          ),
-                        );
-                      }
-                      final trip = itineraries[i - 1];
-                      return ItineraryCard(
-                        itinerary: trip,
-                        onTap: () => context.push('/trip/${trip.id}'),
-                        onDelete: () => ref
-                            .read(itineraryListProvider.notifier)
-                            .deleteItinerary(trip.id),
-                      );
-                    },
-                  ),
+              ItineraryListLoaded(:final itineraries) => _buildTripList(
+                  context,
+                  ref,
+                  _searchQuery.isEmpty
+                      ? itineraries
+                      : itineraries
+                          .where(
+                            (t) =>
+                                t.title.toLowerCase().contains(
+                                      _searchQuery.toLowerCase(),
+                                    ) ||
+                                (t.description
+                                        ?.toLowerCase()
+                                        .contains(_searchQuery.toLowerCase()) ??
+                                    false),
+                          )
+                          .toList(),
                 ),
             },
           ],

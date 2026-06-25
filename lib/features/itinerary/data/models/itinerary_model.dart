@@ -19,6 +19,7 @@ class ItineraryModel extends TravelItinerary {
     super.status,
     super.isPublic,
     super.notes,
+    super.themeKey,
   });
 
   factory ItineraryModel.fromJson(Map<String, dynamic> json) => ItineraryModel(
@@ -48,6 +49,7 @@ class ItineraryModel extends TravelItinerary {
     ),
     isPublic: json['is_public'] as bool? ?? false,
     notes: json['notes'] as String?,
+    themeKey: json['theme_key'] as String? ?? 'classic',
   );
 
   factory ItineraryModel.fromEntity(TravelItinerary e) => ItineraryModel(
@@ -67,6 +69,7 @@ class ItineraryModel extends TravelItinerary {
     status: e.status,
     isPublic: e.isPublic,
     notes: e.notes,
+    themeKey: e.themeKey,
   );
 
   Map<String, dynamic> toJson() => {
@@ -90,6 +93,7 @@ class ItineraryModel extends TravelItinerary {
     'status': status.name,
     'is_public': isPublic,
     if (notes != null) 'notes': notes,
+    'theme_key': themeKey,
   };
 }
 
