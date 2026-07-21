@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/theme.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
@@ -52,17 +51,17 @@ class _PasswordResetPageState extends ConsumerState<PasswordResetPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: AppTheme.warmOatmeal,
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: LoadingWidget(message: 'Sending email…'),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Reset Password'),
-        backgroundColor: AppTheme.warmOatmeal,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: BackButton(onPressed: () => context.pop()),
       ),
       body: SafeArea(
@@ -102,18 +101,18 @@ class _ResetForm extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Forgot your password?',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.darkEspresso,
+                color: context.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "Enter your email and we'll send a reset link.",
-              style: TextStyle(fontSize: 14, color: AppTheme.earthBrown),
+              style: TextStyle(fontSize: 14, color: context.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
             EmailInputField(
@@ -144,31 +143,31 @@ class _SentConfirmation extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppTheme.cherryBlossom,
+              color: context.colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.mark_email_read_outlined,
               size: 40,
-              color: AppTheme.softCoral,
+              color: context.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Check your inbox',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: AppTheme.darkEspresso,
+              color: context.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             'We sent a password reset link to\n$email',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: AppTheme.earthBrown,
+              color: context.colorScheme.onSurfaceVariant,
               height: 1.5,
             ),
           ),

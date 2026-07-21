@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../config/theme.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../itinerary/domain/entities/travel_itinerary.dart';
@@ -115,8 +114,8 @@ class _AddRatingSheetState extends ConsumerState<_AddRatingSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppTheme.warmOatmeal,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
@@ -133,19 +132,19 @@ class _AddRatingSheetState extends ConsumerState<_AddRatingSheet> {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.sakuraStone,
+                      color: context.colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
 
-                const Text(
+                Text(
                   'Rate your experience',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.darkEspresso,
+                    color: context.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -224,17 +223,17 @@ class _AddRatingSheetState extends ConsumerState<_AddRatingSheet> {
                 FilledButton(
                   onPressed: _isSubmitting ? null : _submit,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.softCoral,
-                    foregroundColor: AppTheme.cloudWhite,
+                    backgroundColor: context.colorScheme.primary,
+                    foregroundColor: context.colorScheme.surface,
                     minimumSize: const Size.fromHeight(50),
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppTheme.cloudWhite,
+                            color: context.colorScheme.surface,
                           ),
                         )
                       : const Text('Submit Review'),
@@ -291,12 +290,12 @@ class _Chip extends StatelessWidget {
               const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color:
-                selected ? AppTheme.softCoral : AppTheme.cloudWhite,
+                selected ? context.colorScheme.primary : context.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: selected
-                  ? AppTheme.softCoral
-                  : AppTheme.sakuraStone,
+                  ? context.colorScheme.primary
+                  : context.colorScheme.outlineVariant,
             ),
           ),
           child: Text(
@@ -305,8 +304,8 @@ class _Chip extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: selected
-                  ? AppTheme.cloudWhite
-                  : AppTheme.darkEspresso,
+                  ? context.colorScheme.surface
+                  : context.colorScheme.onSurface,
             ),
           ),
         ),
@@ -333,7 +332,7 @@ class _StarPicker extends StatelessWidget {
                 size: 40,
                 color: star <= value
                     ? const Color(0xFFFFC107)
-                    : AppTheme.sakuraStone,
+                    : context.colorScheme.outlineVariant,
               ),
             ),
           );

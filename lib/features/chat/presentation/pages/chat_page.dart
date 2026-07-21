@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../../config/theme.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
@@ -50,6 +49,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   void _subscribeTyping() {
+    // Fire-and-forget: mark all existing messages as read on open
+    ref
+        .read(chatRemoteDataSourceProvider)
+        .markMessagesRead(widget.itineraryId)
+        .ignore();
+
     final channel = KumoSupabaseClient.client
         .channel('typing:${widget.itineraryId}');
     _typingChannel = channel;
@@ -235,27 +240,32 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     ref.listen(chatStreamProvider(widget.itineraryId), (_, next) {
       if (next is AsyncData) {
         _scrollToBottom();
+        // Mark any newly arrived messages as read while chat is open
+        ref
+            .read(chatRemoteDataSourceProvider)
+            .markMessagesRead(widget.itineraryId)
+            .ignore();
       }
     });
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.warmOatmeal,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               tripTitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.darkEspresso,
+                color: context.colorScheme.onSurface,
               ),
             ),
-            const Text(
+            Text(
               'Group chat',
-              style: TextStyle(fontSize: 12, color: AppTheme.earthBrown),
+              style: TextStyle(fontSize: 12, color: context.colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -271,7 +281,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   padding: const EdgeInsets.all(24),
                   child: Text(
                     e.toString(),
-                    style: const TextStyle(color: AppTheme.softCoral),
+                    style: TextStyle(color: context.colorScheme.primary),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -282,19 +292,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ...streamMessages,
                 ];
                 if (allMessages.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.chat_bubble_outline,
-                            size: 48, color: AppTheme.sakuraStone),
+                            size: 48, color: context.colorScheme.outlineVariant),
                         SizedBox(height: 12),
                         Text(
                           'No messages yet',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.earthBrown,
+                            color: context.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         SizedBox(height: 4),
@@ -302,7 +312,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           'Say hello to your travel crew!',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppTheme.earthBrown,
+                            color: context.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -362,12 +372,12 @@ class _LoadEarlierButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!hasMore) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 12),
         child: Center(
           child: Text(
             'Beginning of conversation',
-            style: TextStyle(fontSize: 12, color: AppTheme.earthBrown),
+            style: TextStyle(fontSize: 12, color: context.colorScheme.onSurfaceVariant),
           ),
         ),
       );
@@ -376,21 +386,21 @@ class _LoadEarlierButton extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Center(
         child: isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppTheme.softCoral,
+                  color: context.colorScheme.primary,
                 ),
               )
             : TextButton.icon(
                 onPressed: onTap,
-                icon: const Icon(Icons.expand_less,
-                    size: 16, color: AppTheme.earthBrown),
-                label: const Text(
+                icon: Icon(Icons.expand_less,
+                    size: 16, color: context.colorScheme.onSurfaceVariant),
+                label: Text(
                   'Load earlier messages',
-                  style: TextStyle(fontSize: 13, color: AppTheme.earthBrown),
+                  style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
                 ),
               ),
       ),
@@ -426,14 +436,14 @@ class _TypingIndicator extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 2),
       child: Row(
         children: [
-          _DotsAnimation(),
+          ExcludeSemantics(child: _DotsAnimation()),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
               _label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.earthBrown,
+                color: context.colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
               ),
               overflow: TextOverflow.ellipsis,
@@ -487,8 +497,8 @@ class _DotsAnimationState extends State<_DotsAnimation>
                   child: Container(
                     width: 5,
                     height: 5,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.earthBrown,
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.onSurfaceVariant,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -498,6 +508,24 @@ class _DotsAnimationState extends State<_DotsAnimation>
           );
         },
       );
+}
+
+class _ReadTick extends StatelessWidget {
+  const _ReadTick({required this.readBy});
+
+  final List<String> readBy;
+
+  @override
+  Widget build(BuildContext context) {
+    final read = readBy.isNotEmpty;
+    return Icon(
+      read ? Icons.done_all : Icons.done,
+      size: 12,
+      color: read
+          ? context.colorScheme.surface
+          : context.colorScheme.surface.withValues(alpha: 0.55),
+    );
+  }
 }
 
 class _MessageBubble extends StatelessWidget {
@@ -514,11 +542,11 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bubbleColor =
-        isMe ? AppTheme.softCoral : AppTheme.cloudWhite;
+        isMe ? context.colorScheme.primary : context.colorScheme.surface;
     final textColor =
-        isMe ? AppTheme.cloudWhite : AppTheme.darkEspresso;
+        isMe ? context.colorScheme.surface : context.colorScheme.onSurface;
     final timeColor =
-        isMe ? AppTheme.cloudWhite.withValues(alpha: 0.7) : AppTheme.earthBrown;
+        isMe ? context.colorScheme.surface.withValues(alpha: 0.7) : context.colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -537,10 +565,10 @@ class _MessageBubble extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 12, bottom: 3),
                   child: Text(
                     message.senderName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.earthBrown,
+                      color: context.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -557,7 +585,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.darkEspresso.withValues(alpha: 0.06),
+                      color: context.colorScheme.onSurface.withValues(alpha: 0.06),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -575,10 +603,19 @@ class _MessageBubble extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      DateFormat('h:mm a')
-                          .format(message.createdAt.toLocal()),
-                      style: TextStyle(fontSize: 10, color: timeColor),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          DateFormat('h:mm a')
+                              .format(message.createdAt.toLocal()),
+                          style: TextStyle(fontSize: 10, color: timeColor),
+                        ),
+                        if (isMe) ...[
+                          const SizedBox(width: 3),
+                          _ReadTick(readBy: message.readBy),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -605,10 +642,10 @@ class _InputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         decoration: BoxDecoration(
-          color: AppTheme.cloudWhite,
+          color: context.colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.darkEspresso.withValues(alpha: 0.06),
+              color: context.colorScheme.onSurface.withValues(alpha: 0.06),
               blurRadius: 16,
               offset: const Offset(0, -4),
             ),
@@ -629,15 +666,15 @@ class _InputBar extends StatelessWidget {
                     minLines: 1,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => onSend(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppTheme.darkEspresso,
+                      color: context.colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Message…',
-                      hintStyle: const TextStyle(color: AppTheme.earthBrown),
+                      hintStyle: TextStyle(color: context.colorScheme.onSurfaceVariant),
                       filled: true,
-                      fillColor: AppTheme.warmOatmeal,
+                      fillColor: Theme.of(context).scaffoldBackgroundColor,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(22),
                         borderSide: BorderSide.none,
@@ -648,8 +685,8 @@ class _InputBar extends StatelessWidget {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(22),
-                        borderSide: const BorderSide(
-                          color: AppTheme.softCoral,
+                        borderSide: BorderSide(
+                          color: context.colorScheme.primary,
                           width: 1.5,
                         ),
                       ),
@@ -676,33 +713,38 @@ class _SendButton extends StatelessWidget {
   final VoidCallback onSend;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: isSending ? null : onSend,
-        child: Container(
+  Widget build(BuildContext context) => Semantics(
+        label: isSending ? 'Sending message' : 'Send message',
+        button: true,
+        enabled: !isSending,
+        child: GestureDetector(
+          onTap: isSending ? null : onSend,
+          child: Container(
           width: 44,
           height: 44,
           decoration: BoxDecoration(
             color: isSending
-                ? AppTheme.sakuraStone
-                : AppTheme.softCoral,
+                ? context.colorScheme.outlineVariant
+                : context.colorScheme.primary,
             shape: BoxShape.circle,
           ),
           child: isSending
-              ? const Center(
+              ? Center(
                   child: SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppTheme.cloudWhite,
+                      color: context.colorScheme.surface,
                     ),
                   ),
                 )
-              : const Icon(
+              : Icon(
                   Icons.send_rounded,
-                  color: AppTheme.cloudWhite,
+                  color: context.colorScheme.surface,
                   size: 20,
                 ),
+          ),
         ),
       );
 }

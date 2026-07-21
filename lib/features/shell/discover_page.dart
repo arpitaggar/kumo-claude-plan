@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../config/theme.dart';
 import '../../core/utils/formatters.dart';
 import '../auth/presentation/providers/auth_provider.dart';
 import '../discover/presentation/providers/discover_provider.dart';
 import '../itinerary/domain/entities/travel_itinerary.dart';
+import '../../shared/extensions/context_extensions.dart';
 
 class DiscoverPage extends ConsumerStatefulWidget {
   const DiscoverPage({super.key});
@@ -53,15 +53,15 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     final state = ref.watch(discoverNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.warmOatmeal,
-        title: const Text(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: Text(
           'Discover',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 22,
-            color: AppTheme.darkEspresso,
+            color: context.colorScheme.onSurface,
           ),
         ),
       ),
@@ -82,7 +82,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                       )
                     : null,
                 filled: true,
-                fillColor: AppTheme.cloudWhite,
+                fillColor: context.colorScheme.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide.none,
@@ -93,8 +93,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
           ),
           Expanded(
             child: switch (state) {
-              DiscoverInitial() || DiscoverLoading() => const Center(
-                  child: CircularProgressIndicator(color: AppTheme.softCoral),
+              DiscoverInitial() || DiscoverLoading() => Center(
+                  child: CircularProgressIndicator(color: context.colorScheme.primary),
                 ),
               DiscoverError(:final message) => _ErrorView(
                   message: message,
@@ -195,7 +195,7 @@ class _PublicTripCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Material(
-        color: AppTheme.cloudWhite,
+        color: context.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -205,8 +205,8 @@ class _PublicTripCard extends ConsumerWidget {
             children: [
               Container(
                 height: 4,
-                decoration: const BoxDecoration(
-                  gradient: AppTheme.featuredGradient,
+                decoration: BoxDecoration(
+                  gradient: context.featuredGradient,
                 ),
               ),
               Padding(
@@ -220,10 +220,10 @@ class _PublicTripCard extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             itinerary.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.darkEspresso,
+                              color: context.colorScheme.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -234,21 +234,21 @@ class _PublicTripCard extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 9, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppTheme.softCoral.withValues(alpha: 0.12),
+                            color: context.colorScheme.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.public,
-                                  size: 11, color: AppTheme.softCoral),
+                                  size: 11, color: context.colorScheme.primary),
                               SizedBox(width: 3),
                               Text(
                                 'Public',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.softCoral,
+                                  color: context.colorScheme.primary,
                                 ),
                               ),
                             ],
@@ -261,8 +261,8 @@ class _PublicTripCard extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         itinerary.description!,
-                        style: const TextStyle(
-                            fontSize: 13, color: AppTheme.earthBrown),
+                        style: TextStyle(
+                            fontSize: 13, color: context.colorScheme.onSurfaceVariant),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -270,31 +270,31 @@ class _PublicTripCard extends ConsumerWidget {
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        const Icon(Icons.calendar_today_outlined,
-                            size: 13, color: AppTheme.earthBrown),
+                        Icon(Icons.calendar_today_outlined,
+                            size: 13, color: context.colorScheme.onSurfaceVariant),
                         const SizedBox(width: 5),
                         Text(
                           '${Formatters.formatDate(itinerary.startDate)} – ${Formatters.formatDate(itinerary.endDate)}',
-                          style: const TextStyle(
-                              fontSize: 12, color: AppTheme.earthBrown),
+                          style: TextStyle(
+                              fontSize: 12, color: context.colorScheme.onSurfaceVariant),
                         ),
                         const Spacer(),
-                        const Icon(Icons.people_outline,
-                            size: 13, color: AppTheme.earthBrown),
+                        Icon(Icons.people_outline,
+                            size: 13, color: context.colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Text(
                           '${itinerary.members.length}',
-                          style: const TextStyle(
-                              fontSize: 12, color: AppTheme.earthBrown),
+                          style: TextStyle(
+                              fontSize: 12, color: context.colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(width: 12),
                         Text(
                           Formatters.formatCurrency(
                               itinerary.totalBudget, itinerary.currencyCode),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.softCoral,
+                            color: context.colorScheme.primary,
                           ),
                         ),
                       ],
@@ -307,8 +307,8 @@ class _PublicTripCard extends ConsumerWidget {
                         icon: const Icon(Icons.copy_outlined, size: 16),
                         label: const Text('Clone to My Trips'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.softCoral,
-                          side: const BorderSide(color: AppTheme.softCoral),
+                          foregroundColor: context.colorScheme.primary,
+                          side: BorderSide(color: context.colorScheme.primary),
                           visualDensity: VisualDensity.compact,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -340,15 +340,15 @@ class _EmptyDiscover extends StatelessWidget {
             Icon(
               Icons.explore_outlined,
               size: 64,
-              color: AppTheme.earthBrown.withValues(alpha: 0.4),
+              color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
               hasQuery ? 'No matching trips' : 'No public trips yet',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.earthBrown,
+                color: context.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
@@ -356,7 +356,7 @@ class _EmptyDiscover extends StatelessWidget {
               hasQuery
                   ? 'Try a different search term'
                   : 'Be the first to share your adventure!',
-              style: const TextStyle(fontSize: 14, color: AppTheme.earthBrown),
+              style: TextStyle(fontSize: 14, color: context.colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
           ],
@@ -375,12 +375,12 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_outlined,
-                size: 48, color: AppTheme.sakuraStone),
+            Icon(Icons.wifi_off_outlined,
+                size: 48, color: context.colorScheme.outlineVariant),
             const SizedBox(height: 12),
             Text(
               message,
-              style: const TextStyle(color: AppTheme.earthBrown),
+              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),

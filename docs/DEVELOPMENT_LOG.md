@@ -1604,3 +1604,573 @@ Key patterns used:
 ---
 
 > **Kumo v1.0 beta is ready for internal testing.** All 9 stages are complete. See `docs/DEVELOPMENT_ROADMAP.md` for the full feature inventory and deferred items list.
+
+---
+
+## Chapter 11 — Stage 10: Destination-Based Trip Themes
+
+**Status:** Complete ✅
+
+### Overview
+
+Each trip now carries a visual theme derived from its destination. Themes affect the card accent bar gradient, the detail page header gradient, and the page background tint — giving the app an immediate sense of place before the user even opens the trip.
+
+### TripTheme Entity — `lib/features/itinerary/domain/entities/trip_theme.dart`
+
+Eight static const presets defined as value objects:
+
+| Key | Label | Emoji | Region |
+|-----|-------|-------|--------|
+| `classic` | Classic | ✈️ | Default / fallback |
+| `sakura` | Sakura | 🌸 | Japan |
+| `tropical` | Tropical | 🌴 | Southeast Asia / Pacific |
+| `alpine` | Alpine | ⛰️ | Mountains / Switzerland |
+| `desert` | Desert | 🏜️ | Middle East / North Africa |
+| `nordic` | Nordic | 🌌 | Scandinavia / Iceland |
+| `mediterranean` | Mediterranean | 🫒 | Southern Europe |
+| `rainforest` | Rainforest | 🌿 | Amazon / Central America |
+
+Each preset carries: `key`, `label`, `emoji`, `primary` (`Color`), `gradientStart`, `gradientEnd`, `backgroundTint`. Two computed getters produce `LinearGradient` instances used in the UI.
+
+**`TripTheme.resolve(String title)`** — keyword matching against ~100 region keywords (case-insensitive). Used for auto-suggest as the user types the trip title. Falls back to `classic`.
+
+**`TripTheme.forKey(String key)`** — lookup by key string. Falls back to `classic` for unknown or empty keys.
+
+### Data Layer Changes
+
+`ItineraryModel`:
+- `fromJson` reads `json['theme_key'] as String? ?? 'classic'`
+- `toJson` writes `'theme_key': themeKey`
+- `fromEntity` propagates `themeKey`
+
+`TravelItinerary` entity: `themeKey` added as an optional field defaulting to `'classic'`. Included in `copyWith` and `props`.
+
+`CreateItineraryUseCase`: accepts optional `themeKey` param, passes it through to the entity.
+
+SQL migration `docs/supabase_migrations/stage10_destination_themes.sql`:
+```sql
+ALTER TABLE itineraries ADD COLUMN IF NOT EXISTS theme_key TEXT NOT NULL DEFAULT 'classic';
+ALTER TABLE itineraries ADD CONSTRAINT itineraries_theme_key_check
+  CHECK (theme_key IN ('classic','sakura','tropical','alpine','desert','nordic','mediterranean','rainforest'));
+```
+
+### Presentation Layer Changes
+
+**`TripThemePicker` widget** — horizontal `ListView` of 8 coloured swatches (48×48 `AnimatedContainer`). Selected swatch shows a coloured border and shadow; unselected shows a transparent border. Tapping calls `onSelected(key)`.
+
+**`CreateItineraryPage`**:
+- `_themeKey` state (default `'classic'`) and `_autoTheme` flag (default `true`).
+- Title field listener calls `_autoSuggestTheme()`: while `_autoTheme == true`, resolves a theme from the current title and applies it.
+- Tapping a swatch in `TripThemePicker` sets `_autoTheme = false`, locking the user's manual choice.
+- `themeKey` passed to `createItinerary(...)` on submit.
+
+**`ItineraryCard`**: accent bar gradient changed from `AppTheme.featuredGradient` to `theme.cardBarGradient`; budget text colour changed from `AppTheme.softCoral` to `theme.primary`.
+
+**`ItineraryDetailPage`**:
+- `Scaffold(backgroundColor: tripTheme.backgroundTint)`
+- `SliverAppBar` background gradient: `tripTheme.headerGradient`
+- `TabBar` label and indicator colour: `tripTheme.primary`
+
+---
+
+## Chapter 12 — Stage 11: Invite System — RLS Fix + Email
+
+**Status:** Complete ✅
+
+### Problem
+
+Two bugs blocked the pending-invitation invite flow:
+
+**Bug 1 — RLS blocking editors:** `pending_invitations_owner` only allowed the trip `owner_id` to insert invitation rows. Editors could not send invites even though the UI showed the invite button to them.
+
+**Bug 2 — JSONB key mismatch:** The first fix checked `m->>'userId'` (camelCase) in the `members` array. But `GroupMemberModel.toJson()` writes `user_id` (snake_case). Every editor who was added directly via the Flutter client had their member entry stored with snake_case keys, so the RLS lookup returned NULL and blocked all inserts — including for the trip owner when both key formats appeared.
+
+### Fix — `docs/supabase_migrations/stage11_invite_rls_and_email.sql`
+
+Dropped both old policies; created one `pending_invitations_member` policy that checks both key formats with `OR`:
+
+```sql
+where (m->>'user_id' = auth.uid()::text   -- Flutter client (snake_case)
+    or m->>'userId'  = auth.uid()::text)  -- trigger (camelCase)
+  and m->>'role' in ('owner', 'editor')
+```
+
+### Invite Email — `supabase/functions/invite-email/index.ts`
+
+Edge Function invoked best-effort after the `pending_invitations` row is written. Two email strategies:
+
+1. **Resend** (branded) — used when `RESEND_API_KEY` secret is set. Sends a custom HTML email with trip title, dates, and inviter name.
+2. **Supabase `auth.admin.inviteUserByEmail`** (built-in fallback) — used when Resend is not configured. Supabase sends a magic-link invite using its own email delivery. When the recipient clicks the link and signs up, `handle_new_user` trigger fires and auto-joins them from `pending_invitations`.
+
+The Flutter call in `ProfileRemoteDataSourceImpl.createPendingInvitation` wraps the function invoke in its own `try/catch` so a missing deployment or missing API key never fails the invite — the DB row is always written first.
+
+```dart
+// Best-effort — failure does not block the invite row being saved.
+try {
+  await KumoSupabaseClient.client.functions.invoke('invite-email', body: {...});
+} catch (_) {}
+```
+
+---
+
+## Chapter 13 — Bug Fixes: Multi-User Collaboration
+
+**Status:** Complete ✅
+
+Three bugs discovered during invite flow testing, all rooted in the same JSONB key inconsistency between the Flutter client (snake_case) and the Postgres `handle_new_user` trigger (camelCase).
+
+### Bug 1 — TypeError on Trips Page
+
+`GroupMemberModel.fromJson` cast `json['user_id'] as String` unconditionally. Members written by the trigger used `userId` (camelCase), so `json['user_id']` was null and the cast threw at runtime.
+
+**Fix in `itinerary_model.dart`:**
+```dart
+userId:   (json['user_id']   ?? json['userId'])  as String,
+userName: (json['user_name'] ?? json['userName'] ?? '') as String,
+joinedAt: DateTime.parse((json['joined_at'] ?? json['joinedAt']) as String),
+```
+
+### Bug 2 — Invited User's Trip Not Appearing in List
+
+`fetchItineraries` used `.eq('owner_id', userId)` which excluded all trips where the user was only a member. Additionally, `itineraries_member_select` RLS used `members @> jsonb_build_array(jsonb_build_object('userId', ...))` (camelCase only) so Flutter-direct members failed the containment check.
+
+**Fix 1 — `itinerary_remote_datasource.dart`:** Removed `.eq('owner_id', userId)`. RLS now controls visibility for both owned and shared trips.
+
+**Fix 2 — `docs/supabase_migrations/stage12_fix_member_visibility.sql`:** Replaced `@>` containment with `EXISTS + jsonb_array_elements` checking both key formats on `itineraries_member_select` and `itineraries_member_update`.
+
+### Bug 3 — RLS Violation Adding Reviews / Expenses
+
+`ratings` and `expenses` INSERT policies used the same camelCase-only `@>` check. Flutter-direct members (snake_case keys) were blocked from adding ratings or expenses even on their own trips.
+
+**Fix — `docs/supabase_migrations/stage13_fix_member_jsonb_all_tables.sql`:** Replaced all remaining camelCase-only `@>` containment checks with `EXISTS + jsonb_array_elements` (dual-format) on `ratings`, `expenses`, and `messages`.
+
+### Root Cause Summary
+
+| Written by | Key format | Example |
+|-----------|-----------|---------|
+| Flutter `GroupMemberModel.toJson()` | snake_case | `user_id`, `user_name`, `joined_at` |
+| Postgres `handle_new_user` trigger | camelCase | `userId`, `userName`, `joinedAt` |
+
+All RLS policies and model deserializers now accept both formats. The `toJson()` output remains snake_case (no change to data written by Flutter).
+
+---
+
+## Chapter 14 — Katha AI: Security Hardening & Branding
+
+**Status:** Complete ✅
+
+### API Key Security
+
+The Anthropic API key was previously stored in `.env` and bundled with the app binary. Any reverse-engineering tool (e.g. `strings`, Frida) could extract it from a production build, allowing unauthorised usage billed to the Kumo account.
+
+**Fix:** Moved the Anthropic call to a Supabase Edge Function. The key is now a Supabase secret, never transmitted to or stored on the client.
+
+**`supabase/functions/generate-itinerary/index.ts`**:
+- Verifies the caller's JWT before calling Anthropic (no unauthenticated use).
+- Accepts: `destination`, `trip_days`, `travel_style`, `interests`, `start_date`, `end_date`.
+- Returns: `{ items: [...] }` — the parsed JSON array, ready for the Flutter `_parseItems` method.
+- Uses the same prompt as the old client-side call.
+
+**`lib/features/ai_generation/data/datasources/ai_generation_datasource.dart`**:
+- Replaced `Dio` HTTP client with `KumoSupabaseClient.client.functions.invoke(...)`.
+- `_parseItems` promoted to `static parseItems(...)` for direct unit testing.
+- `dio` package removed from `pubspec.yaml`.
+- `Environment.anthropicApiKey` removed from `lib/config/environment.dart`.
+
+**Deploy:**
+```bash
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+supabase functions deploy generate-itinerary
+```
+
+### Katha AI Branding
+
+The AI assistant is named **Katha** (from Hindi: *कथा*, meaning "story" or "narrative"). All user-facing strings updated:
+
+| Before | After |
+|--------|-------|
+| "Generate with AI" | "Generate with Katha" |
+| "AI" (button label) | "Katha" |
+| "AI itinerary attached" | "Katha itinerary attached" |
+
+Until the Edge Function is deployed and the API key configured, both AI entry points (`CreateItineraryPage` and `ItineraryDetailPage`) show a **"Katha AI coming soon ✨"** snackbar instead of opening the generation sheet.
+
+---
+
+## Chapter 15 — Test Suite Expansion
+
+**Status:** Complete ✅
+
+### New Test Files
+
+**`test/features/itinerary/domain/entities/trip_theme_test.dart`** (17 tests)
+
+| Group | Tests |
+|-------|-------|
+| `TripTheme.forKey` | All 8 keys resolve correctly; unknown key → classic; empty string → classic |
+| `TripTheme.resolve` | 7 destination regions matched; unrecognised title → classic; case-insensitive |
+| `TripTheme gradients` | headerGradient colours; cardBarGradient colours; all 8 presets have distinct primaries |
+
+**`test/features/itinerary/data/models/itinerary_model_test.dart`** (12 tests)
+
+| Group | Tests |
+|-------|-------|
+| `GroupMemberModel.fromJson` | snake_case parse; camelCase parse; snake_case precedence; missing userName default; unknown role default; toJson always writes snake_case |
+| `ItineraryModel.fromJson — themeKey` | reads theme_key; absent → classic; null → classic; toJson includes theme_key; fromEntity preserves themeKey |
+
+**`test/features/ai_generation/data/datasources/ai_generation_datasource_test.dart`** (9 tests — rewritten)
+
+Previously mocked `Dio`. Now tests `AiGenerationDataSourceImpl.parseItems` directly (promoted to `static`):
+
+| Test | What it covers |
+|------|---------------|
+| Parses valid item list | Basic field mapping |
+| Sorted ascending by startTime | Sort invariant |
+| Falls back to tripStart when start_time is null | Null handling |
+| Falls back to tripStart when start_time unparseable | Bad date string |
+| Ignores unparseable end_time | Graceful degradation |
+| Each item gets a unique non-empty id | UUID generation |
+| Defaults item_type to "activity" | Missing field default |
+| Defaults title to "Untitled" | Missing field default |
+| Empty list returns empty | Edge case |
+
+### Suite Totals
+
+| Stage | Tests Added | Running Total |
+|-------|------------|---------------|
+| Chapters 1–10 (baseline) | 123 | 123 |
+| Chapter 14 — AI datasource rewrite | ±0 (9 replaced 6) | 126 |
+| Chapter 15 — TripTheme + model tests | +23 | 149 |
+
+All 149 tests pass (`flutter test`).
+
+---
+
+*End of Chapter 15 — Test Suite Expansion*
+
+---
+
+## Chapter 16 — App Icon & Launch Screen (Stage 14)
+
+**Status:** Complete ✅
+
+### Background
+
+The app shipped with Flutter's default blue icon and white splash screen. Both are required to be replaced before App Store or Google Play submission. The design assets were already present in `assets/icons/` as SVG files in seven colour variants.
+
+### Asset Selection
+
+Seven colour variants were available: black, charcoal, grey, light, premium gold, premium rose gold, royal blue. **Royal blue** (`kumo_app_icon_royal_blue.svg`) was selected for the app icon — it provides strong contrast on both light and dark home screens and reads well at small sizes. The background colour used throughout is `#1E3A8A`.
+
+For the launch/splash screen, the **white stacked logo** (`kumo_logo_stacked_light.svg`) was used — white on royal blue creates a clean, high-contrast splash that matches the icon's colour identity.
+
+### Conversion Pipeline
+
+`flutter_launcher_icons` requires a PNG source image; it cannot consume SVG directly. `librsvg` was installed (`brew install librsvg`) to provide the `rsvg-convert` CLI tool.
+
+```bash
+# App icon source (1024×1024)
+rsvg-convert -w 1024 -h 1024 assets/icons/kumo_app_icon_royal_blue.svg \
+  -o assets/icons/app_icon.png
+
+# iOS launch screen logo
+rsvg-convert -w 200 assets/icons/kumo_logo_stacked_light.svg \
+  -o ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png
+rsvg-convert -w 400 ... -o LaunchImage@2x.png
+rsvg-convert -w 600 ... -o LaunchImage@3x.png
+
+# Android splash logo
+rsvg-convert -w 288 assets/icons/kumo_logo_stacked_light.svg \
+  -o android/app/src/main/res/drawable/launch_logo.png
+```
+
+### flutter_launcher_icons
+
+Added `flutter_launcher_icons: ^0.14.3` to `dev_dependencies`. Configuration in `pubspec.yaml`:
+
+```yaml
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  remove_alpha_ios: true          # App Store rejects alpha channel
+  min_sdk_android: 21
+  adaptive_icon_background: "#1E3A8A"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
+```
+
+Running `dart run flutter_launcher_icons` generated:
+
+- **Android** — all `mipmap-mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi` densities, plus the adaptive icon XML and `colors.xml` with the background colour.
+- **iOS** — all `AppIcon.appiconset` sizes (20pt through 1024pt, @1x/@2x/@3x), alpha channel stripped.
+
+### Launch / Splash Screen
+
+**iOS** (`ios/Runner/Base.lproj/LaunchScreen.storyboard`):
+- Background colour changed from white (`1 1 1`) to royal blue (`0.118 0.227 0.541`).
+- `LaunchImage.imageset` replaced with the white stacked logo at @1x (200px), @2x (400px), @3x (600px). The storyboard already centres the image, so no layout changes were needed.
+
+**Android** (`android/app/src/main/res/drawable/launch_background.xml`):
+- Updated from plain white fill to a `<layer-list>` with:
+  1. `@color/ic_launcher_background` fill (royal blue — already written by `flutter_launcher_icons`)
+  2. A centred `<bitmap>` pointing to `@drawable/launch_logo`
+
+---
+
+## Chapter 17 — Privacy, GDPR & Legal Compliance (Stage 15)
+
+**Status:** Complete ✅
+
+### Motivation
+
+Before App Store and Google Play submission, two things are required:
+1. A publicly accessible Privacy Policy URL.
+2. A mechanism for users to request account/data deletion (Apple App Store Review Guideline 5.1.1; Google Play Data Safety).
+
+GDPR additionally requires: lawful basis disclosure, data subject rights (access, erasure, portability, restriction), sub-processor disclosure, and international transfer basis.
+
+### Account Deletion — Right to Erasure (GDPR Art. 17)
+
+The cleanest server-side deletion mechanism in Supabase is a `SECURITY DEFINER` function that deletes the caller's own `auth.users` row. All app data in `public.*` tables is removed automatically via `ON DELETE CASCADE` foreign keys.
+
+**`docs/supabase_migrations/stage14_delete_user_rpc.sql`**:
+
+```sql
+create or replace function public.delete_user()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from auth.users where id = auth.uid();
+$$;
+
+revoke all on function public.delete_user() from anon;
+grant execute on function public.delete_user() to authenticated;
+```
+
+The `SECURITY DEFINER` flag allows the function to run with elevated permissions (to touch `auth.users`) while being callable by any authenticated user. Revoking from `anon` prevents unauthenticated calls.
+
+### Domain & Data Layer
+
+**`DeleteAccountUseCase`** — simple pass-through:
+```dart
+class DeleteAccountUseCase {
+  const DeleteAccountUseCase(this._repository);
+  Future<Either<Failure, void>> call() => _repository.deleteAccount();
+}
+```
+
+**`AuthRemoteDataSource.deleteAccount()`**:
+```dart
+Future<void> deleteAccount() async {
+  await KumoSupabaseClient.client.rpc('delete_user');
+  await KumoSupabaseClient.auth.signOut();
+}
+```
+
+Calls the RPC first, then signs out locally. If the RPC fails (e.g. network error), an exception is thrown before `signOut()`, so the user stays authenticated and can retry.
+
+**`AuthRepositoryImpl.deleteAccount()`** — wraps in `Either`, clears local cache on success.
+
+**`AuthNotifier.deleteAccount()`** — transitions to `AuthUnauthenticated` on `Right(_)`, leaves state unchanged (caller shows error snackbar) on `Left(failure)`.
+
+### In-App Legal Pages
+
+Two new pages added under `lib/features/legal/presentation/pages/`:
+
+**`PrivacyPolicyPage`** (`/legal/privacy-policy`) — 13 sections:
+1. Data Controller
+2. Data We Collect (account data, trip data, usage data)
+3. Legal Basis (contract, legitimate interests, consent)
+4. How We Use Your Data
+5. Data Sharing & Sub-processors (Supabase, Anthropic, Apple/Google)
+6. International Transfers (SCCs for USA transfers)
+7. Data Retention (deleted within 30 days of account deletion)
+8. Your Rights (access, rectification, erasure, restriction, portability, objection)
+9. Discoverability & Visibility
+10. Security (HTTPS, Keychain/Keystore, RLS)
+11. Children (no under-16)
+12. Changes to Policy
+13. Contact
+
+**`TermsPage`** (`/legal/terms`) — 16 sections covering eligibility, acceptable use, user content ownership, collaboration visibility, Katha AI disclaimer, IP, warranty disclaimer, liability cap, governing law (England & Wales).
+
+Both routes are whitelisted in the GoRouter redirect so they are accessible without authentication (users need to read the policy before signing up).
+
+### Signup Consent Checkbox
+
+A consent checkbox was added between the confirm-password field and the "Create Account" button:
+
+```dart
+Row(
+  children: [
+    Checkbox(value: _agreedToTerms, onChanged: ...),
+    Text.rich(TextSpan(children: [
+      TextSpan(text: 'I agree to the '),
+      TextSpan(text: 'Privacy Policy', recognizer: _privacyTap, ...),
+      TextSpan(text: ' and '),
+      TextSpan(text: 'Terms of Service', recognizer: _termsTap, ...),
+    ])),
+  ],
+)
+```
+
+`TapGestureRecognizer` instances push `/legal/privacy-policy` or `/legal/terms` inline. The "Create Account" button is `onPressed: _agreedToTerms ? _submit : null` — disabled until ticked.
+
+### Privacy Settings Page
+
+The existing `PrivacySettingsPage` was extended with two new sections:
+
+**Legal section** — ListTile links to both in-app legal pages.
+
+**Danger zone** — "Delete Account" tile in error-coloured text. Tapping shows an `AlertDialog` with a plain-English warning ("This permanently deletes your account and all associated data — trips, expenses, messages, packing lists. This cannot be undone."). Confirming calls `authNotifierProvider.notifier.deleteAccount()`, then navigates to `/login` on success.
+
+### Hosted HTML (App Store URL field)
+
+Two static HTML files were created for GitHub Pages hosting:
+
+- `docs/legal/privacy-policy.html`
+- `docs/legal/terms.html`
+
+Both are mobile-responsive, styled to match the Kumo brand (`#faf8f5` background, `#2c1810` text, `#e07060` links). Enable GitHub Pages on the repo (`Settings → Pages → Deploy from branch: main, /docs`) and submit:
+
+```
+https://[your-github-username].github.io/[repo-name]/docs/legal/privacy-policy.html
+```
+
+as the Privacy Policy URL in both App Store Connect and Google Play Console.
+
+---
+
+## Chapter 18 — Test Suite: Stage 14–15
+
+**Status:** Complete ✅
+
+### New Test File
+
+**`test/features/auth/domain/usecases/delete_account_usecase_test.dart`** (5 tests)
+
+| Test | What it covers |
+|------|----------------|
+| Calls `repository.deleteAccount()` exactly once | Repository delegation |
+| Returns `Right(null)` when repository succeeds | Happy path |
+| Propagates `AuthFailure` from repository | Auth error passthrough |
+| Propagates `UnexpectedFailure` from repository | Generic error passthrough, message preserved |
+| Does not call any other repository method | No side-effect scope creep |
+
+### Suite Totals
+
+| Stage | Tests Added | Running Total |
+|-------|------------|---------------|
+| Chapters 1–10 (baseline) | 123 | 123 |
+| Chapter 14 — AI datasource rewrite | ±0 (9 replaced 6) | 126 |
+| Chapter 15 — TripTheme + model tests | +23 | 149 |
+| Chapter 18 — DeleteAccountUseCase | +5 | 154 |
+
+All 154 tests pass (`flutter test`).
+
+---
+
+*End of Chapter 18 — Test Suite: Stage 14–15*
+
+---
+
+## Chapter 19 — Stage 16: Chat Polish, Animations & Accessibility
+
+**Status:** Complete ✅
+
+### Read Receipts
+
+**SQL migration (`docs/supabase_migrations/stage15_read_receipts.sql`)**
+
+A `read_by text[]` column (default `'{}'`) was added to the `messages` table. A `SECURITY DEFINER` RPC `mark_messages_read(p_itinerary_id uuid)` atomically appends the caller's `auth.uid()` to every message in the given itinerary that was sent by someone else and hasn't yet been marked read by the caller. Using an RPC avoids the need for a broad `UPDATE` RLS policy on the messages table.
+
+**Domain / Data**
+
+`Message` entity gained a `readBy: List<String>` field (default `const []`), included in `Equatable.props`. `MessageModel.fromJson` reads `json['read_by']` with null-safe casting; `toJson` writes `read_by`. `ChatRemoteDataSource` gained `markMessagesRead(String itineraryId)` calling the RPC.
+
+**Presentation**
+
+`ChatPage._subscribeTyping` fires `markMessagesRead` fire-and-forget on open. A `ref.listen` on `chatStreamProvider` fires it again whenever new messages arrive (so messages sent while the screen is open get acknowledged too).
+
+`_ReadTick` widget — rendered inline after the timestamp in each outgoing bubble: `Icons.done_all` (full opacity) when `readBy.isNotEmpty`, `Icons.done` (55% opacity) otherwise. Both are 12px icons in `AppTheme.cloudWhite`.
+
+### Hero Animations
+
+A `Hero` tag `'trip-header-${itinerary.id}'` was added to:
+- The 4px gradient accent bar in `ItineraryCard` (hero source).
+- The `SliverAppBar` `FlexibleSpaceBar` background `Container` in `ItineraryDetailPage` (hero destination).
+
+Flutter interpolates the size from 4px-tall bar to full expanded header on push, and reverses it on pop. No custom flight shuttle is needed.
+
+### Slide Page Transitions
+
+A `_slidePage<T>` helper in `router.dart` returns a `CustomTransitionPage` with a `SlideTransition` (right → left, `Curves.easeInOutCubic`, 280ms push / 240ms pop). Every full-screen push route — including the two new `/legal/*` routes — uses `_slidePage`. Shell tab routes (`NoTransitionPage`) are unaffected.
+
+### Accessibility Improvements
+
+`_DotsAnimation` in `_TypingIndicator` is wrapped with `ExcludeSemantics` — the animated dots are purely decorative and the adjacent text label ("Alice is typing…") conveys the same information to screen readers.
+
+`_SendButton` is wrapped with `Semantics(label: ..., button: true, enabled: ...)`. Label is `'Sending message'` during send and `'Send message'` otherwise. The `enabled` flag mirrors `!isSending` so VoiceOver/TalkBack correctly reports the disabled state.
+
+---
+
+*End of Chapter 19 — Stage 16: Chat Polish, Animations & Accessibility*
+
+---
+
+## Chapter 20 — Test Suite: Stage 15–16
+
+**Status:** Complete ✅
+
+### New Test Files
+
+**`test/features/legal/presentation/pages/legal_pages_test.dart`** (13 widget tests)
+
+| Group | Test | What it covers |
+|-------|------|----------------|
+| PrivacyPolicyPage | Renders title in AppBar | Widget renders |
+| | Contains effective date (1 July 2026) | Static content present |
+| | Contains "Data We Collect" section | Scrollable section present |
+| | Contains "Your Rights" section | GDPR rights section present |
+| | Mentions "Delete Account" | Right-to-erasure workflow documented |
+| | Mentions "Supabase" as sub-processor | Sub-processor disclosure present |
+| | Back navigation via AppBar | `BackButton` present when pushed |
+| TermsPage | Renders title in AppBar | Widget renders |
+| | Contains effective date (1 July 2026) | Static content present |
+| | Contains "Acceptable Use" section | Scrollable section present |
+| | Termination section references "Delete Account" | Termination clause present |
+| | Mentions "Katha AI" | AI disclaimer present |
+| | Mentions "England and Wales" | Governing law present |
+
+**`test/features/chat/data/models/message_model_test.dart`** (11 unit tests)
+
+| Group | Test | What it covers |
+|-------|------|----------------|
+| Message entity | `readBy` defaults to empty list | Default value on entity |
+| | `readBy` is included in equality props | Equatable coverage |
+| MessageModel.fromJson | Parses all standard fields | Core field mapping |
+| | Defaults `readBy` to empty when key absent | Null-safe parsing |
+| | Defaults `readBy` to empty when key is null | Null-safe parsing |
+| | Parses `read_by` array correctly | Happy path |
+| | Parses empty `read_by` array | Edge case |
+| | Defaults `senderName` to empty string when absent | Backwards compat |
+| | `createdAt` is UTC | Timezone handling |
+| MessageModel.toJson | Includes `read_by` in output | Serialisation |
+| | Serialises empty `readBy` as empty list | Edge case |
+| | Round-trips through fromJson/toJson | Consistency |
+
+### Suite Totals
+
+| Chapter | Tests Added | Running Total |
+|---------|------------|---------------|
+| Chapters 1–18 (baseline) | 154 | 154 |
+| Chapter 20 — Legal widget tests | +13 | 167 |
+| Chapter 20 — MessageModel unit tests | +11 | 178 |
+
+All 178 tests expected to pass (`flutter test`).
+
+---
+
+*End of Chapter 20 — Test Suite: Stage 15–16*

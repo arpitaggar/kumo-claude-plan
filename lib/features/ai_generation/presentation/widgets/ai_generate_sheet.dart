@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../config/theme.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../itinerary/domain/entities/travel_itinerary.dart';
 import '../../domain/entities/ai_generation_request.dart';
@@ -18,7 +17,7 @@ Future<List<ItineraryItem>?> showAiGenerateSheet(
     showModalBottomSheet<List<ItineraryItem>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.cloudWhite,
+      backgroundColor: context.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -122,30 +121,30 @@ class _LoadingView extends StatelessWidget {
             Container(
               width: 64,
               height: 64,
-              decoration: const BoxDecoration(
-                gradient: AppTheme.featuredGradient,
+              decoration: BoxDecoration(
+                gradient: context.featuredGradient,
                 shape: BoxShape.circle,
               ),
-              child: const Center(
+              child: Center(
                 child: CircularProgressIndicator(
-                  color: AppTheme.cloudWhite,
+                  color: context.colorScheme.surface,
                   strokeWidth: 2.5,
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Crafting your itinerary…',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.darkEspresso,
+                color: context.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'This usually takes 5–10 seconds',
-              style: TextStyle(fontSize: 13, color: AppTheme.earthBrown),
+              style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -176,29 +175,29 @@ class _SuccessView extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  gradient: AppTheme.featuredGradient,
+                  gradient: context.featuredGradient,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.auto_awesome,
-                    color: AppTheme.cloudWhite, size: 18),
+                child: Icon(Icons.auto_awesome,
+                    color: context.colorScheme.surface, size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Itinerary ready!',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.darkEspresso,
+                        color: context.colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       '${items.length} activities generated',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.earthBrown),
+                      style: TextStyle(
+                          fontSize: 12, color: context.colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -209,7 +208,7 @@ class _SuccessView extends StatelessWidget {
           Container(
             constraints: const BoxConstraints(maxHeight: 260),
             decoration: BoxDecoration(
-              color: AppTheme.warmOatmeal,
+              color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: ListView.separated(
@@ -230,17 +229,17 @@ class _SuccessView extends StatelessWidget {
                         children: [
                           Text(
                             item.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.darkEspresso,
+                              color: context.colorScheme.onSurface,
                             ),
                           ),
                           if (item.location != null)
                             Text(
                               item.location!,
-                              style: const TextStyle(
-                                  fontSize: 11, color: AppTheme.earthBrown),
+                              style: TextStyle(
+                                  fontSize: 11, color: context.colorScheme.onSurfaceVariant),
                             ),
                         ],
                       ),
@@ -254,17 +253,17 @@ class _SuccessView extends StatelessWidget {
           FilledButton(
             onPressed: onUse,
             style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.softCoral,
-              foregroundColor: AppTheme.cloudWhite,
+              backgroundColor: context.colorScheme.primary,
+              foregroundColor: context.colorScheme.surface,
             ),
             child: const Text('Use this itinerary'),
           ),
           const SizedBox(height: 8),
           TextButton(
             onPressed: onRegenerate,
-            child: const Text(
+            child: Text(
               'Try again',
-              style: TextStyle(color: AppTheme.earthBrown),
+              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
             ),
           ),
         ],
@@ -299,19 +298,19 @@ class _FormView extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  gradient: AppTheme.featuredGradient,
+                  gradient: context.featuredGradient,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.auto_awesome,
-                    color: AppTheme.cloudWhite, size: 18),
+                child: Icon(Icons.auto_awesome,
+                    color: context.colorScheme.surface, size: 18),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Generate with AI',
+              Text(
+                'Generate with Katha',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.darkEspresso,
+                  color: context.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -326,7 +325,7 @@ class _FormView extends StatelessWidget {
               hintText: 'e.g. Tokyo, Japan',
               prefixIcon: const Icon(Icons.location_on_outlined),
               filled: true,
-              fillColor: AppTheme.warmOatmeal,
+              fillColor: Theme.of(context).scaffoldBackgroundColor,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -334,12 +333,12 @@ class _FormView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Travel style',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppTheme.darkEspresso,
+              color: context.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -356,8 +355,8 @@ class _FormView extends StatelessWidget {
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: selected
-                        ? AppTheme.softCoral
-                        : AppTheme.warmOatmeal,
+                        ? context.colorScheme.primary
+                        : Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -366,8 +365,8 @@ class _FormView extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: selected
-                          ? AppTheme.cloudWhite
-                          : AppTheme.darkEspresso,
+                          ? context.colorScheme.surface
+                          : context.colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -385,7 +384,7 @@ class _FormView extends StatelessWidget {
               hintText: 'e.g. street food, temples, hiking',
               prefixIcon: const Icon(Icons.favorite_border_outlined),
               filled: true,
-              fillColor: AppTheme.warmOatmeal,
+              fillColor: Theme.of(context).scaffoldBackgroundColor,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -398,8 +397,8 @@ class _FormView extends StatelessWidget {
             icon: const Icon(Icons.auto_awesome, size: 18),
             label: const Text('Generate itinerary'),
             style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.softCoral,
-              foregroundColor: AppTheme.cloudWhite,
+              backgroundColor: context.colorScheme.primary,
+              foregroundColor: context.colorScheme.surface,
             ),
           ),
         ],
@@ -426,10 +425,10 @@ class _ItemTypeIcon extends StatelessWidget {
       width: 28,
       height: 28,
       decoration: BoxDecoration(
-        color: AppTheme.cherryBlossom,
+        color: context.colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Icon(icon, size: 15, color: AppTheme.softCoral),
+      child: Icon(icon, size: 15, color: context.colorScheme.primary),
     );
   }
 }

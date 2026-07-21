@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/theme.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -61,15 +60,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppTheme.warmOatmeal,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppTheme.warmOatmeal,
-          title: const Text(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          title: Text(
             'Edit Profile',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 20,
-              color: AppTheme.darkEspresso,
+              color: context.colorScheme.onSurface,
             ),
           ),
         ),
@@ -78,12 +77,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              const Text(
+              Text(
                 'Display Name',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.earthBrown,
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 8),
@@ -109,12 +108,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               FilledButton(
                 onPressed: _saving ? null : _save,
                 child: _saving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppTheme.cloudWhite,
+                          color: context.colorScheme.surface,
                         ),
                       )
                     : const Text('Save Changes'),

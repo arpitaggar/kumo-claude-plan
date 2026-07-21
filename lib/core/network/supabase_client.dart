@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/environment.dart';
 import '../utils/logger.dart';
@@ -31,6 +32,16 @@ class KumoSupabaseClient {
       );
       rethrow;
     }
+  }
+
+  /// Wires up a Supabase instance that was already initialised externally.
+  /// Only call this from test code — never from the app itself.
+  /// Wires up a Supabase instance that was already initialised externally.
+  /// Only call this from test code — never from the app itself.
+  @visibleForTesting
+  // ignore: use_setters_to_change_properties
+  static void setInstanceForTesting(Supabase instance) {
+    _supabaseInstance = instance;
   }
 
   /// Get the Supabase client instance.

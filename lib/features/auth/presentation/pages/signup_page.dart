@@ -1,9 +1,11 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/theme.dart';
+import '../../../../config/brand.dart';
+import '../../../../config/theme_provider.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../providers/auth_provider.dart';
@@ -23,6 +25,19 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _agreedToTerms = false;
+
+  late final TapGestureRecognizer _privacyTap;
+  late final TapGestureRecognizer _termsTap;
+
+  @override
+  void initState() {
+    super.initState();
+    _privacyTap = TapGestureRecognizer()
+      ..onTap = () => context.push('/legal/privacy-policy');
+    _termsTap = TapGestureRecognizer()
+      ..onTap = () => context.push('/legal/terms');
+  }
 
   @override
   void dispose() {
@@ -30,6 +45,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _privacyTap.dispose();
+    _termsTap.dispose();
     super.dispose();
   }
 
@@ -61,13 +78,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
     if (authState is AuthLoading) {
       return const Scaffold(
-        backgroundColor: AppTheme.warmOatmeal,
         body: LoadingWidget(message: 'Creating account…'),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -81,28 +96,28 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 // Logo
                 Center(
                   child: SvgPicture.asset(
-                    'assets/icons/kumo_logo_stacked_charcoal.svg',
+                    Brand.logoFor(ref.watch(themeProvider)),
                     height: 56,
                   ),
                 ),
                 const SizedBox(height: 28),
 
-                const Text(
+                Text(
                   'Create your account',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.darkEspresso,
+                    color: context.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Start planning your next adventure',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.earthBrown,
+                    color: context.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 36),
@@ -139,10 +154,61 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
+
+                // Consent checkbox
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Checkbox(
+                      value: _agreedToTerms,
+                      onChanged: (v) =>
+                          setState(() => _agreedToTerms = v ?? false),
+                      visualDensity: VisualDensity.compact,
+                      activeColor: context.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text.rich(
+                          TextSpan(
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: context.colorScheme.onSurfaceVariant,
+                            ),
+                            children: [
+                              const TextSpan(text: 'I agree to the '),
+                              TextSpan(
+                                text: 'Privacy Policy',
+                                recognizer: _privacyTap,
+                                style: TextStyle(
+                                  color: context.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                              const TextSpan(text: ' and '),
+                              TextSpan(
+                                text: 'Terms of Service',
+                                recognizer: _termsTap,
+                                style: TextStyle(
+                                  color: context.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
                 ElevatedButton(
-                  onPressed: _submit,
+                  onPressed: _agreedToTerms ? _submit : null,
                   child: const Text('Create Account'),
                 ),
                 const SizedBox(height: 16),
@@ -150,11 +216,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Already have an account? ',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.earthBrown,
+                        color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     TextButton(

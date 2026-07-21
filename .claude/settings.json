@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dart run *)",
+      "Bash(rsvg-convert -w 200 assets/icons/kumo_logo_stacked_light.svg -o ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png)",
+      "Bash(rsvg-convert -w 400 assets/icons/kumo_logo_stacked_light.svg -o ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png)",
+      "Bash(rsvg-convert -w 600 assets/icons/kumo_logo_stacked_light.svg -o ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png)",
+      "Bash(rsvg-convert -w 288 assets/icons/kumo_logo_stacked_light.svg -o android/app/src/main/res/drawable/launch_logo.png)",
+      "Bash(flutter analyze *)",
+      "Bash(flutter doctor *)",
+      "Bash(flutter build *)",
+      "Bash(rsvg-convert -w 1024 -h 1024 /Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/assets/icons/kumo_logo_stacked_black.svg -o /Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/assets/icons/app_icon.png)",
+      "Bash(flutter pub *)",
+      "Bash(convert --version)",
+      "Bash(python3 -c \"from PIL import Image; print\\('Pillow OK'\\)\")",
+      "Bash(python3 -)",
+      "Bash(python3 -c \"import numpy; print\\('numpy', numpy.__version__\\); from PIL import Image; print\\('Pillow ok'\\); import subprocess; subprocess.run\\(['rsvg-convert','--version'], capture_output=True\\)\")",
+      "Bash(python3 /private/tmp/claude-501/-Users-pitto-Documents-KUMO-kumo-claude-plan-kumo-claude/4a2c90f9-7ec3-4cdf-85f3-c62f20debbe3/scratchpad/gen_icon_splash.py)",
+      "Bash(flutter clean *)",
+      "Bash(curl -s \"https://pub.dev/api/packages/flutter_native_splash\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d['latest']['version']\\)\")",
+      "Bash(find /Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/android/app/src/main/res -name *.xml)",
+      "Bash(find /Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/android/app/src/main/res -name *.png -o -name *.xml)",
+      "Bash(flutter --version)",
+      "Bash(python3 -c \"import numpy; import PIL; print\\('numpy', numpy.__version__\\); print\\('PIL ok'\\)\")",
+      "Bash(pip3 install *)",
+      "Bash(python3 /private/tmp/claude-501/-Users-pitto-Documents-KUMO-kumo-claude-plan-kumo-claude/4a2c90f9-7ec3-4cdf-85f3-c62f20debbe3/scratchpad/gen_icons.py)",
+      "Bash(python3 scripts/gen_icons.py cherry_blossom)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 scripts/gen_icons.py deep_voyage)",
+      "Bash(python3)",
+      "Bash(grep -v \"^warning\\\\|^error\\\\|^info\\\\|^  \\\\|^$\\\\|Analyzing\\\\|No issues\\\\|issues found\")",
+      "Bash(grep -v \"^$\\\\|^Analyzing\\\\|^No issues\")",
+      "Bash(python3 scripts/gen_icons.py all)",
+      "Bash(python3 scripts/gen_icons.py alternates)"
+    ]
+  }
+}

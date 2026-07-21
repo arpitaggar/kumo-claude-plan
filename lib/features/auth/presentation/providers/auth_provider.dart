@@ -11,6 +11,7 @@ import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/usecases/delete_account_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/signup_usecase.dart';
@@ -56,6 +57,10 @@ final logoutUseCaseProvider = Provider<LogoutUseCase>(
   (ref) => LogoutUseCase(ref.watch(authRepositoryProvider)),
 );
 
+final deleteAccountUseCaseProvider = Provider<DeleteAccountUseCase>(
+  (ref) => DeleteAccountUseCase(ref.watch(authRepositoryProvider)),
+);
+
 // ---------------------------------------------------------------------------
 // Auth state
 // ---------------------------------------------------------------------------
@@ -99,6 +104,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required this.loginUseCase,
     required this.signupUseCase,
     required this.logoutUseCase,
+    required this.deleteAccountUseCase,
     required this.repository,
   }) : super(const AuthInitial()) {
     _checkCurrentUser();
@@ -112,6 +118,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final LoginUseCase loginUseCase;
   final SignupUseCase signupUseCase;
   final LogoutUseCase logoutUseCase;
+  final DeleteAccountUseCase deleteAccountUseCase;
   final AuthRepositoryImpl repository;
   StreamSubscription<sb.AuthState>? _authSubscription;
 
@@ -193,6 +200,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return result;
   }
 
+  Future<Either<Failure, void>> deleteAccount() async {
+    final result = await deleteAccountUseCase();
+    result.fold(
+      (_) {},
+      (_) => state = const AuthUnauthenticated(),
+    );
+    return result;
+  }
+
   void clearError() {
     if (state is AuthError) {
       state = const AuthUnauthenticated();
@@ -205,6 +221,7 @@ final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>(
     loginUseCase: ref.watch(loginUseCaseProvider),
     signupUseCase: ref.watch(signupUseCaseProvider),
     logoutUseCase: ref.watch(logoutUseCaseProvider),
+    deleteAccountUseCase: ref.watch(deleteAccountUseCaseProvider),
     repository: ref.watch(authRepositoryProvider),
   ),
 );

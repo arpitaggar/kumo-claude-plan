@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
-import '../../../../config/theme.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../providers/auth_provider.dart';
@@ -52,17 +51,17 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
     final authState = ref.watch(authNotifierProvider);
 
     if (authState is AuthLoading) {
-      return const Scaffold(
-        backgroundColor: AppTheme.warmOatmeal,
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: LoadingWidget(message: 'Updating password…'),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Set New Password'),
-        backgroundColor: AppTheme.warmOatmeal,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -73,20 +72,20 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Create a new password',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.darkEspresso,
+                    color: context.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Must be at least ${AppConstants.minPasswordLength} characters.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.earthBrown,
+                    color: context.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 32),

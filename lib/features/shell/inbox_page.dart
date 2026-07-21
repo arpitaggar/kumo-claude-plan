@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../config/theme.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/chat/domain/entities/message.dart';
 import '../../features/chat/presentation/providers/chat_provider.dart';
 import '../../features/itinerary/domain/entities/travel_itinerary.dart';
 import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
+import '../../shared/extensions/context_extensions.dart';
 
 class InboxPage extends ConsumerStatefulWidget {
   const InboxPage({super.key});
@@ -53,48 +53,48 @@ class _InboxPageState extends ConsumerState<InboxPage> {
     final listState = ref.watch(itineraryListProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Inbox',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 22,
-            color: AppTheme.darkEspresso,
+            color: context.colorScheme.onSurface,
           ),
         ),
-        backgroundColor: AppTheme.warmOatmeal,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       body: switch (listState) {
-        ItineraryListInitial() || ItineraryListLoading() => const Center(
-            child: CircularProgressIndicator(color: AppTheme.softCoral),
+        ItineraryListInitial() || ItineraryListLoading() => Center(
+            child: CircularProgressIndicator(color: context.colorScheme.primary),
           ),
         ItineraryListError(:final message) => Center(
             child: Text(
               'Error: $message',
-              style: const TextStyle(color: AppTheme.earthBrown),
+              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
             ),
           ),
         ItineraryListLoaded(:final itineraries) when itineraries.isEmpty =>
-          const Center(
+          Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.chat_bubble_outline,
-                    size: 56, color: AppTheme.sakuraStone),
+                    size: 56, color: context.colorScheme.outlineVariant),
                 SizedBox(height: 16),
                 Text(
                   'No trip chats yet',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.earthBrown,
+                    color: context.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 SizedBox(height: 6),
                 Text(
                   'Create or join a trip to start chatting',
-                  style: TextStyle(fontSize: 13, color: AppTheme.earthBrown),
+                  style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -103,10 +103,10 @@ class _InboxPageState extends ConsumerState<InboxPage> {
         ItineraryListLoaded(:final itineraries) => ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 12),
             itemCount: itineraries.length,
-            separatorBuilder: (_, _) => const Divider(
+            separatorBuilder: (_, _) => Divider(
               height: 1,
               indent: 80,
-              color: AppTheme.sakuraStone,
+              color: context.colorScheme.outlineVariant,
             ),
             itemBuilder: (context, i) => _ChatPreviewTile(
               itinerary: itineraries[i],
@@ -144,7 +144,7 @@ class _ChatPreviewTile extends ConsumerWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                gradient: AppTheme.featuredGradient,
+                gradient: context.featuredGradient,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
@@ -152,10 +152,10 @@ class _ChatPreviewTile extends ConsumerWidget {
                   itinerary.title.isNotEmpty
                       ? itinerary.title[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.cloudWhite,
+                    color: context.colorScheme.surface,
                   ),
                 ),
               ),
@@ -172,10 +172,10 @@ class _ChatPreviewTile extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           itinerary.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.darkEspresso,
+                            color: context.colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -184,9 +184,9 @@ class _ChatPreviewTile extends ConsumerWidget {
                       if (latestMessage != null)
                         Text(
                           _formatTime(latestMessage.createdAt),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppTheme.earthBrown,
+                            color: context.colorScheme.onSurfaceVariant,
                           ),
                         ),
                     ],
@@ -201,9 +201,9 @@ class _ChatPreviewTile extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(
+            Icon(
               Icons.chevron_right,
-              color: AppTheme.sakuraStone,
+              color: context.colorScheme.outlineVariant,
               size: 20,
             ),
           ],
@@ -240,17 +240,17 @@ class _PreviewText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Text(
+      return Text(
         '…',
-        style: TextStyle(fontSize: 13, color: AppTheme.earthBrown),
+        style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
       );
     }
     if (message == null) {
-      return const Text(
+      return Text(
         'No messages yet — say hello!',
         style: TextStyle(
           fontSize: 13,
-          color: AppTheme.earthBrown,
+          color: context.colorScheme.onSurfaceVariant,
           fontStyle: FontStyle.italic,
         ),
       );
@@ -259,7 +259,7 @@ class _PreviewText extends StatelessWidget {
         message!.senderId == currentUserId ? 'You' : message!.senderName;
     return Text(
       '$prefix: ${message!.content}',
-      style: const TextStyle(fontSize: 13, color: AppTheme.earthBrown),
+      style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );

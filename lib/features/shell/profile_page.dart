@@ -2,9 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../config/theme.dart';
+import '../../config/theme_provider.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
+import '../../shared/extensions/context_extensions.dart';
+
+// Per-theme display metadata used in the picker and the current-theme label.
+const _kThemeMeta = {
+  KumoTheme.cherryBlossom: (
+    label: 'Cherry Blossom',
+    accent: Color(0xFFD4667A),
+    bg: Color(0xFFF5F2EB),
+  ),
+  KumoTheme.goldenHour: (
+    label: 'Golden Hour',
+    accent: Color(0xFFC97A20),
+    bg: Color(0xFFFAF5E4),
+  ),
+  KumoTheme.deepVoyage: (
+    label: 'Deep Voyage',
+    accent: Color(0xFFC88A2A),
+    bg: Color(0xFF0E1B33),
+  ),
+};
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -13,16 +33,17 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
     final user = authState is AuthAuthenticated ? authState.user : null;
+    final currentTheme = ref.watch(themeProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Profile',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 22,
-            color: AppTheme.darkEspresso,
+            color: context.colorScheme.onSurface,
           ),
         ),
       ),
@@ -34,7 +55,7 @@ class ProfilePage extends ConsumerWidget {
               children: [
                 CircleAvatar(
                   radius: 44,
-                  backgroundColor: AppTheme.cherryBlossom,
+                  backgroundColor: context.colorScheme.primaryContainer,
                   backgroundImage: user?.avatarUrl != null
                       ? NetworkImage(user!.avatarUrl!)
                       : null,
@@ -43,10 +64,10 @@ class ProfilePage extends ConsumerWidget {
                           user?.displayName?.isNotEmpty == true
                               ? user!.displayName![0].toUpperCase()
                               : user?.email[0].toUpperCase() ?? '?',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.softCoral,
+                            color: context.colorScheme.primary,
                           ),
                         )
                       : null,
@@ -54,19 +75,19 @@ class ProfilePage extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Text(
                   user?.displayName ?? 'Traveler',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.darkEspresso,
+                    color: context.colorScheme.onSurface,
                   ),
                 ),
                 if (user != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     user.email,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppTheme.earthBrown,
+                      color: context.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -76,22 +97,34 @@ class ProfilePage extends ConsumerWidget {
           const SizedBox(height: 24),
           const _StatsCard(),
           const SizedBox(height: 24),
+          const _SectionHeader('Appearance'),
+          const SizedBox(height: 8),
           _tile(
+            context,
+            icon: Icons.palette_outlined,
+            label: 'Theme: ${_kThemeMeta[currentTheme]!.label}',
+            trailing: _ThemeSwatch(theme: currentTheme),
+            onTap: () => _showThemePicker(context, ref),
+          ),
+          const SizedBox(height: 24),
+          const _SectionHeader('Account'),
+          const SizedBox(height: 8),
+          _tile(context,
             icon: Icons.edit_outlined,
             label: 'Edit Profile',
             onTap: () => context.push('/profile/edit'),
           ),
           const SizedBox(height: 8),
-          _tile(
+          _tile(context,
             icon: Icons.lock_outline,
             label: 'Privacy Settings',
             onTap: () => context.push('/settings/privacy'),
           ),
           const SizedBox(height: 8),
-          _tile(
+          _tile(context,
             icon: Icons.logout,
             label: 'Sign Out',
-            color: AppTheme.softCoral,
+            color: context.colorScheme.primary,
             onTap: () => ref.read(authNotifierProvider.notifier).logout(),
           ),
         ],
@@ -99,41 +132,277 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _tile({
+  void _showThemePicker(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _ThemePickerSheet(currentRef: ref),
+    );
+  }
+
+  Widget _tile(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
-    Color color = AppTheme.darkEspresso,
-  }) =>
-      Material(
-        color: AppTheme.cloudWhite,
+    Color? color,
+    Widget? trailing,
+  }) {
+    final effectiveColor = color ?? context.colorScheme.onSurface;
+    return Material(
+      color: context.colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Icon(icon, color: effectiveColor, size: 22),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: effectiveColor,
+                  ),
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing,
+              ] else
+                Icon(Icons.chevron_right,
+                    color: context.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Section header ─────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(left: 4),
+        child: Text(
+          title.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+}
+
+// ── Theme swatch (small preview used in the tile trailing area) ─────────────
+
+class _ThemeSwatch extends StatelessWidget {
+  const _ThemeSwatch({required this.theme});
+
+  final KumoTheme theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final meta = _kThemeMeta[theme]!;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            color: meta.bg,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: context.colorScheme.outlineVariant,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            color: meta.accent,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: context.colorScheme.outlineVariant,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Icon(Icons.chevron_right,
+            color:
+                context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+      ],
+    );
+  }
+}
+
+// ── Theme picker bottom sheet ──────────────────────────────────────────────
+
+class _ThemePickerSheet extends ConsumerWidget {
+  const _ThemePickerSheet({required this.currentRef});
+
+  // We receive the parent ref so we can dispatch setTheme without a new
+  // ProviderScope being required inside the modal route.
+  final WidgetRef currentRef;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(themeProvider);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'App Theme',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: context.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Choose how Kumo looks. Your choice syncs with the app icon.',
+            style: TextStyle(
+              fontSize: 13,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ...KumoTheme.values.map(
+            (t) => _ThemeOption(
+              theme: t,
+              isSelected: t == selected,
+              onTap: () {
+                currentRef.read(themeProvider.notifier).setTheme(t);
+                Navigator.of(context).pop();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  const _ThemeOption({
+    required this.theme,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final KumoTheme theme;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final meta = _kThemeMeta[theme]!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: isSelected
+            ? context.colorScheme.primaryContainer.withValues(alpha: 0.4)
+            : context.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(icon, color: color, size: 22),
-                const SizedBox(width: 16),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: color,
+                // Color preview
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Stack(
+                      children: [
+                        Container(color: meta.bg),
+                        Positioned(
+                          right: -8,
+                          bottom: -8,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: meta.accent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const Spacer(),
-                Icon(Icons.chevron_right,
-                    color: AppTheme.earthBrown.withValues(alpha: 0.5)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    meta.label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: context.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(Icons.check_circle_rounded,
+                      color: context.colorScheme.primary)
+                else
+                  Icon(Icons.circle_outlined,
+                      color: context.colorScheme.outlineVariant),
               ],
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
 }
+
+// ── Stats card ─────────────────────────────────────────────────────────────────
 
 class _StatsCard extends ConsumerWidget {
   const _StatsCard();
@@ -155,16 +424,16 @@ class _StatsCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: AppTheme.cloudWhite,
+        color: context.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _StatPill(value: '${trips.length}', label: 'Trips'),
-          Container(width: 1, height: 32, color: AppTheme.sakuraStone),
+          Container(width: 1, height: 32, color: context.colorScheme.outlineVariant),
           _StatPill(value: '$upcoming', label: 'Upcoming'),
-          Container(width: 1, height: 32, color: AppTheme.sakuraStone),
+          Container(width: 1, height: 32, color: context.colorScheme.outlineVariant),
           _StatPill(value: '$daysTraveled', label: 'Days traveled'),
         ],
       ),
@@ -183,16 +452,16 @@ class _StatPill extends StatelessWidget {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: AppTheme.softCoral,
+              color: context.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: AppTheme.earthBrown),
+            style: TextStyle(fontSize: 11, color: context.colorScheme.onSurfaceVariant),
           ),
         ],
       );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/theme.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../itinerary/domain/entities/travel_itinerary.dart';
@@ -158,22 +157,22 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
         }
 
         return Scaffold(
-          backgroundColor: AppTheme.warmOatmeal,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
-            backgroundColor: AppTheme.warmOatmeal,
-            title: const Text(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            title: Text(
               'Add Expense',
               style: TextStyle(
-                  fontWeight: FontWeight.w700, color: AppTheme.darkEspresso),
+                  fontWeight: FontWeight.w700, color: context.colorScheme.onSurface),
             ),
             leading: BackButton(
                 onPressed: () => context.pop(),
-                color: AppTheme.darkEspresso),
+                color: context.colorScheme.onSurface),
           ),
           body: _isSubmitting
-              ? const Center(
+              ? Center(
                   child:
-                      CircularProgressIndicator(color: AppTheme.softCoral))
+                      CircularProgressIndicator(color: context.colorScheme.primary))
               : SafeArea(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
@@ -242,12 +241,12 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                                   decoration: BoxDecoration(
                                     color: selected
                                         ? Color(cat.colorValue)
-                                        : AppTheme.cloudWhite,
+                                        : context.colorScheme.surface,
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: selected
                                           ? Color(cat.colorValue)
-                                          : AppTheme.sakuraStone,
+                                          : context.colorScheme.outlineVariant,
                                     ),
                                   ),
                                   child: Text(
@@ -257,7 +256,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                                       fontWeight: FontWeight.w500,
                                       color: selected
                                           ? Colors.white
-                                          : AppTheme.darkEspresso,
+                                          : context.colorScheme.onSurface,
                                     ),
                                   ),
                                 ),
@@ -300,20 +299,20 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                           Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: AppTheme.cloudWhite,
+                              color: context.colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.call_split_outlined,
-                                    size: 18, color: AppTheme.earthBrown),
+                                Icon(Icons.call_split_outlined,
+                                    size: 18, color: context.colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     'Split equally among all ${_members(itinerary).length} members',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 13,
-                                        color: AppTheme.earthBrown),
+                                        color: context.colorScheme.onSurfaceVariant),
                                   ),
                                 ),
                               ],
@@ -324,8 +323,8 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                           FilledButton(
                             onPressed: () => _submit(itinerary),
                             style: FilledButton.styleFrom(
-                              backgroundColor: AppTheme.softCoral,
-                              foregroundColor: AppTheme.cloudWhite,
+                              backgroundColor: context.colorScheme.primary,
+                              foregroundColor: context.colorScheme.surface,
                             ),
                             child: const Text('Add Expense'),
                           ),

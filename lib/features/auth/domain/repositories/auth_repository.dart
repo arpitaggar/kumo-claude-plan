@@ -189,4 +189,10 @@ abstract class AuthRepository {
   ///
   /// @returns Session object or null if not authenticated
   Future<Either<Failure, Map<String, dynamic>?>> getSession();
+
+  /// Permanently deletes the current user's account and all associated data.
+  ///
+  /// Calls the `delete_user` Supabase RPC (SECURITY DEFINER) which removes the
+  /// auth.users row. All app data is removed via ON DELETE CASCADE on the DB.
+  Future<Either<Failure, void>> deleteAccount();
 }

@@ -8,6 +8,7 @@ class Message extends Equatable {
     required this.senderName,
     required this.content,
     required this.createdAt,
+    this.readBy = const [],
   });
 
   final String id;
@@ -16,8 +17,9 @@ class Message extends Equatable {
   final String senderName;
   final String content;
   final DateTime createdAt;
+  final List<String> readBy;
 
   @override
   List<Object> get props =>
-      [id, itineraryId, senderId, senderName, content, createdAt];
+      [id, itineraryId, senderId, senderName, content, createdAt, readBy];
 }

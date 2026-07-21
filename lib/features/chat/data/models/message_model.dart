@@ -8,6 +8,7 @@ class MessageModel extends Message {
     required super.senderName,
     required super.content,
     required super.createdAt,
+    super.readBy,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) => MessageModel(
@@ -17,6 +18,7 @@ class MessageModel extends Message {
         senderName: (json['sender_name'] as String?) ?? '',
         content: json['content'] as String,
         createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
+        readBy: (json['read_by'] as List?)?.cast<String>() ?? const [],
       );
 
   Map<String, dynamic> toJson() => {
@@ -26,5 +28,6 @@ class MessageModel extends Message {
         'sender_name': senderName,
         'content': content,
         'created_at': createdAt.toIso8601String(),
+        'read_by': readBy,
       };
 }

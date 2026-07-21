@@ -3,8 +3,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'config/brand.dart';
 import 'config/router.dart';
 import 'config/theme.dart';
+import 'config/theme_provider.dart';
 import 'core/network/supabase_client.dart';
 import 'core/utils/logger.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
@@ -48,12 +50,17 @@ class KumoApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(routerProvider);
+    final router     = ref.watch(routerProvider);
+    final kumoTheme  = ref.watch(themeProvider);
 
     return MaterialApp.router(
-      title: 'Kumo',
+      title: Brand.appName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
+      theme: switch (kumoTheme) {
+        KumoTheme.goldenHour    => AppTheme.goldenHour,
+        KumoTheme.deepVoyage    => AppTheme.deepVoyage,
+        KumoTheme.cherryBlossom => AppTheme.light,
+      },
       routerConfig: router,
     );
   }

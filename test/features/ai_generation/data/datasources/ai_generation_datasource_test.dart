@@ -1,63 +1,29 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kumo_claude/core/error/exception.dart';
 import 'package:kumo_claude/features/ai_generation/data/datasources/ai_generation_datasource.dart';
-import 'package:kumo_claude/features/ai_generation/domain/entities/ai_generation_request.dart';
-import 'package:mocktail/mocktail.dart';
-
-class MockDio extends Mock implements Dio {}
 
 void main() {
-  late MockDio mockDio;
-  late AiGenerationDataSourceImpl dataSource;
+  final tripStart = DateTime.utc(2026, 6, 10);
 
-  final request = AiGenerationRequest(
-    destination: 'Tokyo',
-    startDate: DateTime.utc(2026, 6, 10),
-    endDate: DateTime.utc(2026, 6, 12),
-    travelStyle: TravelStyle.culture,
-  );
-
-  setUp(() {
-    mockDio = MockDio();
-    dataSource = AiGenerationDataSourceImpl(dio: mockDio);
-  });
-
-  Response<Map<String, dynamic>> makeResponse(String text) => Response(
-        data: {
-          'content': [
-            {'type': 'text', 'text': text}
-          ]
+  group('AiGenerationDataSourceImpl.parseItems', () {
+    test('parses a valid item list', () {
+      final raw = [
+        {
+          'item_type': 'activity',
+          'title': 'Visit Senso-ji Temple',
+          'start_time': '2026-06-10T09:00:00Z',
+          'end_time': '2026-06-10T11:00:00Z',
+          'location': 'Asakusa, Tokyo',
         },
-        statusCode: 200,
-        requestOptions: RequestOptions(path: '/messages'),
-      );
+        {
+          'item_type': 'restaurant',
+          'title': 'Ramen lunch',
+          'start_time': '2026-06-10T12:30:00Z',
+          'end_time': null,
+          'location': null,
+        },
+      ];
 
-  group('AiGenerationDataSourceImpl.generateItinerary', () {
-    test('parses a valid JSON array from AI response', () async {
-      const json = '''
-[
-  {
-    "item_type": "activity",
-    "title": "Visit Senso-ji Temple",
-    "start_time": "2026-06-10T09:00:00Z",
-    "end_time": "2026-06-10T11:00:00Z",
-    "location": "Asakusa, Tokyo"
-  },
-  {
-    "item_type": "restaurant",
-    "title": "Ramen lunch",
-    "start_time": "2026-06-10T12:30:00Z",
-    "end_time": "2026-06-10T13:30:00Z",
-    "location": null
-  }
-]''';
-      when(() => mockDio.post<Map<String, dynamic>>(
-            any(),
-            data: any(named: 'data'),
-          )).thenAnswer((_) async => makeResponse(json));
-
-      final items = await dataSource.generateItinerary(request);
+      final items = AiGenerationDataSourceImpl.parseItems(raw, tripStart);
 
       expect(items, hasLength(2));
       expect(items[0].title, 'Visit Senso-ji Temple');
@@ -65,125 +31,133 @@ void main() {
       expect(items[0].location, 'Asakusa, Tokyo');
       expect(items[1].title, 'Ramen lunch');
       expect(items[1].location, isNull);
+      expect(items[1].endTime, isNull);
     });
 
-    test('strips markdown fences and still parses JSON', () async {
-      const json = '''
-```json
-[
-  {
-    "item_type": "hotel",
-    "title": "Check in to Shinjuku hotel",
-    "start_time": "2026-06-10T15:00:00Z",
-    "end_time": null,
-    "location": "Shinjuku"
-  }
-]
-```''';
-      when(() => mockDio.post<Map<String, dynamic>>(
-            any(),
-            data: any(named: 'data'),
-          )).thenAnswer((_) async => makeResponse(json));
+    test('items are sorted by startTime ascending', () {
+      final raw = [
+        {
+          'item_type': 'activity',
+          'title': 'Evening walk',
+          'start_time': '2026-06-10T19:00:00Z',
+          'end_time': null,
+          'location': null,
+        },
+        {
+          'item_type': 'activity',
+          'title': 'Morning yoga',
+          'start_time': '2026-06-10T07:00:00Z',
+          'end_time': null,
+          'location': null,
+        },
+      ];
 
-      final items = await dataSource.generateItinerary(request);
-
-      expect(items, hasLength(1));
-      expect(items[0].title, 'Check in to Shinjuku hotel');
-      expect(items[0].endTime, isNull);
-    });
-
-    test('items are sorted by startTime ascending', () async {
-      const json = '''
-[
-  {
-    "item_type": "activity",
-    "title": "Evening walk",
-    "start_time": "2026-06-10T19:00:00Z",
-    "end_time": null,
-    "location": null
-  },
-  {
-    "item_type": "activity",
-    "title": "Morning yoga",
-    "start_time": "2026-06-10T07:00:00Z",
-    "end_time": null,
-    "location": null
-  }
-]''';
-      when(() => mockDio.post<Map<String, dynamic>>(
-            any(),
-            data: any(named: 'data'),
-          )).thenAnswer((_) async => makeResponse(json));
-
-      final items = await dataSource.generateItinerary(request);
+      final items = AiGenerationDataSourceImpl.parseItems(raw, tripStart);
 
       expect(items[0].title, 'Morning yoga');
       expect(items[1].title, 'Evening walk');
     });
 
-    test('falls back to tripStart when start_time is missing', () async {
-      const json = '''
-[
-  {
-    "item_type": "activity",
-    "title": "Free time",
-    "start_time": null,
-    "end_time": null,
-    "location": null
-  }
-]''';
-      when(() => mockDio.post<Map<String, dynamic>>(
-            any(),
-            data: any(named: 'data'),
-          )).thenAnswer((_) async => makeResponse(json));
+    test('falls back to tripStart when start_time is null', () {
+      final raw = [
+        {
+          'item_type': 'activity',
+          'title': 'Free time',
+          'start_time': null,
+          'end_time': null,
+          'location': null,
+        },
+      ];
 
-      final items = await dataSource.generateItinerary(request);
+      final items = AiGenerationDataSourceImpl.parseItems(raw, tripStart);
 
-      expect(items, hasLength(1));
-      expect(items[0].startTime, request.startDate.toUtc());
+      expect(items[0].startTime, tripStart.toUtc());
     });
 
-    test('throws ServerException when content is empty', () async {
-      when(() => mockDio.post<Map<String, dynamic>>(
-            any(),
-            data: any(named: 'data'),
-          )).thenAnswer((_) async => Response(
-            data: {'content': []},
-            statusCode: 200,
-            requestOptions: RequestOptions(path: '/messages'),
-          ));
+    test('falls back to tripStart when start_time is unparseable', () {
+      final raw = [
+        {
+          'item_type': 'activity',
+          'title': 'Mystery event',
+          'start_time': 'not-a-date',
+          'end_time': null,
+          'location': null,
+        },
+      ];
 
-      expect(
-        () => dataSource.generateItinerary(request),
-        throwsA(isA<ServerException>()),
-      );
+      final items = AiGenerationDataSourceImpl.parseItems(raw, tripStart);
+
+      expect(items[0].startTime, tripStart.toUtc());
     });
 
-    test('throws ServerException when JSON cannot be parsed', () async {
-      when(() => mockDio.post<Map<String, dynamic>>(
-            any(),
-            data: any(named: 'data'),
-          )).thenAnswer((_) async => makeResponse('This is not JSON at all.'));
+    test('ignores unparseable end_time', () {
+      final raw = [
+        {
+          'item_type': 'hotel',
+          'title': 'Hotel check-in',
+          'start_time': '2026-06-10T15:00:00Z',
+          'end_time': 'bad-date',
+          'location': 'Shinjuku',
+        },
+      ];
 
-      expect(
-        () => dataSource.generateItinerary(request),
-        throwsA(isA<ServerException>()),
-      );
+      final items = AiGenerationDataSourceImpl.parseItems(raw, tripStart);
+
+      expect(items[0].endTime, isNull);
     });
 
-    test('throws ServerException on DioException', () async {
-      when(() => mockDio.post<Map<String, dynamic>>(
-            any(),
-            data: any(named: 'data'),
-          )).thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/messages'),
-        type: DioExceptionType.connectionTimeout,
-      ));
-
-      expect(
-        () => dataSource.generateItinerary(request),
-        throwsA(isA<ServerException>()),
+    test('each item gets a unique non-empty id', () {
+      final raw = List.generate(
+        3,
+        (i) => {
+          'item_type': 'activity',
+          'title': 'Item $i',
+          'start_time': '2026-06-10T0${i + 9}:00:00Z',
+          'end_time': null,
+          'location': null,
+        },
       );
+
+      final items = AiGenerationDataSourceImpl.parseItems(raw, tripStart);
+      final ids = items.map((e) => e.id).toSet();
+
+      expect(ids, hasLength(3));
+      expect(ids.every((id) => id.isNotEmpty), isTrue);
+    });
+
+    test('uses activity as default when item_type is missing', () {
+      final raw = [
+        {
+          'title': 'Mystery stop',
+          'start_time': '2026-06-10T10:00:00Z',
+          'end_time': null,
+          'location': null,
+        },
+      ];
+
+      final items = AiGenerationDataSourceImpl.parseItems(raw, tripStart);
+
+      expect(items[0].itemType, 'activity');
+    });
+
+    test('uses Untitled as default when title is missing', () {
+      final raw = [
+        {
+          'item_type': 'activity',
+          'start_time': '2026-06-10T10:00:00Z',
+          'end_time': null,
+          'location': null,
+        },
+      ];
+
+      final items = AiGenerationDataSourceImpl.parseItems(raw, tripStart);
+
+      expect(items[0].title, 'Untitled');
+    });
+
+    test('returns empty list for empty input', () {
+      final items = AiGenerationDataSourceImpl.parseItems([], tripStart);
+      expect(items, isEmpty);
     });
   });
 }

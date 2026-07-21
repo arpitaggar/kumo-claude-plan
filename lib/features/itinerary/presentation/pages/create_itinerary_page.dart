@@ -4,10 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../config/constants.dart';
-import '../../../../config/theme.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
-import '../../../ai_generation/presentation/widgets/ai_generate_sheet.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_theme.dart';
@@ -45,7 +43,9 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
   }
 
   void _autoSuggestTheme() {
-    if (!_autoTheme) return;
+    if (!_autoTheme) {
+      return;
+    }
     final suggested = TripTheme.resolve(_titleController.text).key;
     if (suggested != _themeKey) {
       setState(() {
@@ -90,18 +90,7 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
   }
 
   Future<void> _openAiSheet() async {
-    if (_startDate == null || _endDate == null) {
-      context.showSnackBar('Select trip dates first', isError: true);
-      return;
-    }
-    final items = await showAiGenerateSheet(
-      context,
-      startDate: _startDate!,
-      endDate: _endDate!,
-    );
-    if (items != null && mounted) {
-      setState(() => _generatedItems = items);
-    }
+    context.showSnackBar('Katha AI coming soon ✨');
   }
 
   Future<void> _submit() async {
@@ -340,10 +329,10 @@ class _AiSection extends StatelessWidget {
       return OutlinedButton.icon(
         onPressed: onGenerate,
         icon: const Icon(Icons.auto_awesome, size: 18),
-        label: const Text('Generate with AI'),
+        label: const Text('Generate with Katha'),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppTheme.softCoral,
-          side: const BorderSide(color: AppTheme.softCoral),
+          foregroundColor: context.colorScheme.primary,
+          side: BorderSide(color: context.colorScheme.primary),
         ),
       );
     }
@@ -356,40 +345,40 @@ class _AiSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                gradient: AppTheme.featuredGradient,
+                gradient: context.featuredGradient,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.auto_awesome,
-                      size: 13, color: AppTheme.cloudWhite),
+                  Icon(Icons.auto_awesome,
+                      size: 13, color: context.colorScheme.surface),
                   const SizedBox(width: 4),
                   Text(
                     '${generatedItems.length} activities',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.cloudWhite,
+                      color: context.colorScheme.surface,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
-              'AI itinerary attached',
+            Text(
+              'Katha itinerary attached',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.darkEspresso,
+                color: context.colorScheme.onSurface,
               ),
             ),
             const Spacer(),
             TextButton(
               onPressed: onClear,
               style: TextButton.styleFrom(
-                foregroundColor: AppTheme.earthBrown,
+                foregroundColor: context.colorScheme.onSurfaceVariant,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               ),
@@ -401,7 +390,7 @@ class _AiSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppTheme.warmOatmeal,
+            color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -412,15 +401,15 @@ class _AiSection extends StatelessWidget {
                       bottom: i < 2 && i < generatedItems.length - 1 ? 6 : 0),
                   child: Row(
                     children: [
-                      const Icon(Icons.circle,
-                          size: 6, color: AppTheme.softCoral),
+                      Icon(Icons.circle,
+                          size: 6, color: context.colorScheme.primary),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           generatedItems[i].title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.darkEspresso,
+                            color: context.colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -434,9 +423,9 @@ class _AiSection extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     '+ ${generatedItems.length - 3} more',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppTheme.earthBrown,
+                      color: context.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

@@ -11,7 +11,7 @@ import '../../domain/usecases/generate_itinerary_usecase.dart';
 // ---------------------------------------------------------------------------
 
 final aiGenerationDataSourceProvider = Provider<AiGenerationDataSource>(
-  (_) => AiGenerationDataSourceImpl(),
+  (_) => const AiGenerationDataSourceImpl(),
 );
 
 final aiGenerationRepositoryProvider =

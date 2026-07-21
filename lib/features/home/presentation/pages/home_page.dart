@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/theme.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../itinerary/domain/entities/travel_itinerary.dart';
 import '../../../itinerary/presentation/providers/itinerary_provider.dart';
 import '../../../itinerary/presentation/widgets/itinerary_card.dart';
+import '../../../../shared/extensions/context_extensions.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -72,19 +72,19 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.search_off,
                   size: 48,
-                  color: AppTheme.earthBrown,
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'No trips match "$_searchQuery"',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.darkEspresso,
+                    color: context.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -153,7 +153,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final firstName = user?.displayName?.split(' ').first ?? 'Traveler';
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -170,17 +170,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                         children: [
                           Text(
                             '$_greeting,',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: AppTheme.earthBrown,
+                              color: context.colorScheme.onSurfaceVariant,
                             ),
                           ),
                           Text(
                             firstName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.darkEspresso,
+                              color: context.colorScheme.onSurface,
                               height: 1.2,
                             ),
                           ),
@@ -191,15 +191,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                       onTap: () => context.push('/profile'),
                       child: CircleAvatar(
                         radius: 22,
-                        backgroundColor: AppTheme.cherryBlossom,
+                        backgroundColor: context.colorScheme.primaryContainer,
                         child: Text(
                           firstName.isNotEmpty
                               ? firstName[0].toUpperCase()
                               : '?',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.softCoral,
+                            color: context.colorScheme.primary,
                           ),
                         ),
                       ),
@@ -215,19 +215,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
                 child: TextField(
                   controller: _searchController,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.darkEspresso,
+                    color: context.colorScheme.onSurface,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Where to next?',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 14,
-                      color: AppTheme.earthBrown,
+                      color: context.colorScheme.onSurfaceVariant,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search,
-                      color: AppTheme.earthBrown,
+                      color: context.colorScheme.onSurfaceVariant,
                       size: 20,
                     ),
                     suffixIcon: _searchQuery.isNotEmpty
@@ -237,20 +237,20 @@ class _HomePageState extends ConsumerState<HomePage> {
                           )
                         : null,
                     filled: true,
-                    fillColor: AppTheme.cloudWhite,
+                    fillColor: context.colorScheme.surface,
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: AppTheme.sakuraStone),
+                      borderSide: BorderSide(color: context.colorScheme.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: AppTheme.sakuraStone),
+                      borderSide: BorderSide(color: context.colorScheme.outlineVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(
-                        color: AppTheme.softCoral.withValues(alpha: 0.6),
+                        color: context.colorScheme.primary.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
@@ -321,10 +321,10 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppTheme.darkEspresso,
+              color: context.colorScheme.onSurface,
             ),
           ),
           const Spacer(),
@@ -348,22 +348,22 @@ class _EmptyState extends StatelessWidget {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                gradient: AppTheme.featuredGradient,
+                gradient: context.featuredGradient,
                 borderRadius: BorderRadius.circular(32),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.explore_outlined,
                 size: 48,
-                color: AppTheme.cloudWhite,
+                color: context.colorScheme.surface,
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No trips yet',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.darkEspresso,
+                color: context.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -372,7 +372,7 @@ class _EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.earthBrown.withValues(alpha: 0.8),
+                color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 height: 1.5,
               ),
             ),

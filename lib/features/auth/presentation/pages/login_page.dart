@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/theme.dart';
+import '../../../../config/brand.dart';
+import '../../../../config/theme_provider.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../providers/auth_provider.dart';
@@ -56,13 +57,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     if (authState is AuthLoading) {
       return const Scaffold(
-        backgroundColor: AppTheme.warmOatmeal,
         body: LoadingWidget(message: 'Signing in…'),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -73,32 +72,45 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               children: [
                 const SizedBox(height: 64),
 
+                // Brand name
+                Text(
+                  Brand.appName,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: Brand.fontFamily,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w700,
+                    color: context.colorScheme.onSurface,
+                    letterSpacing: 6,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 // Logo
                 Center(
                   child: SvgPicture.asset(
-                    'assets/icons/kumo_logo_stacked_charcoal.svg',
+                    Brand.logoFor(ref.watch(themeProvider)),
                     height: 72,
                   ),
                 ),
                 const SizedBox(height: 32),
 
                 // Tagline
-                const Text(
-                  // 'Travel planning,\nreimagined.',
-                  'Plan. Explore. Go.',
+                Text(
+                  Brand.tagline,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.darkEspresso,
+                    color: context.colorScheme.onSurface,
                     height: 1.25,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Sign in to continue your journey',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: AppTheme.earthBrown),
+                  style: TextStyle(fontSize: 14, color: context.colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 48),
 
@@ -128,11 +140,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       "Don't have an account? ",
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.earthBrown,
+                        color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     TextButton(

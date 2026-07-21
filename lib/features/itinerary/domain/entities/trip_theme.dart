@@ -128,6 +128,26 @@ class TripTheme {
   static TripTheme forKey(String key) =>
       all.firstWhere((t) => t.key == key, orElse: () => classic);
 
+  /// For 'classic' trips, replaces the hardcoded Cherry-Blossom palette with
+  /// the active app theme's primary colors so the card bar, header gradient,
+  /// and scaffold tint always complement whichever app theme is selected.
+  /// Destination-specific themes (sakura, tropical, …) are returned as-is.
+  TripTheme withContext(BuildContext context) {
+    if (key != 'classic') {
+      return this;
+    }
+    final cs = Theme.of(context).colorScheme;
+    return TripTheme(
+      key: key,
+      label: label,
+      emoji: emoji,
+      primary: cs.primary,
+      gradientStart: cs.primaryContainer,
+      gradientEnd: cs.primary,
+      backgroundTint: Theme.of(context).scaffoldBackgroundColor,
+    );
+  }
+
   /// Infers a theme from keywords in [title] (case-insensitive).
   /// Returns [classic] when no keyword matches.
   static TripTheme resolve(String title) {

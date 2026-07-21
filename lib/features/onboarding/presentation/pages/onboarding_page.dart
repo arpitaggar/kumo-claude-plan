@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/theme.dart';
 import '../providers/onboarding_provider.dart';
+import '../../../../shared/extensions/context_extensions.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
@@ -66,7 +66,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     final isLast = _currentPage == _pages.length - 1;
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -77,9 +77,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 padding: const EdgeInsets.only(top: 8, right: 16),
                 child: TextButton(
                   onPressed: _finish,
-                  child: const Text(
+                  child: Text(
                     'Skip',
-                    style: TextStyle(color: AppTheme.earthBrown, fontSize: 14),
+                    style: TextStyle(color: context.colorScheme.onSurfaceVariant, fontSize: 14),
                   ),
                 ),
               ),
@@ -108,8 +108,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   height: 8,
                   decoration: BoxDecoration(
                     color: _currentPage == i
-                        ? AppTheme.softCoral
-                        : AppTheme.sakuraStone,
+                        ? context.colorScheme.primary
+                        : context.colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -126,8 +126,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 child: FilledButton(
                   onPressed: _next,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.softCoral,
-                    foregroundColor: AppTheme.cloudWhite,
+                    backgroundColor: context.colorScheme.primary,
+                    foregroundColor: context.colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -167,27 +167,27 @@ class _OnboardingSlide extends StatelessWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                gradient: AppTheme.featuredGradient,
+                gradient: context.featuredGradient,
                 borderRadius: BorderRadius.circular(36),
               ),
-              child: Icon(data.icon, size: 56, color: AppTheme.cloudWhite),
+              child: Icon(data.icon, size: 56, color: context.colorScheme.surface),
             ),
             const SizedBox(height: 40),
             Text(
               data.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.darkEspresso,
+                color: context.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             Text(
               data.subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: AppTheme.earthBrown,
+                color: context.colorScheme.onSurfaceVariant,
                 height: 1.6,
               ),
               textAlign: TextAlign.center,

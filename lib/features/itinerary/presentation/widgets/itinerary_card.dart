@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../config/theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_theme.dart';
+import '../../../../shared/extensions/context_extensions.dart';
 
 class ItineraryCard extends StatelessWidget {
   const ItineraryCard({
@@ -19,9 +19,9 @@ class ItineraryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = TripTheme.forKey(itinerary.themeKey);
+    final theme = TripTheme.forKey(itinerary.themeKey).withContext(context);
     return Material(
-      color: AppTheme.cloudWhite,
+      color: context.colorScheme.surface,
       borderRadius: BorderRadius.circular(20),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -29,10 +29,13 @@ class ItineraryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Gradient accent bar — destination-themed
-            Container(
-              height: 4,
-              decoration: BoxDecoration(gradient: theme.cardBarGradient),
+            // Gradient accent bar — destination-themed (Hero source)
+            Hero(
+              tag: 'trip-header-${itinerary.id}',
+              child: Container(
+                height: 4,
+                decoration: BoxDecoration(gradient: theme.cardBarGradient),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
@@ -45,10 +48,10 @@ class ItineraryCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           itinerary.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.darkEspresso,
+                            color: context.colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -62,10 +65,10 @@ class ItineraryCard extends StatelessWidget {
                           width: 32,
                           height: 32,
                           child: IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.delete_outline,
                               size: 18,
-                              color: AppTheme.earthBrown,
+                              color: context.colorScheme.onSurfaceVariant,
                             ),
                             onPressed: onDelete,
                             padding: EdgeInsets.zero,
@@ -80,9 +83,9 @@ class ItineraryCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       itinerary.description!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppTheme.earthBrown,
+                        color: context.colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -91,31 +94,31 @@ class ItineraryCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today_outlined,
                         size: 13,
-                        color: AppTheme.earthBrown,
+                        color: context.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 5),
                       Text(
                         '${Formatters.formatDate(itinerary.startDate)} – ${Formatters.formatDate(itinerary.endDate)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.earthBrown,
+                          color: context.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const Spacer(),
-                      const Icon(
+                      Icon(
                         Icons.people_outline,
                         size: 13,
-                        color: AppTheme.earthBrown,
+                        color: context.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${itinerary.members.length}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.earthBrown,
+                          color: context.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -152,8 +155,8 @@ class _StatusChip extends StatelessWidget {
     final (label, bg, fg) = switch (status) {
       ItineraryStatusEnum.draft => (
           'Draft',
-          AppTheme.sakuraStone,
-          AppTheme.earthBrown,
+          context.colorScheme.outlineVariant,
+          context.colorScheme.onSurfaceVariant,
         ),
       ItineraryStatusEnum.active => (
           'Active',

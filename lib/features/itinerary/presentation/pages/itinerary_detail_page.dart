@@ -5,11 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../../../config/theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
-import '../../../ai_generation/presentation/widgets/ai_generate_sheet.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../expense_split/domain/entities/expense.dart';
 import '../../../expense_split/presentation/providers/expense_provider.dart';
@@ -33,19 +31,19 @@ class ItineraryDetailPage extends ConsumerWidget {
 
     return itineraryAsync.when(
       loading: () => Scaffold(
-        backgroundColor: AppTheme.warmOatmeal,
-        appBar: AppBar(backgroundColor: AppTheme.warmOatmeal),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(backgroundColor: Theme.of(context).scaffoldBackgroundColor),
         body: const LoadingWidget(message: 'Loading trip…'),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: AppTheme.warmOatmeal,
-        appBar: AppBar(backgroundColor: AppTheme.warmOatmeal),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(backgroundColor: Theme.of(context).scaffoldBackgroundColor),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
               e.toString(),
-              style: const TextStyle(color: AppTheme.softCoral),
+              style: TextStyle(color: context.colorScheme.primary),
               textAlign: TextAlign.center,
             ),
           ),
@@ -125,28 +123,7 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
   }
 
   Future<void> _addAiItems() async {
-    final items = await showAiGenerateSheet(
-      context,
-      startDate: it.startDate,
-      endDate: it.endDate,
-    );
-    if (items == null || items.isEmpty || !mounted) {
-      return;
-    }
-    final updated = it.copyWith(items: [...it.items, ...items]);
-    final result = await ref.read(updateItineraryUseCaseProvider).call(updated);
-    result.fold(
-      (f) {
-        if (mounted) {
-          context.showSnackBar(f.message, isError: true);
-        }
-      },
-      (_) {
-        if (mounted) {
-          context.showSnackBar('${items.length} activities added!');
-        }
-      },
-    );
+    context.showSnackBar('Katha AI coming soon ✨');
   }
 
   Future<void> _deleteItem(String itemId) async {
@@ -177,7 +154,7 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
     final canEdit =
         member != null && member.role != GroupMemberRole.viewer;
 
-    final tripTheme = TripTheme.forKey(it.themeKey);
+    final tripTheme = TripTheme.forKey(it.themeKey).withContext(context);
 
     return Scaffold(
       backgroundColor: tripTheme.backgroundTint,
@@ -185,11 +162,11 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
             backgroundColor: tripTheme.backgroundTint,
-            foregroundColor: AppTheme.darkEspresso,
+            foregroundColor: context.colorScheme.onSurface,
             pinned: true,
             expandedHeight: 140,
             forceElevated: innerBoxIsScrolled,
-            shadowColor: AppTheme.darkEspresso.withValues(alpha: 0.08),
+            shadowColor: context.colorScheme.onSurface.withValues(alpha: 0.08),
             actions: [
               IconButton(
                 icon: const Icon(Icons.share_outlined),
@@ -212,28 +189,31 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
                   const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 56),
               title: Text(
                 it.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.darkEspresso,
+                  color: context.colorScheme.onSurface,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: tripTheme.headerGradient,
+              background: Hero(
+                tag: 'trip-header-${it.id}',
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: tripTheme.headerGradient,
+                  ),
                 ),
               ),
             ),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(46),
               child: Container(
-                color: AppTheme.cloudWhite,
+                color: context.colorScheme.surface,
                 child: TabBar(
                   controller: _tabs,
                   labelColor: tripTheme.primary,
-                  unselectedLabelColor: AppTheme.earthBrown,
+                  unselectedLabelColor: context.colorScheme.onSurfaceVariant,
                   indicatorColor: tripTheme.primary,
                   labelStyle: const TextStyle(
                     fontFamily: 'Poppins',
@@ -311,7 +291,7 @@ class _ItineraryTab extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppTheme.cloudWhite,
+            color: context.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -350,14 +330,14 @@ class _ItineraryTab extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppTheme.cloudWhite,
+              color: context.colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               itinerary.description!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.earthBrown,
+                color: context.colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
             ),
@@ -369,12 +349,12 @@ class _ItineraryTab extends ConsumerWidget {
         // Schedule header
         Row(
           children: [
-            const Text(
+            Text(
               'Schedule',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.darkEspresso,
+                color: context.colorScheme.onSurface,
               ),
             ),
             const Spacer(),
@@ -382,9 +362,9 @@ class _ItineraryTab extends ConsumerWidget {
               TextButton.icon(
                 onPressed: onAddAiItems,
                 icon: const Icon(Icons.auto_awesome, size: 15),
-                label: const Text('AI'),
+                label: const Text('Katha'),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.softCoral,
+                  foregroundColor: context.colorScheme.primary,
                   visualDensity: VisualDensity.compact,
                 ),
               ),
@@ -396,7 +376,7 @@ class _ItineraryTab extends ConsumerWidget {
               icon: const Icon(Icons.add, size: 16),
               label: const Text('Add'),
               style: TextButton.styleFrom(
-                foregroundColor: AppTheme.softCoral,
+                foregroundColor: context.colorScheme.primary,
                 visualDensity: VisualDensity.compact,
               ),
             ),
@@ -408,19 +388,19 @@ class _ItineraryTab extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.cloudWhite,
+              color: context.colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Center(
+            child: Center(
               child: Column(
                 children: [
                   Icon(Icons.map_outlined,
                       size: 36,
-                      color: AppTheme.sakuraStone),
+                      color: context.colorScheme.outlineVariant),
                   SizedBox(height: 8),
                   Text(
                     'No activities yet',
-                    style: TextStyle(color: AppTheme.earthBrown),
+                    style: TextStyle(color: context.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -442,12 +422,12 @@ class _ItineraryTab extends ConsumerWidget {
         // Members
         Row(
           children: [
-            const Text(
+            Text(
               'Travellers',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.darkEspresso,
+                color: context.colorScheme.onSurface,
               ),
             ),
             const Spacer(),
@@ -457,7 +437,7 @@ class _ItineraryTab extends ConsumerWidget {
               icon: const Icon(Icons.person_add_outlined, size: 16),
               label: const Text('Invite'),
               style: TextButton.styleFrom(
-                foregroundColor: AppTheme.softCoral,
+                foregroundColor: context.colorScheme.primary,
                 visualDensity: VisualDensity.compact,
               ),
             ),
@@ -501,18 +481,18 @@ class _ExpensesTab extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppTheme.cloudWhite,
+                color: context.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Budget Overview',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.darkEspresso,
+                      color: context.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -523,13 +503,13 @@ class _ExpensesTab extends ConsumerWidget {
                         label: 'Budget',
                         value: Formatters.formatCurrency(
                             budget, itinerary.currencyCode),
-                        color: AppTheme.darkEspresso,
+                        color: context.colorScheme.onSurface,
                       ),
                       _BudgetCol(
                         label: 'Spent',
                         value: Formatters.formatCurrency(
                             spent, itinerary.currencyCode),
-                        color: AppTheme.softCoral,
+                        color: context.colorScheme.primary,
                       ),
                       _BudgetCol(
                         label: 'Left',
@@ -545,10 +525,10 @@ class _ExpensesTab extends ConsumerWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 8,
-                      backgroundColor: AppTheme.sakuraStone,
+                      backgroundColor: context.colorScheme.outlineVariant,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         progress > 0.9
-                            ? AppTheme.softCoral
+                            ? context.colorScheme.primary
                             : const Color(0xFF2E7D52),
                       ),
                     ),
@@ -556,8 +536,8 @@ class _ExpensesTab extends ConsumerWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${(progress * 100).toStringAsFixed(0)}% of budget used',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppTheme.earthBrown),
+                    style: TextStyle(
+                        fontSize: 12, color: context.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -566,16 +546,16 @@ class _ExpensesTab extends ConsumerWidget {
 
             // ── Expense list ─────────────────────────────────────────
             expensesAsync.when(
-              loading: () => const Center(
+              loading: () => Center(
                 child: Padding(
                   padding: EdgeInsets.all(32),
                   child: CircularProgressIndicator(
-                      color: AppTheme.softCoral),
+                      color: context.colorScheme.primary),
                 ),
               ),
               error: (e, _) => Center(
                 child: Text(e.toString(),
-                    style: const TextStyle(color: AppTheme.softCoral)),
+                    style: TextStyle(color: context.colorScheme.primary)),
               ),
               data: (expenses) => expenses.isEmpty
                   ? const _EmptyExpenses()
@@ -584,13 +564,13 @@ class _ExpensesTab extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'Expenses',
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.darkEspresso,
+                                  color: context.colorScheme.onSurface,
                                 ),
                               ),
                             ),
@@ -602,7 +582,7 @@ class _ExpensesTab extends ConsumerWidget {
                               ),
                               label: const Text('CSV'),
                               style: TextButton.styleFrom(
-                                foregroundColor: AppTheme.earthBrown,
+                                foregroundColor: context.colorScheme.onSurfaceVariant,
                                 visualDensity: VisualDensity.compact,
                               ),
                             ),
@@ -636,8 +616,8 @@ class _ExpensesTab extends ConsumerWidget {
             heroTag: 'add_expense',
             onPressed: () =>
                 context.push('/trip/${itinerary.id}/expense/new'),
-            backgroundColor: AppTheme.softCoral,
-            foregroundColor: AppTheme.cloudWhite,
+            backgroundColor: context.colorScheme.primary,
+            foregroundColor: context.colorScheme.surface,
             child: const Icon(Icons.add),
           ),
         ),
@@ -743,7 +723,7 @@ class _ExpenseTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: AppTheme.cloudWhite,
+            color: context.colorScheme.surface,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -768,16 +748,16 @@ class _ExpenseTile extends StatelessWidget {
                   children: [
                     Text(
                       expense.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.darkEspresso,
+                        color: context.colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       'Paid by ${expense.payerName} · ${expense.category.label}',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.earthBrown),
+                      style: TextStyle(
+                          fontSize: 12, color: context.colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -787,18 +767,18 @@ class _ExpenseTile extends StatelessWidget {
                 children: [
                   Text(
                     Formatters.formatCurrency(expense.amount, currency),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.darkEspresso,
+                      color: context.colorScheme.onSurface,
                     ),
                   ),
                   GestureDetector(
                     onTap: onDelete,
-                    child: const Padding(
+                    child: Padding(
                       padding: EdgeInsets.only(top: 2),
                       child: Icon(Icons.delete_outline,
-                          size: 16, color: AppTheme.sakuraStone),
+                          size: 16, color: context.colorScheme.outlineVariant),
                     ),
                   ),
                 ],
@@ -833,19 +813,19 @@ class _SettlementsCard extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Settle up',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppTheme.darkEspresso,
+              color: context.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.cloudWhite,
+              color: context.colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
@@ -880,22 +860,22 @@ class _SettlementRow extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: settlement.fromUserName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.darkEspresso,
+                      color: context.colorScheme.onSurface,
                       fontSize: 13,
                     ),
                   ),
-                  const TextSpan(
+                  TextSpan(
                     text: ' owes ',
                     style: TextStyle(
-                        color: AppTheme.earthBrown, fontSize: 13),
+                        color: context.colorScheme.onSurfaceVariant, fontSize: 13),
                   ),
                   TextSpan(
                     text: settlement.toUserName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.darkEspresso,
+                      color: context.colorScheme.onSurface,
                       fontSize: 13,
                     ),
                   ),
@@ -921,26 +901,26 @@ class _EmptyExpenses extends StatelessWidget {
   const _EmptyExpenses();
 
   @override
-  Widget build(BuildContext context) => const Padding(
+  Widget build(BuildContext context) => Padding(
         padding: EdgeInsets.only(top: 32),
         child: Center(
           child: Column(
             children: [
               Icon(Icons.receipt_long_outlined,
-                  size: 48, color: AppTheme.sakuraStone),
+                  size: 48, color: context.colorScheme.outlineVariant),
               SizedBox(height: 12),
               Text(
                 'No expenses yet',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.earthBrown,
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
               ),
               SizedBox(height: 4),
               Text(
                 'Tap + to log the first one',
-                style: TextStyle(fontSize: 13, color: AppTheme.earthBrown),
+                style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -962,12 +942,12 @@ class _ReviewsTab extends ConsumerWidget {
     return Stack(
       children: [
         ratingsAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.softCoral),
+          loading: () => Center(
+            child: CircularProgressIndicator(color: context.colorScheme.primary),
           ),
           error: (e, _) => Center(
             child: Text(e.toString(),
-                style: const TextStyle(color: AppTheme.softCoral)),
+                style: TextStyle(color: context.colorScheme.primary)),
           ),
           data: (ratings) => ratings.isEmpty
               ? const _EmptyReviews()
@@ -992,8 +972,8 @@ class _ReviewsTab extends ConsumerWidget {
               itineraryId: itinerary.id,
               items: itinerary.items,
             ),
-            backgroundColor: AppTheme.softCoral,
-            foregroundColor: AppTheme.cloudWhite,
+            backgroundColor: context.colorScheme.primary,
+            foregroundColor: context.colorScheme.surface,
             child: const Icon(Icons.rate_review_outlined),
           ),
         ),
@@ -1016,7 +996,7 @@ class _RatingTile extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.cloudWhite,
+            color: context.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -1027,10 +1007,10 @@ class _RatingTile extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       rating.targetName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.darkEspresso,
+                        color: context.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -1038,24 +1018,24 @@ class _RatingTile extends ConsumerWidget {
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => _confirmDelete(context, ref),
-                    child: const Icon(Icons.delete_outline,
-                        size: 18, color: AppTheme.sakuraStone),
+                    child: Icon(Icons.delete_outline,
+                        size: 18, color: context.colorScheme.outlineVariant),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               Text(
                 'by ${rating.userName}',
-                style: const TextStyle(
-                    fontSize: 12, color: AppTheme.earthBrown),
+                style: TextStyle(
+                    fontSize: 12, color: context.colorScheme.onSurfaceVariant),
               ),
               if (rating.comment != null && rating.comment!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   rating.comment!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppTheme.darkEspresso,
+                    color: context.colorScheme.onSurface,
                     height: 1.4,
                   ),
                 ),
@@ -1117,7 +1097,7 @@ class _StarDisplay extends StatelessWidget {
             size: 16,
             color: i < stars
                 ? const Color(0xFFFFC107)
-                : AppTheme.sakuraStone,
+                : context.colorScheme.outlineVariant,
           ),
         ),
       );
@@ -1129,26 +1109,26 @@ class _EmptyReviews extends StatelessWidget {
   const _EmptyReviews();
 
   @override
-  Widget build(BuildContext context) => const Center(
+  Widget build(BuildContext context) => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.rate_review_outlined,
-                size: 48, color: AppTheme.sakuraStone),
+                size: 48, color: context.colorScheme.outlineVariant),
             SizedBox(height: 12),
             Text(
               'No reviews yet',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.earthBrown,
+                color: context.colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: 4),
             Text(
               'Tap + to rate places from this trip',
               style:
-                  TextStyle(fontSize: 13, color: AppTheme.earthBrown),
+                  TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -1245,7 +1225,7 @@ class _MembersCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.cloudWhite,
+          color: context.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -1289,15 +1269,15 @@ class _MemberRow extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: AppTheme.cherryBlossom,
+                backgroundColor: context.colorScheme.primaryContainer,
                 child: Text(
                   member.userName.isNotEmpty
                       ? member.userName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.softCoral,
+                    color: context.colorScheme.primary,
                   ),
                 ),
               ),
@@ -1305,9 +1285,9 @@ class _MemberRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   member.userName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.darkEspresso,
+                    color: context.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -1315,8 +1295,8 @@ class _MemberRow extends StatelessWidget {
               if (canManage) ...[
                 const SizedBox(width: 4),
                 PopupMenuButton<_MemberAction>(
-                  icon: const Icon(Icons.more_vert,
-                      size: 18, color: AppTheme.earthBrown),
+                  icon: Icon(Icons.more_vert,
+                      size: 18, color: context.colorScheme.onSurfaceVariant),
                   tooltip: 'Manage member',
                   onSelected: (action) {
                     switch (action) {
@@ -1347,14 +1327,14 @@ class _MemberRow extends StatelessWidget {
                           Text('Make Viewer'),
                         ]),
                       ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: _MemberAction.remove,
                       child: Row(children: [
                         Icon(Icons.person_remove_outlined,
-                            size: 18, color: AppTheme.softCoral),
+                            size: 18, color: context.colorScheme.primary),
                         SizedBox(width: 8),
                         Text('Remove',
-                            style: TextStyle(color: AppTheme.softCoral)),
+                            style: TextStyle(color: context.colorScheme.primary)),
                       ]),
                     ),
                   ],
@@ -1387,19 +1367,19 @@ class _InfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
         children: [
-          Icon(icon, size: 16, color: AppTheme.earthBrown),
+          Icon(icon, size: 16, color: context.colorScheme.onSurfaceVariant),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, color: AppTheme.earthBrown),
+            style: TextStyle(fontSize: 10, color: context.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppTheme.darkEspresso,
+              color: context.colorScheme.onSurface,
             ),
           ),
         ],
@@ -1411,7 +1391,7 @@ class _Divider extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         width: 1,
         height: 36,
-        color: AppTheme.sakuraStone,
+        color: context.colorScheme.outlineVariant,
       );
 }
 
@@ -1432,7 +1412,7 @@ class _BudgetCol extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppTheme.earthBrown),
+            style: TextStyle(fontSize: 12, color: context.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
           Text(
@@ -1457,18 +1437,18 @@ class _RoleChip extends StatelessWidget {
     final (label, bg, fg) = switch (role) {
       GroupMemberRole.owner => (
           'Owner',
-          AppTheme.cherryBlossom,
-          AppTheme.softCoral,
+          context.colorScheme.primaryContainer,
+          context.colorScheme.primary,
         ),
       GroupMemberRole.editor => (
           'Editor',
-          AppTheme.sakuraStone,
-          AppTheme.earthBrown,
+          context.colorScheme.outlineVariant,
+          context.colorScheme.onSurfaceVariant,
         ),
       GroupMemberRole.viewer => (
           'Viewer',
-          AppTheme.sakuraStone,
-          AppTheme.earthBrown,
+          context.colorScheme.outlineVariant,
+          context.colorScheme.onSurfaceVariant,
         ),
     };
 
@@ -1518,8 +1498,8 @@ class _ScheduleItem extends StatelessWidget {
                     width: 10,
                     height: 10,
                     margin: const EdgeInsets.only(top: 4),
-                    decoration: const BoxDecoration(
-                      color: AppTheme.softCoral,
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1527,7 +1507,7 @@ class _ScheduleItem extends StatelessWidget {
                     Container(
                       width: 2,
                       height: 48,
-                      color: AppTheme.sakuraStone,
+                      color: context.colorScheme.outlineVariant,
                     ),
                 ],
               ),
@@ -1538,7 +1518,7 @@ class _ScheduleItem extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppTheme.cloudWhite,
+                  color: context.colorScheme.surface,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -1550,36 +1530,36 @@ class _ScheduleItem extends StatelessWidget {
                         children: [
                           Text(
                             item.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.darkEspresso,
+                              color: context.colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 3),
                           Text(
                             Formatters.formatDateTime(item.startTime),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.earthBrown,
+                              color: context.colorScheme.onSurfaceVariant,
                             ),
                           ),
                           if (item.location != null) ...[
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.location_on_outlined,
                                   size: 12,
-                                  color: AppTheme.earthBrown,
+                                  color: context.colorScheme.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 2),
                                 Expanded(
                                   child: Text(
                                     item.location!,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: AppTheme.earthBrown,
+                                      color: context.colorScheme.onSurfaceVariant,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -1592,8 +1572,8 @@ class _ScheduleItem extends StatelessWidget {
                       ),
                     ),
                     PopupMenuButton<_Action>(
-                      icon: const Icon(Icons.more_vert,
-                          size: 18, color: AppTheme.earthBrown),
+                      icon: Icon(Icons.more_vert,
+                          size: 18, color: context.colorScheme.onSurfaceVariant),
                       onSelected: (a) {
                         switch (a) {
                           case _Action.edit:
@@ -1681,7 +1661,7 @@ class _StatusRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final (label, bg, fg) = switch (itinerary.status) {
-      ItineraryStatusEnum.draft => ('Draft', AppTheme.sakuraStone, AppTheme.earthBrown),
+      ItineraryStatusEnum.draft => ('Draft', context.colorScheme.outlineVariant, context.colorScheme.onSurfaceVariant),
       ItineraryStatusEnum.active => (
           'Active',
           const Color(0xFFD1E2D3),
@@ -1702,19 +1682,19 @@ class _StatusRow extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.cloudWhite,
+        color: context.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              const Icon(Icons.flag_outlined,
-                  size: 16, color: AppTheme.earthBrown),
+              Icon(Icons.flag_outlined,
+                  size: 16, color: context.colorScheme.onSurfaceVariant),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Status',
-                style: TextStyle(fontSize: 13, color: AppTheme.earthBrown),
+                style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
               ),
               const Spacer(),
               if (_isOwner)
@@ -1775,21 +1755,21 @@ class _StatusRow extends ConsumerWidget {
             const Divider(height: 20),
             Row(
               children: [
-                const Icon(Icons.public_outlined,
-                    size: 16, color: AppTheme.earthBrown),
+                Icon(Icons.public_outlined,
+                    size: 16, color: context.colorScheme.onSurfaceVariant),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Public on Discover',
                     style: TextStyle(
-                        fontSize: 13, color: AppTheme.earthBrown),
+                        fontSize: 13, color: context.colorScheme.onSurfaceVariant),
                   ),
                 ),
                 Switch(
                   value: itinerary.isPublic,
                   onChanged: (v) =>
                       _togglePublic(context, ref, value: v),
-                  activeThumbColor: AppTheme.softCoral,
+                  activeThumbColor: context.colorScheme.primary,
                 ),
               ],
             ),
@@ -1889,12 +1869,12 @@ class _PackingTabState extends ConsumerState<_PackingTab> {
     final itemsAsync = ref.watch(packingStreamProvider(widget.itinerary.id));
 
     return itemsAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: AppTheme.softCoral),
+      loading: () => Center(
+        child: CircularProgressIndicator(color: context.colorScheme.primary),
       ),
       error: (e, _) => Center(
         child: Text(e.toString(),
-            style: const TextStyle(color: AppTheme.softCoral)),
+            style: TextStyle(color: context.colorScheme.primary)),
       ),
       data: (items) {
         final checked = items.where((i) => i.isChecked).length;
@@ -1946,10 +1926,10 @@ class _PackingProgress extends StatelessWidget {
               children: [
                 Text(
                   '$checked of $total packed',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.earthBrown,
+                    color: context.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 if (checked == total)
@@ -1976,7 +1956,7 @@ class _PackingProgress extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: total > 0 ? checked / total : 0,
                 minHeight: 6,
-                backgroundColor: AppTheme.sakuraStone,
+                backgroundColor: context.colorScheme.outlineVariant,
                 valueColor: const AlwaysStoppedAnimation<Color>(
                   Color(0xFF2E7D52),
                 ),
@@ -2011,7 +1991,7 @@ class _PackingItemTile extends StatelessWidget {
                 Checkbox(
                   value: item.isChecked,
                   onChanged: (_) => onToggle(),
-                  activeColor: AppTheme.softCoral,
+                  activeColor: context.colorScheme.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4),
                   ),
@@ -2022,8 +2002,8 @@ class _PackingItemTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       color: item.isChecked
-                          ? AppTheme.earthBrown.withValues(alpha: 0.5)
-                          : AppTheme.darkEspresso,
+                          ? context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
+                          : context.colorScheme.onSurface,
                       decoration: item.isChecked
                           ? TextDecoration.lineThrough
                           : TextDecoration.none,
@@ -2037,7 +2017,7 @@ class _PackingItemTile extends StatelessWidget {
                     child: Icon(
                       Icons.close,
                       size: 16,
-                      color: AppTheme.earthBrown.withValues(alpha: 0.4),
+                      color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                     ),
                   ),
                 ),
@@ -2065,10 +2045,10 @@ class _AddItemRow extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.fromLTRB(20, 8, 12, 24),
         decoration: BoxDecoration(
-          color: AppTheme.cloudWhite,
+          color: context.colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.darkEspresso.withValues(alpha: 0.06),
+              color: context.colorScheme.onSurface.withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, -4),
             ),
@@ -2082,20 +2062,20 @@ class _AddItemRow extends StatelessWidget {
                 focusNode: focusNode,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => onAdd(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Add an item…',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
-                    borderSide: BorderSide(color: AppTheme.sakuraStone),
+                    borderSide: BorderSide(color: context.colorScheme.outlineVariant),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
-                    borderSide: BorderSide(color: AppTheme.sakuraStone),
+                    borderSide: BorderSide(color: context.colorScheme.outlineVariant),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                     borderSide:
-                        BorderSide(color: AppTheme.softCoral, width: 1.5),
+                        BorderSide(color: context.colorScheme.primary, width: 1.5),
                   ),
                   contentPadding:
                       EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -2107,18 +2087,18 @@ class _AddItemRow extends StatelessWidget {
             IconButton(
               onPressed: adding ? null : onAdd,
               style: IconButton.styleFrom(
-                backgroundColor: AppTheme.softCoral,
-                foregroundColor: AppTheme.cloudWhite,
+                backgroundColor: context.colorScheme.primary,
+                foregroundColor: context.colorScheme.surface,
                 disabledBackgroundColor:
-                    AppTheme.softCoral.withValues(alpha: 0.4),
+                    context.colorScheme.primary.withValues(alpha: 0.4),
               ),
               icon: adding
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppTheme.cloudWhite,
+                        color: context.colorScheme.surface,
                       ),
                     )
                   : const Icon(Icons.add),
@@ -2132,25 +2112,25 @@ class _EmptyPacking extends StatelessWidget {
   const _EmptyPacking();
 
   @override
-  Widget build(BuildContext context) => const Center(
+  Widget build(BuildContext context) => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.checklist_outlined,
-                size: 48, color: AppTheme.sakuraStone),
+                size: 48, color: context.colorScheme.outlineVariant),
             SizedBox(height: 12),
             Text(
               'Nothing packed yet',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.earthBrown,
+                color: context.colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: 4),
             Text(
               'Add items below to build your packing list',
-              style: TextStyle(fontSize: 13, color: AppTheme.earthBrown),
+              style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -2232,31 +2212,31 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
               children: [
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Trip Notes',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.darkEspresso,
+                        color: context.colorScheme.onSurface,
                       ),
                     ),
                     const Spacer(),
                     if (_saving)
-                      const Row(
+                      Row(
                         children: [
                           SizedBox(
                             width: 12,
                             height: 12,
                             child: CircularProgressIndicator(
                               strokeWidth: 1.5,
-                              color: AppTheme.earthBrown,
+                              color: context.colorScheme.onSurfaceVariant,
                             ),
                           ),
                           SizedBox(width: 6),
                           Text(
                             'Saving…',
                             style: TextStyle(
-                                fontSize: 12, color: AppTheme.earthBrown),
+                                fontSize: 12, color: context.colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ),
@@ -2266,7 +2246,7 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.cloudWhite,
+                      color: context.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: TextField(
@@ -2276,17 +2256,17 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
                       maxLines: null,
                       expands: true,
                       textAlignVertical: TextAlignVertical.top,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.darkEspresso,
+                        color: context.colorScheme.onSurface,
                         height: 1.6,
                       ),
                       decoration: InputDecoration(
                         hintText: _canEdit
                             ? 'Add shared notes, links, ideas…'
                             : 'No notes yet',
-                        hintStyle: const TextStyle(
-                            fontSize: 14, color: AppTheme.sakuraStone),
+                        hintStyle: TextStyle(
+                            fontSize: 14, color: context.colorScheme.outlineVariant),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.all(16),
                       ),

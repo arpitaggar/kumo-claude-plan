@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../config/theme.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/itinerary/domain/entities/travel_itinerary.dart';
 import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
 import '../../features/itinerary/presentation/widgets/itinerary_card.dart';
+import '../../shared/extensions/context_extensions.dart';
 
 class TripsPage extends ConsumerStatefulWidget {
   const TripsPage({super.key});
@@ -24,32 +24,32 @@ class _TripsPageState extends ConsumerState<TripsPage> {
     final auth = ref.watch(authNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.warmOatmeal,
-        title: const Text(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: Text(
           'My Trips',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 22,
-            color: AppTheme.darkEspresso,
+            color: context.colorScheme.onSurface,
           ),
         ),
       ),
       body: switch (state) {
-        ItineraryListInitial() || ItineraryListLoading() => const Center(
-            child: CircularProgressIndicator(color: AppTheme.softCoral),
+        ItineraryListInitial() || ItineraryListLoading() => Center(
+            child: CircularProgressIndicator(color: context.colorScheme.primary),
           ),
         ItineraryListError(:final message) => Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.wifi_off_outlined,
-                    size: 48, color: AppTheme.sakuraStone),
+                Icon(Icons.wifi_off_outlined,
+                    size: 48, color: context.colorScheme.outlineVariant),
                 const SizedBox(height: 12),
                 Text(
                   message,
-                  style: const TextStyle(color: AppTheme.earthBrown),
+                  style: TextStyle(color: context.colorScheme.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -87,8 +87,8 @@ class _TripsPageState extends ConsumerState<TripsPage> {
                 .softRefresh(auth.user.id);
           }
         },
-        backgroundColor: AppTheme.softCoral,
-        foregroundColor: AppTheme.cloudWhite,
+        backgroundColor: context.colorScheme.primary,
+        foregroundColor: context.colorScheme.surface,
         child: const Icon(Icons.add),
       ),
     );
@@ -112,22 +112,22 @@ class _TripsPageState extends ConsumerState<TripsPage> {
             Icon(
               Icons.luggage_outlined,
               size: 64,
-              color: AppTheme.earthBrown.withValues(alpha: 0.4),
+              color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
               _statusFilter == null ? 'No trips yet' : 'No ${_statusFilter!.label} trips',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.earthBrown,
+                color: context.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             if (_statusFilter == null)
-              const Text(
+              Text(
                 'Tap + to plan your first adventure',
-                style: TextStyle(fontSize: 14, color: AppTheme.earthBrown),
+                style: TextStyle(fontSize: 14, color: context.colorScheme.onSurfaceVariant),
               ),
           ],
         ),
@@ -205,7 +205,7 @@ class _Chip extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? AppTheme.softCoral : AppTheme.cloudWhite,
+            color: selected ? context.colorScheme.primary : context.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -213,7 +213,7 @@ class _Chip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selected ? AppTheme.cloudWhite : AppTheme.earthBrown,
+              color: selected ? context.colorScheme.surface : context.colorScheme.onSurfaceVariant,
             ),
           ),
         ),

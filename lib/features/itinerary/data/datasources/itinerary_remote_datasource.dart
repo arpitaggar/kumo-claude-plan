@@ -18,9 +18,11 @@ class ItineraryRemoteDataSourceImpl implements ItineraryRemoteDataSource {
   @override
   Future<List<ItineraryModel>> fetchItineraries(String userId) async {
     try {
+      // No owner_id filter — RLS returns both owned trips and trips where
+      // the user appears in the members JSONB array.
       final rows = await KumoSupabaseClient.getTable(
         AppConstants.itinerariesTable,
-      ).select().eq('owner_id', userId).order('created_at', ascending: false);
+      ).select().order('created_at', ascending: false);
 
       return (rows as List<dynamic>)
           .map((r) => ItineraryModel.fromJson(r as Map<String, dynamic>))

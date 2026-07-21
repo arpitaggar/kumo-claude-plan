@@ -18,6 +18,7 @@ abstract class ChatRemoteDataSource {
     required String senderName,
     required String content,
   });
+  Future<void> markMessagesRead(String itineraryId);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -77,6 +78,20 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         'sender_name': senderName,
         'content': content,
       });
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> markMessagesRead(String itineraryId) async {
+    try {
+      await KumoSupabaseClient.client.rpc(
+        'mark_messages_read',
+        params: {'p_itinerary_id': itineraryId},
+      );
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

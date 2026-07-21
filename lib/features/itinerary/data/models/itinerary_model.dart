@@ -107,13 +107,16 @@ class GroupMemberModel extends GroupMember {
 
   factory GroupMemberModel.fromJson(Map<String, dynamic> json) =>
       GroupMemberModel(
-        userId: json['user_id'] as String,
-        userName: json['user_name'] as String,
+        // Handle both snake_case (Flutter client) and camelCase (Postgres trigger).
+        userId: (json['user_id'] ?? json['userId']) as String,
+        userName: (json['user_name'] ?? json['userName'] ?? '') as String,
         role: GroupMemberRole.values.firstWhere(
           (r) => r.name == (json['role'] as String),
           orElse: () => GroupMemberRole.viewer,
         ),
-        joinedAt: DateTime.parse(json['joined_at'] as String),
+        joinedAt: DateTime.parse(
+          (json['joined_at'] ?? json['joinedAt']) as String,
+        ),
       );
 
   factory GroupMemberModel.fromEntity(GroupMember e) => GroupMemberModel(
