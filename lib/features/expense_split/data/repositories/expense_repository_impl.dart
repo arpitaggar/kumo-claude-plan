@@ -39,6 +39,9 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
         payerName: expense.payerName,
         splits: expense.splits,
         createdAt: expense.createdAt,
+        splitMode: expense.splitMode,
+        exchangeRateToBase: expense.exchangeRateToBase,
+        isSettlement: expense.isSettlement,
       );
       final saved = await dataSource.addExpense(model);
       return Right(saved);

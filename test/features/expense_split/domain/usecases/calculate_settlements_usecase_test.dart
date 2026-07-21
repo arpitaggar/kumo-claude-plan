@@ -30,7 +30,7 @@ void main() {
 
   group('empty / trivial cases', () {
     test('returns empty list for no expenses', () {
-      expect(useCase([]), isEmpty);
+      expect(useCase([], baseCurrency: 'USD'), isEmpty);
     });
 
     test('returns empty list when payer is the only member (no splits)', () {
@@ -40,7 +40,7 @@ void main() {
         amount: 30,
         splits: [],
       );
-      expect(useCase([expense]), isEmpty);
+      expect(useCase([expense], baseCurrency: 'USD'), isEmpty);
     });
   });
 
@@ -56,7 +56,7 @@ void main() {
         ],
       );
 
-      final settlements = useCase([expense]);
+      final settlements = useCase([expense], baseCurrency: 'USD');
 
       expect(settlements, hasLength(1));
       expect(settlements.first.fromUserId, 'bob');
@@ -88,7 +88,7 @@ void main() {
         ),
       ];
 
-      final settlements = useCase(expenses);
+      final settlements = useCase(expenses, baseCurrency: 'USD');
 
       expect(settlements, hasLength(1));
       expect(settlements.first.fromUserId, 'bob');
@@ -108,7 +108,7 @@ void main() {
         ],
       );
 
-      final settlements = useCase([expense]);
+      final settlements = useCase([expense], baseCurrency: 'USD');
 
       expect(settlements.first.amount, 33.33);
     });
@@ -129,7 +129,7 @@ void main() {
         ],
       );
 
-      final settlements = useCase([expense]);
+      final settlements = useCase([expense], baseCurrency: 'USD');
 
       expect(settlements, hasLength(2));
       final toAlice = settlements.where((s) => s.toUserId == 'alice').toList();
@@ -175,7 +175,7 @@ void main() {
         ),
       ];
 
-      final settlements = useCase(expenses);
+      final settlements = useCase(expenses, baseCurrency: 'USD');
 
       // Total owed to Alice = 45.  Bob net owes 20; Carol net owes 25.
       expect(settlements, hasLength(2));
@@ -216,7 +216,7 @@ void main() {
         ),
       ];
 
-      expect(useCase(expenses), isEmpty);
+      expect(useCase(expenses, baseCurrency: 'USD'), isEmpty);
     });
   });
 
@@ -232,7 +232,7 @@ void main() {
         ],
       );
 
-      final settlements = useCase([expense]);
+      final settlements = useCase([expense], baseCurrency: 'USD');
 
       for (final s in settlements) {
         expect(s.fromUserId, isNot(s.toUserId));
@@ -255,7 +255,7 @@ void main() {
         ),
       ];
 
-      final settlements = useCase(expenses);
+      final settlements = useCase(expenses, baseCurrency: 'USD');
 
       for (final s in settlements) {
         expect(s.amount, isPositive);

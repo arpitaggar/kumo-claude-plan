@@ -12,6 +12,9 @@ class ExpenseModel extends Expense {
     required super.payerName,
     required super.splits,
     required super.createdAt,
+    super.splitMode,
+    super.exchangeRateToBase,
+    super.isSettlement,
   });
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
@@ -21,12 +24,21 @@ class ExpenseModel extends Expense {
       orElse: () => ExpenseCategory.other,
     );
 
+    final splitModeStr = json['split_mode'] as String? ?? 'equal';
+    final splitMode = SplitMode.values.firstWhere(
+      (m) => m.name == splitModeStr,
+      orElse: () => SplitMode.equal,
+    );
+
     final rawSplits = json['splits'] as List<dynamic>? ?? [];
     final splits = rawSplits
         .map((s) => ExpenseSplit(
               userId: s['userId'] as String,
               userName: s['userName'] as String,
               shareAmount: (s['shareAmount'] as num).toDouble(),
+              rawValue: s['rawValue'] != null
+                  ? (s['rawValue'] as num).toDouble()
+                  : null,
             ))
         .toList();
 
@@ -41,6 +53,10 @@ class ExpenseModel extends Expense {
       payerName: json['payer_name'] as String,
       splits: splits,
       createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
+      splitMode: splitMode,
+      exchangeRateToBase:
+          (json['exchange_rate_to_base'] as num?)?.toDouble() ?? 1.0,
+      isSettlement: json['is_settlement'] as bool? ?? false,
     );
   }
 
@@ -58,8 +74,12 @@ class ExpenseModel extends Expense {
                   'userId': s.userId,
                   'userName': s.userName,
                   'shareAmount': s.shareAmount,
+                  if (s.rawValue != null) 'rawValue': s.rawValue,
                 })
             .toList(),
         'created_at': createdAt.toIso8601String(),
+        'split_mode': splitMode.name,
+        'exchange_rate_to_base': exchangeRateToBase,
+        'is_settlement': isSettlement,
       };
 }

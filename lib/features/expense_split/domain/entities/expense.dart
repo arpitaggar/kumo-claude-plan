@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+enum SplitMode { equal, percentage, ratio }
+
 class Expense extends Equatable {
   const Expense({
     required this.id,
@@ -12,6 +14,9 @@ class Expense extends Equatable {
     required this.payerName,
     required this.splits,
     required this.createdAt,
+    this.splitMode = SplitMode.equal,
+    this.exchangeRateToBase = 1.0,
+    this.isSettlement = false,
   });
 
   final String id;
@@ -23,10 +28,21 @@ class Expense extends Equatable {
   final String payerId;
   final String payerName;
 
-  /// Shares owed by non-payer members to the payer.
+  /// Shares owed by non-payer members to the payer, in [currencyCode].
   final List<ExpenseSplit> splits;
 
   final DateTime createdAt;
+
+  /// How splits were calculated.
+  final SplitMode splitMode;
+
+  /// 1 unit of [currencyCode] = [exchangeRateToBase] units of the trip base currency.
+  /// Used by the settlement calculator to normalise cross-currency debts.
+  final double exchangeRateToBase;
+
+  /// True for cash settle-up payments. Excluded from budget totals; included
+  /// in the settlement calculator so debts cancel out correctly.
+  final bool isSettlement;
 
   @override
   List<Object> get props => [
@@ -40,6 +56,9 @@ class Expense extends Equatable {
         payerName,
         splits,
         createdAt,
+        splitMode,
+        exchangeRateToBase,
+        isSettlement,
       ];
 }
 
@@ -48,19 +67,24 @@ class ExpenseSplit extends Equatable {
     required this.userId,
     required this.userName,
     required this.shareAmount,
+    this.rawValue,
   });
 
   final String userId;
   final String userName;
 
-  /// Amount this person owes the payer.
+  /// Amount this person owes the payer, in the expense currency.
   final double shareAmount;
 
+  /// The raw percentage (0–100) or ratio value entered by the user.
+  /// Null for equal splits. Stored for display purposes only.
+  final double? rawValue;
+
   @override
-  List<Object> get props => [userId, userName, shareAmount];
+  List<Object?> get props => [userId, userName, shareAmount, rawValue];
 }
 
-/// A suggested payment to settle debts — computed client-side.
+/// A suggested payment to settle debts — computed client-side in base currency.
 class Settlement extends Equatable {
   const Settlement({
     required this.fromUserId,
@@ -68,17 +92,23 @@ class Settlement extends Equatable {
     required this.toUserId,
     required this.toUserName,
     required this.amount,
+    required this.currencyCode,
   });
 
   final String fromUserId;
   final String fromUserName;
   final String toUserId;
   final String toUserName;
+
+  /// Amount in the trip's base currency.
   final double amount;
+
+  /// Always the trip's base currency code.
+  final String currencyCode;
 
   @override
   List<Object> get props =>
-      [fromUserId, fromUserName, toUserId, toUserName, amount];
+      [fromUserId, fromUserName, toUserId, toUserName, amount, currencyCode];
 }
 
 enum ExpenseCategory {

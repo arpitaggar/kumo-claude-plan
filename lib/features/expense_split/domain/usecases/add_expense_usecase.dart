@@ -19,6 +19,9 @@ class AddExpenseUseCase {
     required String payerId,
     required String payerName,
     required List<ExpenseSplit> splits,
+    SplitMode splitMode = SplitMode.equal,
+    double exchangeRateToBase = 1.0,
+    bool isSettlement = false,
   }) {
     final expense = Expense(
       id: const Uuid().v4(),
@@ -31,6 +34,9 @@ class AddExpenseUseCase {
       payerName: payerName,
       splits: splits,
       createdAt: DateTime.now().toUtc(),
+      splitMode: splitMode,
+      exchangeRateToBase: exchangeRateToBase,
+      isSettlement: isSettlement,
     );
     return _repository.addExpense(expense);
   }

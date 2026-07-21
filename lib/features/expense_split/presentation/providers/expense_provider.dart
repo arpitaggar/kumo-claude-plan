@@ -53,11 +53,13 @@ final expenseStreamProvider =
 
 // ---------------------------------------------------------------------------
 // Derived: settlements computed from live expenses
+// Family param is (itineraryId, baseCurrencyCode).
 // ---------------------------------------------------------------------------
 
-final settlementsProvider =
-    Provider.family<List<Settlement>, String>((ref, itineraryId) {
+final settlementsProvider = Provider.family<List<Settlement>,
+    (String itineraryId, String baseCurrency)>((ref, args) {
   final expenses =
-      ref.watch(expenseStreamProvider(itineraryId)).value ?? [];
-  return ref.watch(calculateSettlementsUseCaseProvider)(expenses);
+      ref.watch(expenseStreamProvider(args.$1)).value ?? [];
+  return ref
+      .watch(calculateSettlementsUseCaseProvider)(expenses, baseCurrency: args.$2);
 });

@@ -2,12 +2,13 @@ import '../entities/expense.dart';
 
 /// Pure computation — no repository. Converts a list of expenses into the
 /// minimum set of payments needed to settle all debts.
+///
+/// All amounts are normalised to the trip base currency via each expense's
+/// [Expense.exchangeRateToBase] before computing balances.
 class CalculateSettlementsUseCase {
   const CalculateSettlementsUseCase();
 
-  List<Settlement> call(List<Expense> expenses) {
-    // Compute net balance per person (userId → balance).
-    // Positive = creditor (is owed money), negative = debtor (owes money).
+  List<Settlement> call(List<Expense> expenses, {required String baseCurrency}) {
     final people = <String, _Person>{};
 
     void ensure(String id, String name) {
@@ -17,13 +18,15 @@ class CalculateSettlementsUseCase {
     for (final expense in expenses) {
       ensure(expense.payerId, expense.payerName);
 
-      // Payer lent out the sum of everyone else's shares.
-      final lent = expense.splits.fold<double>(0, (s, e) => s + e.shareAmount);
+      // Convert split amounts to base currency before accumulating.
+      final rate = expense.exchangeRateToBase;
+      final lent = expense.splits
+          .fold<double>(0, (s, e) => s + e.shareAmount * rate);
       people[expense.payerId]!.balance += lent;
 
       for (final split in expense.splits) {
         ensure(split.userId, split.userName);
-        people[split.userId]!.balance -= split.shareAmount;
+        people[split.userId]!.balance -= split.shareAmount * rate;
       }
     }
 
@@ -58,6 +61,7 @@ class CalculateSettlementsUseCase {
         toUserId: creditor.id,
         toUserName: creditor.name,
         amount: _round(payment),
+        currencyCode: baseCurrency,
       ));
 
       debtor.balance += payment;

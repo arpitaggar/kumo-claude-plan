@@ -463,8 +463,8 @@ class _ExpensesTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final expensesAsync =
         ref.watch(expenseStreamProvider(itinerary.id));
-    final settlements =
-        ref.watch(settlementsProvider(itinerary.id));
+    final settlements = ref.watch(
+        settlementsProvider((itinerary.id, itinerary.currencyCode)));
 
     final budget = itinerary.totalBudget;
     final spent = itinerary.expenseSummary.totalSpent;
@@ -557,53 +557,61 @@ class _ExpensesTab extends ConsumerWidget {
                 child: Text(e.toString(),
                     style: TextStyle(color: context.colorScheme.primary)),
               ),
-              data: (expenses) => expenses.isEmpty
-                  ? const _EmptyExpenses()
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Expenses',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: context.colorScheme.onSurface,
+              data: (allExpenses) {
+                // Settlement payments are excluded from the visible list
+                // but remain in the stream so the calculator can cancel debts.
+                final expenses = allExpenses
+                    .where((e) => !e.isSettlement)
+                    .toList();
+                return expenses.isEmpty
+                    ? const _EmptyExpenses()
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Expenses',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.colorScheme.onSurface,
+                                  ),
                                 ),
                               ),
-                            ),
-                            TextButton.icon(
-                              onPressed: () => _exportCsv(expenses),
-                              icon: const Icon(
-                                Icons.download_outlined,
-                                size: 15,
+                              TextButton.icon(
+                                onPressed: () => _exportCsv(expenses),
+                                icon: const Icon(
+                                  Icons.download_outlined,
+                                  size: 15,
+                                ),
+                                label: const Text('CSV'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor:
+                                      context.colorScheme.onSurfaceVariant,
+                                  visualDensity: VisualDensity.compact,
+                                ),
                               ),
-                              label: const Text('CSV'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: context.colorScheme.onSurfaceVariant,
-                                visualDensity: VisualDensity.compact,
-                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          ...expenses.map((e) => _ExpenseTile(
+                                expense: e,
+                                onDelete: () =>
+                                    _deleteExpense(context, ref, e),
+                              )),
+                          if (settlements.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            _SettlementsCard(
+                              settlements: settlements,
+                              onSettle: (s) =>
+                                  _settleUp(context, ref, s),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 10),
-                        ...expenses.map((e) => _ExpenseTile(
-                              expense: e,
-                              currency: itinerary.currencyCode,
-                              onDelete: () => _deleteExpense(
-                                  context, ref, e),
-                            )),
-                        if (settlements.isNotEmpty) ...[
-                          const SizedBox(height: 24),
-                          _SettlementsCard(
-                            settlements: settlements,
-                            currency: itinerary.currencyCode,
-                          ),
                         ],
-                      ],
-                    ),
+                      );
+              },
             ),
           ],
         ),
@@ -622,6 +630,64 @@ class _ExpensesTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _settleUp(
+    BuildContext context,
+    WidgetRef ref,
+    Settlement settlement,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as paid?'),
+        content: Text(
+          '${settlement.fromUserName} paid ${settlement.toUserName} '
+          '${Formatters.formatCurrency(settlement.amount, settlement.currencyCode)} cash.\n\n'
+          'This records the payment and clears the debt.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => ctx.pop(true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final result = await ref.read(addExpenseUseCaseProvider).call(
+          itineraryId: itinerary.id,
+          title:
+              'Settlement: ${settlement.fromUserName} → ${settlement.toUserName}',
+          amount: settlement.amount,
+          currencyCode: settlement.currencyCode,
+          category: ExpenseCategory.other,
+          payerId: settlement.fromUserId,
+          payerName: settlement.fromUserName,
+          splits: [
+            ExpenseSplit(
+              userId: settlement.toUserId,
+              userName: settlement.toUserName,
+              shareAmount: settlement.amount,
+            ),
+          ],
+          isSettlement: true,
+        );
+
+    if (!context.mounted) {
+      return;
+    }
+    result.fold(
+      (f) => context.showSnackBar(f.message, isError: true),
+      (_) => context.showSnackBar('Payment recorded ✓'),
     );
   }
 
@@ -709,12 +775,10 @@ class _ExpensesTab extends ConsumerWidget {
 class _ExpenseTile extends StatelessWidget {
   const _ExpenseTile({
     required this.expense,
-    required this.currency,
     required this.onDelete,
   });
 
   final Expense expense;
-  final String currency;
   final VoidCallback onDelete;
 
   @override
@@ -766,7 +830,7 @@ class _ExpenseTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    Formatters.formatCurrency(expense.amount, currency),
+                    Formatters.formatCurrency(expense.amount, expense.currencyCode),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -803,11 +867,11 @@ class _ExpenseTile extends StatelessWidget {
 class _SettlementsCard extends StatelessWidget {
   const _SettlementsCard({
     required this.settlements,
-    required this.currency,
+    required this.onSettle,
   });
 
   final List<Settlement> settlements;
-  final String currency;
+  final void Function(Settlement) onSettle;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -833,7 +897,9 @@ class _SettlementsCard extends StatelessWidget {
                 for (int i = 0; i < settlements.length; i++) ...[
                   if (i > 0) const Divider(height: 16),
                   _SettlementRow(
-                      settlement: settlements[i], currency: currency),
+                    settlement: settlements[i],
+                    onSettle: () => onSettle(settlements[i]),
+                  ),
                 ],
               ],
             ),
@@ -845,11 +911,11 @@ class _SettlementsCard extends StatelessWidget {
 class _SettlementRow extends StatelessWidget {
   const _SettlementRow({
     required this.settlement,
-    required this.currency,
+    required this.onSettle,
   });
 
   final Settlement settlement;
-  final String currency;
+  final VoidCallback onSettle;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -869,7 +935,8 @@ class _SettlementRow extends StatelessWidget {
                   TextSpan(
                     text: ' owes ',
                     style: TextStyle(
-                        color: context.colorScheme.onSurfaceVariant, fontSize: 13),
+                        color: context.colorScheme.onSurfaceVariant,
+                        fontSize: 13),
                   ),
                   TextSpan(
                     text: settlement.toUserName,
@@ -883,13 +950,28 @@ class _SettlementRow extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
-            Formatters.formatCurrency(settlement.amount, currency),
+            Formatters.formatCurrency(
+                settlement.amount, settlement.currencyCode),
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: Color(0xFF2E7D52),
             ),
+          ),
+          const SizedBox(width: 12),
+          TextButton(
+            onPressed: onSettle,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF2E7D52),
+              visualDensity: VisualDensity.compact,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              textStyle: const TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            child: const Text('Mark paid'),
           ),
         ],
       );
