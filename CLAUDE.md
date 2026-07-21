@@ -569,6 +569,69 @@ python3 scripts/gen_icons.py
 
 The default launcher icon (`ic_launcher`) remains Deep Voyage; alternate assets exist in the resource tree but are not activated at runtime.
 
+### Extended User Profile (Stage 16)
+
+**Migration:** `docs/supabase_migrations/stage16_extended_profile.sql`  
+Must be run in Supabase SQL editor before deploying the corresponding app build.
+
+#### Database schema additions
+
+`public.profiles` gains these columns (all `add column if not exists`):
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `username` | `text` | Unique, case-insensitive (`lower(username)` unique index, NULLs distinct) |
+| `bio` | `text` | |
+| `city` | `text` | |
+| `country` | `char(2)` | ISO 3166-1 alpha-2 |
+| `timezone` | `text` | IANA tz string |
+| `preferred_currency` | `char(3)` | ISO 4217 |
+| `preferred_language` | `char(2)` | ISO 639-1 |
+| `units_preference` | `text` | `'metric'` or `'imperial'`, NOT NULL default `'metric'` |
+| `travel_preference_tags` | `text[]` | NOT NULL default `'{}'` |
+| `profile_visibility` | `text` | `'public'` or `'private'`, NOT NULL default `'public'` |
+| `contact_visibility` | `text` | `'collaborators_only'` or `'hidden'`, NOT NULL default `'collaborators_only'` |
+| `username_last_changed_at` | `timestamptz` | Used for 7-day cooldown enforcement |
+| `updated_at` | `timestamptz` | NOT NULL default `now()` |
+
+**New tables:**
+- `public.username_history` — one row per username change; owner-only read RLS
+- `public.profile_change_log` — audit trail for field changes; owner-only read RLS
+- `public.notification_preferences` — `(user_id, channel, category)` PK; owner-all RLS
+
+**Notification channels:** `push`, `email`, `sms`  
+**Notification categories:** `trip_invites`, `expense_activity`, `flight_alerts`, `collab_updates`, `marketing_engagement`  
+All default `enabled = true` except `marketing_engagement` (GDPR opt-in → defaults `false`).
+
+#### RPCs
+
+**`update_profile(...)`** — `SECURITY DEFINER`, all params optional (default `null`):
+- Uses `COALESCE(param, current_value)` — passing `null` leaves the column unchanged
+- Username validation: format regex `^[a-zA-Z0-9][a-zA-Z0-9_]{1,28}[a-zA-Z0-9]$`, case-insensitive uniqueness, 7-day cooldown
+- On username change: inserts into `username_history` and `profile_change_log` atomically
+- The `username_last_changed_at` CASE expression in the UPDATE re-reads the column to detect a true change (avoids resetting the clock when `p_username` matches current value)
+
+**`upsert_notification_preference(p_channel, p_category, p_enabled)`** — single-row upsert on the `(user_id, channel, category)` PK.
+
+**`seed_notification_preferences(p_user_id)`** — called by the `handle_new_user` trigger on signup and once as a backfill for existing users. Uses `ON CONFLICT DO NOTHING` so it is idempotent.
+
+#### Flutter layer
+
+- **Entities:** `lib/features/profile/domain/entities/user_profile.dart` — `UserProfile extends Equatable` with computed `canChangeUsername` (7-day guard) and `nextUsernameChangeAt`
+- **Entities:** `lib/features/profile/domain/entities/notification_preference.dart` — `NotifChannel` / `NotifCategory` constant classes + `NotificationPreference entity`
+- **Repository interface:** `lib/features/profile/domain/repositories/user_profile_repository.dart`
+- **Data layer:** `lib/features/profile/data/` — models, `UserProfileRemoteDataSourceImpl`, `UserProfileRepositoryImpl`
+- **Providers:** `lib/features/profile/presentation/providers/user_profile_provider.dart` — `userProfileProvider` (`FutureProvider.autoDispose`), `notificationPreferencesProvider`, `userProfileRepositoryProvider`
+- **Edit Profile page:** `lib/features/profile/presentation/pages/edit_profile_page.dart` — `ConsumerStatefulWidget`; sections: Identity (name, username + cooldown warning, bio), Avatar URL, Location, Preferences (SegmentedButton for units), Travel Interests (FilterChip grid); saves auth metadata + profiles table in sequence; invalidates `userProfileProvider` on success
+- **Notification Preferences page:** `lib/features/profile/presentation/pages/notification_preferences_page.dart` — matrix UI (rows = categories, columns = channels); optimistic toggle with revert on failure; route `/profile/notifications`
+- **Privacy Settings page:** extended with profile-visibility and contact-visibility `SwitchListTile` sections; reads from `userProfileProvider`, writes via `userProfileRepositoryProvider.updateProfile`
+
+#### Key design decisions
+
+- **UUID is the only stable FK.** `username` is mutable — never used as a foreign key anywhere in the schema. All relations use `user_id uuid`.
+- **Two-store sync for display_name / avatar_url.** These fields exist in both `auth.users` metadata (drives `AuthAuthenticated.user` in the app) and `public.profiles`. `EditProfilePage._save()` calls `authNotifier.updateProfile()` first (auth metadata), then `userProfileRepository.updateProfile()` (profiles table).
+- **Optimistic notification toggles.** `_PrefsBodyState` keeps a local `Map<(String, String), bool> _state`; on failure the RPC result reverts the local state and shows a snackbar.
+
 ---
 
 ## Useful Resources
