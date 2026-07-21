@@ -19,6 +19,7 @@ import '../features/legal/presentation/pages/terms_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../features/profile/presentation/pages/edit_profile_page.dart';
+import '../features/profile/presentation/pages/notification_preferences_page.dart';
 import '../features/settings/presentation/pages/privacy_settings_page.dart';
 import '../features/shell/discover_page.dart';
 import '../features/shell/inbox_page.dart';
@@ -144,6 +145,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/edit',
         pageBuilder: (context, state) =>
             _slidePage(const EditProfilePage(), state),
+      ),
+      GoRoute(
+        path: '/profile/notifications',
+        pageBuilder: (context, state) =>
+            _slidePage(const NotificationPreferencesPage(), state),
       ),
       GoRoute(
         path: '/settings/privacy',

@@ -6,6 +6,7 @@ import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../itinerary/data/datasources/profile_remote_datasource.dart';
+import '../../../profile/presentation/providers/user_profile_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
@@ -58,6 +59,7 @@ class _PrivacyBody extends ConsumerStatefulWidget {
 class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
   late bool _isSearchable;
   bool _isSaving = false;
+  bool _visibilitySaving = false;
 
   @override
   void initState() {
@@ -92,6 +94,25 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  Future<void> _updateVisibility({
+    String? profileVisibility,
+    String? contactVisibility,
+  }) async {
+    setState(() => _visibilitySaving = true);
+    final result = await ref.read(userProfileRepositoryProvider).updateProfile(
+          profileVisibility: profileVisibility,
+          contactVisibility: contactVisibility,
+        );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _visibilitySaving = false);
+    result.fold(
+      (f) => context.showSnackBar(f.message, isError: true),
+      (_) => ref.invalidate(userProfileProvider),
+    );
   }
 
   Future<void> _confirmDeleteAccount() async {
@@ -135,7 +156,15 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
   }
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) {
+    final userProfileAsync = ref.watch(userProfileProvider);
+    final profileVisibility =
+        userProfileAsync.valueOrNull?.profileVisibility ?? 'public';
+    final contactVisibility =
+        userProfileAsync.valueOrNull?.contactVisibility ?? 'collaborators_only';
+    final visibilityReady = userProfileAsync.hasValue;
+
+    return ListView(
         children: [
           // ── Discoverability ─────────────────────────────────────────────
           Padding(
@@ -185,6 +214,71 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
             ),
           ),
 
+          // ── Profile visibility ───────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
+            child: Text(
+              'Profile visibility',
+              style: context.textTheme.titleSmall?.copyWith(
+                color: context.colorScheme.primary,
+              ),
+            ),
+          ),
+          SwitchListTile(
+            title: const Text('Public profile'),
+            subtitle: Text(
+              profileVisibility == 'public'
+                  ? 'Your profile is visible on shared itineraries and the discovery feed.'
+                  : 'Your profile is hidden from the discovery feed and shared itineraries.',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            value: profileVisibility == 'public',
+            onChanged: visibilityReady && !_visibilitySaving
+                ? (v) => _updateVisibility(
+                      profileVisibility: v ? 'public' : 'private',
+                    )
+                : null,
+            secondary: _visibilitySaving
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.public_outlined),
+          ),
+
+          // ── Contact visibility ────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
+            child: Text(
+              'Contact visibility',
+              style: context.textTheme.titleSmall?.copyWith(
+                color: context.colorScheme.primary,
+              ),
+            ),
+          ),
+          SwitchListTile(
+            title: const Text('Show contact details to collaborators'),
+            subtitle: Text(
+              contactVisibility == 'collaborators_only'
+                  ? 'Trip collaborators can see your email address.'
+                  : 'Your email is never shown to other users.',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            value: contactVisibility == 'collaborators_only',
+            onChanged: visibilityReady && !_visibilitySaving
+                ? (v) => _updateVisibility(
+                      contactVisibility:
+                          v ? 'collaborators_only' : 'hidden',
+                    )
+                : null,
+            secondary: const Icon(Icons.contact_mail_outlined),
+          ),
+
           // ── Legal ────────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
@@ -232,4 +326,5 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
           const SizedBox(height: 32),
         ],
       );
+  }
 }
