@@ -5,9 +5,12 @@
 //  • App name / tagline / font  — change the constants below.
 //  • Per-theme in-app logo      — update the path constants in the Logos section.
 //  • App-icon / splash PNGs     — replace assets/icons/app_icon.png and
-//                                 adaptive_icon_foreground.png, then run:
-//                                   flutter pub run flutter_launcher_icons
-//                                   flutter pub run flutter_native_splash:create
+//                                 adaptive_icon_foreground_deep_voyage.png, then
+//                                 run: python3 scripts/gen_icons.py
+//                                 background.png (portrait launch image) is
+//                                 manually managed — regenerate via gen_icons.py
+//                                 or scripts/gen_background.py if the gradient
+//                                 or icon changes. Do NOT run flutter_native_splash.
 //  • Color palette              — see lib/config/theme.dart.
 
 import 'theme_provider.dart';

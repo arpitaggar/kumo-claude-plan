@@ -483,6 +483,94 @@ cd android && fastlane deploy_google_play
 
 ---
 
+## Platform Implementation Details
+
+### Theming System
+
+Kumo supports three visual themes: **Cherry Blossom**, **Golden Hour**, and **Deep Voyage** (default).
+
+- **Enum & provider:** `lib/config/theme_provider.dart` — `KumoTheme` enum + `ThemeNotifier extends StateNotifier<KumoTheme>`
+- **Persistence:** SharedPreferences key `kumo_theme` stores `KumoTheme.name`; loaded in `ThemeNotifier` constructor via `_loadSaved()`
+- **UI:** Theme picker is a bottom sheet on the Profile page (`lib/features/shell/profile_page.dart`); opened via `isScrollControlled: true, useSafeArea: true`
+- **Launcher icon:** Fixed as Deep Voyage on both platforms. Runtime icon switching via `PackageManager.setComponentEnabledSetting()` was removed because it clears the Android task stack (the app appears to close).
+
+### Router Architecture
+
+**File:** `lib/config/router.dart`
+
+GoRouter is created **once** per app lifetime using the `_RouterNotifier` pattern:
+
+```dart
+final routerProvider = Provider<GoRouter>((ref) {
+  final notifier = _RouterNotifier(ref);
+  ref.onDispose(notifier.dispose);
+  return GoRouter(
+    initialLocation: '/splash',
+    refreshListenable: notifier,
+    redirect: notifier.redirect,
+    routes: [ /* ... */ ],
+  );
+});
+
+class _RouterNotifier extends ChangeNotifier {
+  _RouterNotifier(this._ref) {
+    _ref
+      ..listen<AuthState>(authNotifierProvider, (prev, next) => notifyListeners())
+      ..listen<bool?>(onboardingProvider, (prev, next) => notifyListeners());
+  }
+  // ...
+}
+```
+
+**Why not `ref.watch` at the top level?** Watching reactive state inside `Provider` rebuilds the entire provider value — i.e. creates a new `GoRouter` — whenever auth or onboarding state changes. A new GoRouter resets to `initialLocation: '/splash'`, causing the splash screen to appear multiple times (after login, after skipping onboarding, etc.). `_RouterNotifier` + `refreshListenable` keeps one GoRouter alive and only triggers `redirect` re-evaluation.
+
+**Redirect rules:**
+- `/splash` is never redirected — the splash page controls its own navigation
+- Unauthenticated users outside auth routes → `/login`
+- Authenticated users on auth routes → `/onboarding` (if not completed) or `/home`
+- Password recovery state → `/reset-password`
+
+### Android Splash Screen Architecture
+
+Two layers cover different API levels:
+
+#### Pre-Android 12 (API < 31)
+
+- `styles.xml` `LaunchTheme.windowBackground` → `@drawable/launch_background`
+- `drawable/launch_background.xml` and `drawable-v21/launch_background.xml` → single `<bitmap gravity="fill" src="@drawable/background"/>`
+- `background.png` is a **manually generated** portrait image (1080 × 2400 px) with the same radial gradient as the app icon (`centre #16294D → edges #0E1B33`), extended to full portrait dimensions so there is no visible seam around the icon.
+- **Do not regenerate with `flutter_native_splash:create`** — it would overwrite `background.png` with a flat colour.
+
+#### Android 12+ (API 31+)
+
+- OS splash is controlled by `windowSplashScreenAnimatedIcon` in `values-v31/styles.xml`
+- Points to `@drawable/android12splash` — **transparent RGBA PNGs** (logo strokes only, no background)
+- `windowSplashScreenIconBackgroundColor` = `#0E1B33` fills the icon circle; same colour used for outer background, so no visible ring
+- Files: `drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/android12splash.png` (and `-night-` variants)
+- `colors.xml` `splash_background` = `#0E1B33` (used by `NormalTheme` during Flutter engine init)
+
+**Key constraint:** Android 12 OS splash is always the same regardless of the user's selected in-app theme; it cannot be changed at runtime.
+
+### Icon & Asset Generation Script
+
+**File:** `scripts/gen_icons.py`
+
+Run to regenerate all icon assets after changing source SVGs or theme colours:
+
+```bash
+python3 scripts/gen_icons.py
+```
+
+`generate_alternate_icons()` produces per-theme:
+- `drawable-{mdpi…xxxhdpi}/ic_launcher_foreground_{theme}.png` — adaptive icon foreground at 108–432 px
+- `drawable/ic_launcher_background_{theme}.xml` — per-theme gradient XML
+- `mipmap-anydpi-v26/ic_launcher_{theme}.xml` — adaptive icon descriptor
+- `mipmap-{mdpi…xxxhdpi}/ic_launcher_{theme}.png` — plain PNG fallback for API < 26
+
+The default launcher icon (`ic_launcher`) remains Deep Voyage; alternate assets exist in the resource tree but are not activated at runtime.
+
+---
+
 ## Useful Resources
 
 - [Clean Architecture](https://resocoder.com/flutter-clean-architecture)
