@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
@@ -25,14 +27,14 @@ class EditProfilePage extends ConsumerStatefulWidget {
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers — initialised once the profile loads.
   late TextEditingController _nameCtrl;
   late TextEditingController _usernameCtrl;
   late TextEditingController _bioCtrl;
-  late TextEditingController _avatarCtrl;
   late TextEditingController _cityCtrl;
+  late FocusNode _cityFocusNode;
 
   // Picker-field state (ISO code or null if unset).
+  String? _avatarUrl;
   String? _country;
   String? _timezone;
   String? _currency;
@@ -42,16 +44,16 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   List<String> _selectedTags = [];
   bool _controllersReady = false;
   bool _saving = false;
+  bool _uploadingAvatar = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialise with empty controllers; _initFromProfile fills them once loaded.
-    _nameCtrl     = TextEditingController();
-    _usernameCtrl = TextEditingController();
-    _bioCtrl      = TextEditingController();
-    _avatarCtrl   = TextEditingController();
-    _cityCtrl     = TextEditingController();
+    _nameCtrl      = TextEditingController();
+    _usernameCtrl  = TextEditingController();
+    _bioCtrl       = TextEditingController();
+    _cityCtrl      = TextEditingController();
+    _cityFocusNode = FocusNode();
   }
 
   @override
@@ -59,8 +61,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _nameCtrl.dispose();
     _usernameCtrl.dispose();
     _bioCtrl.dispose();
-    _avatarCtrl.dispose();
     _cityCtrl.dispose();
+    _cityFocusNode.dispose();
     super.dispose();
   }
 
@@ -72,17 +74,233 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _nameCtrl.text     = profile?.displayName ?? '';
     _usernameCtrl.text = profile?.username    ?? '';
     _bioCtrl.text      = profile?.bio         ?? '';
-    _avatarCtrl.text   = profile?.avatarUrl   ?? '';
     _cityCtrl.text     = profile?.city        ?? '';
     setState(() {
-      _country      = (profile?.country          as String?)?.isNotEmpty == true ? profile!.country          as String : null;
-      _timezone     = (profile?.timezone         as String?)?.isNotEmpty == true ? profile!.timezone         as String : null;
-      _currency     = (profile?.preferredCurrency as String?)?.isNotEmpty == true ? profile!.preferredCurrency as String : null;
-      _language     = (profile?.preferredLanguage as String?)?.isNotEmpty == true ? profile!.preferredLanguage as String : null;
+      _avatarUrl = (profile?.avatarUrl as String?)?.isNotEmpty == true
+          ? profile!.avatarUrl as String
+          : null;
+      _country  = (profile?.country           as String?)?.isNotEmpty == true ? profile!.country           as String : null;
+      _timezone = (profile?.timezone          as String?)?.isNotEmpty == true ? profile!.timezone          as String : null;
+      _currency = (profile?.preferredCurrency as String?)?.isNotEmpty == true ? profile!.preferredCurrency as String : null;
+      _language = (profile?.preferredLanguage as String?)?.isNotEmpty == true ? profile!.preferredLanguage as String : null;
       _units        = profile?.unitsPreference       ?? 'metric';
       _selectedTags = List<String>.from(profile?.travelPreferenceTags ?? []);
     });
   }
+
+  // ── Avatar editing ────────────────────────────────────────────────────────
+
+  Future<void> _onEditAvatar() async {
+    final choice = await showModalBottomSheet<_AvatarAction>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from Library'),
+              onTap: () => Navigator.of(context).pop(_AvatarAction.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take Photo'),
+              onTap: () => Navigator.of(context).pop(_AvatarAction.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: const Text('Enter Image URL'),
+              onTap: () => Navigator.of(context).pop(_AvatarAction.url),
+            ),
+            if (_avatarUrl != null)
+              ListTile(
+                leading: Icon(Icons.delete_outline,
+                    color: context.colorScheme.error),
+                title: Text('Remove Photo',
+                    style: TextStyle(color: context.colorScheme.error)),
+                onTap: () => Navigator.of(context).pop(_AvatarAction.remove),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || choice == null) {
+      return;
+    }
+
+    switch (choice) {
+      case _AvatarAction.gallery:
+        await _pickAndUpload(ImageSource.gallery);
+      case _AvatarAction.camera:
+        await _pickAndUpload(ImageSource.camera);
+      case _AvatarAction.url:
+        await _enterAvatarUrl();
+      case _AvatarAction.remove:
+        setState(() => _avatarUrl = null);
+    }
+  }
+
+  Future<void> _pickAndUpload(ImageSource source) async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (file == null || !mounted) {
+      return;
+    }
+
+    setState(() => _uploadingAvatar = true);
+
+    try {
+      final supabase = Supabase.instance.client;
+      final userId   = supabase.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final bytes = await file.readAsBytes();
+      final ext   = file.path.split('.').last.toLowerCase();
+      final path  = '$userId/avatar.$ext';
+
+      await supabase.storage.from('avatars').uploadBinary(
+        path,
+        bytes,
+        fileOptions: FileOptions(
+          contentType: 'image/$ext',
+          upsert: true,
+        ),
+      );
+
+      final url =
+          '${supabase.storage.from('avatars').getPublicUrl(path)}'
+          '?t=${DateTime.now().millisecondsSinceEpoch}';
+
+      if (mounted) {
+        setState(() => _avatarUrl = url);
+      }
+    } catch (e) {
+      if (mounted) {
+        context.showSnackBar('Upload failed: $e', isError: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingAvatar = false);
+      }
+    }
+  }
+
+  Future<void> _enterAvatarUrl() async {
+    final ctrl = TextEditingController(text: _avatarUrl);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Image URL'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.url,
+          decoration: const InputDecoration(hintText: 'https://…'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (result != null && result.isNotEmpty && mounted) {
+      setState(() => _avatarUrl = result);
+    }
+  }
+
+  // ── City autocomplete helpers ─────────────────────────────────────────────
+
+  Iterable<CityEntry> _cityOptions(TextEditingValue value) {
+    if (value.text.length < 2) {
+      return const [];
+    }
+    final q = value.text.toLowerCase();
+    return kCityData.where((c) => c.name.toLowerCase().contains(q)).take(8);
+  }
+
+  void _onCitySelected(CityEntry city) {
+    setState(() {
+      _country  = city.country;
+      _timezone = city.timezone;
+      _currency = city.currency;
+    });
+  }
+
+  Widget _cityFieldView(BuildContext context, TextEditingController controller,
+          FocusNode focusNode, VoidCallback onFieldSubmitted) =>
+      ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          onFieldSubmitted: (_) => onFieldSubmitted(),
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            hintText: 'e.g. Tokyo',
+            prefixIcon: const Icon(Icons.location_city_outlined),
+            suffixIcon: controller.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: controller.clear,
+                  )
+                : null,
+          ),
+        ),
+      );
+
+  Widget _cityOptionsView(
+    BuildContext context,
+    AutocompleteOnSelected<CityEntry> onSelected,
+    Iterable<CityEntry> options,
+  ) =>
+      Align(
+        alignment: Alignment.topLeft,
+        child: Material(
+          elevation: 6,
+          borderRadius: BorderRadius.circular(12),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 256),
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              itemCount: options.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (_, i) {
+                final city = options.elementAt(i);
+                final countryName = kCountries
+                        .where((c) => c.code == city.country)
+                        .firstOrNull
+                        ?.name ??
+                    city.country;
+                return ListTile(
+                  dense: true,
+                  title: Text(city.name),
+                  subtitle: Text('$countryName  ·  ${city.currency}'),
+                  onTap: () => onSelected(city),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+  // ── Save ─────────────────────────────────────────────────────────────────
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
@@ -94,15 +312,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     final username = _usernameCtrl.text.trim();
     final repo     = ref.read(userProfileRepositoryProvider);
 
-    // Sync display_name + avatar_url to auth metadata so AuthNotifier stays
-    // current (drives the Profile page avatar/name header).
     final authResult = await ref
         .read(authNotifierProvider.notifier)
         .updateProfile(
           displayName: name.isNotEmpty ? name : null,
-          avatarUrl:   _avatarCtrl.text.trim().isNotEmpty
-              ? _avatarCtrl.text.trim()
-              : null,
+          avatarUrl:   _avatarUrl,
         );
 
     if (!mounted) {
@@ -120,7 +334,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       return;
     }
 
-    // Update all fields in the profiles table via the update_profile RPC.
     final profileResult = await repo.updateProfile(
       displayName:          name.isNotEmpty ? name : null,
       username:             username.isNotEmpty ? username : null,
@@ -136,9 +349,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       preferredLanguage:    _language,
       unitsPreference:      _units,
       travelPreferenceTags: _selectedTags,
-      avatarUrl:            _avatarCtrl.text.trim().isNotEmpty
-          ? _avatarCtrl.text.trim()
-          : null,
+      avatarUrl:            _avatarUrl,
     );
 
     if (!mounted) {
@@ -156,6 +367,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       },
     );
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -202,8 +415,17 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           children: [
+            // ── Avatar ────────────────────────────────────────────────────
+            _AvatarHeader(
+              avatarUrl:   _avatarUrl,
+              displayName: _nameCtrl.text,
+              uploading:   _uploadingAvatar,
+              onTap:       _onEditAvatar,
+            ),
+            const SizedBox(height: 32),
+
             // ── Identity ──────────────────────────────────────────────────
             const _SectionHeader('Identity'),
             const SizedBox(height: 12),
@@ -235,7 +457,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   : '3–30 chars · letters, numbers, underscores',
               validator: (v) {
                 if (v == null || v.trim().isEmpty) {
-                  return null; // username is optional
+                  return null;
                 }
                 final trimmed = v.trim();
                 if (!RegExp(r'^[a-zA-Z0-9][a-zA-Z0-9_]{1,28}[a-zA-Z0-9]$')
@@ -256,29 +478,33 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               maxLength: 200,
             ),
 
-            // ── Avatar ────────────────────────────────────────────────────
-            const SizedBox(height: 24),
-            const _SectionHeader('Avatar'),
-            const SizedBox(height: 12),
-            _field(
-              label: 'Avatar URL',
-              controller: _avatarCtrl,
-              icon: Icons.image_outlined,
-              hint: 'https://…',
-              keyboardType: TextInputType.url,
-              helperText: 'Direct image URL · Supabase Storage upload coming soon',
-            ),
-
             // ── Location ──────────────────────────────────────────────────
             const SizedBox(height: 24),
             const _SectionHeader('Location'),
             const SizedBox(height: 12),
-            _field(
-              label: 'City',
-              controller: _cityCtrl,
-              icon: Icons.location_city_outlined,
-              hint: 'e.g. Tokyo',
+
+            // City with autocomplete; selecting a suggestion auto-fills
+            // Country, Timezone, and Currency below.
+            _fieldLabel('City'),
+            const SizedBox(height: 6),
+            RawAutocomplete<CityEntry>(
+              textEditingController: _cityCtrl,
+              focusNode: _cityFocusNode,
+              displayStringForOption: (c) => c.name,
+              optionsBuilder: _cityOptions,
+              onSelected: _onCitySelected,
+              fieldViewBuilder: _cityFieldView,
+              optionsViewBuilder: _cityOptionsView,
             ),
+            const SizedBox(height: 4),
+            Text(
+              'Selecting a known city auto-fills country, timezone, and currency.',
+              style: TextStyle(
+                fontSize: 12,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+
             const SizedBox(height: 16),
             _PickerField(
               label: 'Country',
@@ -370,6 +596,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
+  Widget _fieldLabel(String label) => Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      );
+
   Widget _field({
     required String label,
     required TextEditingController controller,
@@ -385,14 +620,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          _fieldLabel(label),
           const SizedBox(height: 6),
           TextFormField(
             controller: controller,
@@ -412,7 +640,93 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       );
 }
 
-// ── Section header ───────────────────────────────────────────────────────────
+enum _AvatarAction { gallery, camera, url, remove }
+
+// ── Avatar header ─────────────────────────────────────────────────────────────
+
+class _AvatarHeader extends StatelessWidget {
+  const _AvatarHeader({
+    required this.avatarUrl,
+    required this.displayName,
+    required this.uploading,
+    required this.onTap,
+  });
+
+  final String? avatarUrl;
+  final String displayName;
+  final bool uploading;
+  final VoidCallback onTap;
+
+  String _initials() {
+    final parts = displayName.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) {
+      return '?';
+    }
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          CircleAvatar(
+            radius: 56,
+            backgroundColor: colorScheme.primaryContainer,
+            backgroundImage:
+                avatarUrl != null && !uploading ? NetworkImage(avatarUrl!) : null,
+            child: uploading
+                ? CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: colorScheme.onPrimaryContainer,
+                  )
+                : avatarUrl == null
+                    ? Text(
+                        _initials(),
+                        style: TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      )
+                    : null,
+          ),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: uploading ? null : onTap,
+              child: Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: colorScheme.surface,
+                    width: 2.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.edit,
+                  size: 15,
+                  color: colorScheme.onPrimary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Section header ────────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.title);
@@ -430,7 +744,7 @@ class _SectionHeader extends StatelessWidget {
       );
 }
 
-// ── Units toggle ─────────────────────────────────────────────────────────────
+// ── Units toggle ──────────────────────────────────────────────────────────────
 
 class _UnitsToggle extends StatelessWidget {
   const _UnitsToggle({required this.value, required this.onChanged});
@@ -632,7 +946,6 @@ class _LookupSheetState extends State<_LookupSheet> {
       maxChildSize: 0.95,
       builder: (_, scrollCtrl) => Column(
         children: [
-          // Drag handle
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 8),
             width: 40,
