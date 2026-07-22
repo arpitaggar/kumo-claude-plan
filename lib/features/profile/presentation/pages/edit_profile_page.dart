@@ -7,6 +7,7 @@ import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/user_profile_provider.dart';
+import 'profile_field_data.dart';
 
 const _kTravelTags = [
   'adventure', 'backpacking', 'beach', 'budget', 'city',
@@ -30,10 +31,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late TextEditingController _bioCtrl;
   late TextEditingController _avatarCtrl;
   late TextEditingController _cityCtrl;
-  late TextEditingController _countryCtrl;
-  late TextEditingController _timezoneCtrl;
-  late TextEditingController _currencyCtrl;
-  late TextEditingController _languageCtrl;
+
+  // Picker-field state (ISO code or null if unset).
+  String? _country;
+  String? _timezone;
+  String? _currency;
+  String? _language;
 
   String _units = 'metric';
   List<String> _selectedTags = [];
@@ -49,10 +52,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _bioCtrl      = TextEditingController();
     _avatarCtrl   = TextEditingController();
     _cityCtrl     = TextEditingController();
-    _countryCtrl  = TextEditingController();
-    _timezoneCtrl = TextEditingController();
-    _currencyCtrl = TextEditingController();
-    _languageCtrl = TextEditingController();
   }
 
   @override
@@ -62,10 +61,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _bioCtrl.dispose();
     _avatarCtrl.dispose();
     _cityCtrl.dispose();
-    _countryCtrl.dispose();
-    _timezoneCtrl.dispose();
-    _currencyCtrl.dispose();
-    _languageCtrl.dispose();
     super.dispose();
   }
 
@@ -79,11 +74,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _bioCtrl.text      = profile?.bio         ?? '';
     _avatarCtrl.text   = profile?.avatarUrl   ?? '';
     _cityCtrl.text     = profile?.city        ?? '';
-    _countryCtrl.text  = profile?.country     ?? '';
-    _timezoneCtrl.text = profile?.timezone    ?? '';
-    _currencyCtrl.text = profile?.preferredCurrency ?? '';
-    _languageCtrl.text = profile?.preferredLanguage ?? '';
     setState(() {
+      _country      = (profile?.country          as String?)?.isNotEmpty == true ? profile!.country          as String : null;
+      _timezone     = (profile?.timezone         as String?)?.isNotEmpty == true ? profile!.timezone         as String : null;
+      _currency     = (profile?.preferredCurrency as String?)?.isNotEmpty == true ? profile!.preferredCurrency as String : null;
+      _language     = (profile?.preferredLanguage as String?)?.isNotEmpty == true ? profile!.preferredLanguage as String : null;
       _units        = profile?.unitsPreference       ?? 'metric';
       _selectedTags = List<String>.from(profile?.travelPreferenceTags ?? []);
     });
@@ -135,18 +130,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       city:                 _cityCtrl.text.trim().isNotEmpty
           ? _cityCtrl.text.trim()
           : null,
-      country:              _countryCtrl.text.trim().isNotEmpty
-          ? _countryCtrl.text.trim().toUpperCase()
-          : null,
-      timezone:             _timezoneCtrl.text.trim().isNotEmpty
-          ? _timezoneCtrl.text.trim()
-          : null,
-      preferredCurrency:    _currencyCtrl.text.trim().isNotEmpty
-          ? _currencyCtrl.text.trim().toUpperCase()
-          : null,
-      preferredLanguage:    _languageCtrl.text.trim().isNotEmpty
-          ? _languageCtrl.text.trim().toLowerCase()
-          : null,
+      country:              _country,
+      timezone:             _timezone,
+      preferredCurrency:    _currency,
+      preferredLanguage:    _language,
       unitsPreference:      _units,
       travelPreferenceTags: _selectedTags,
       avatarUrl:            _avatarCtrl.text.trim().isNotEmpty
@@ -293,57 +280,44 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               hint: 'e.g. Tokyo',
             ),
             const SizedBox(height: 16),
-            _field(
+            _PickerField(
               label: 'Country',
-              controller: _countryCtrl,
               icon: Icons.flag_outlined,
-              hint: 'ISO code · e.g. JP, US, GB',
-              maxLength: 2,
-              validator: (v) {
-                if (v != null && v.trim().isNotEmpty && v.trim().length != 2) {
-                  return 'Use a 2-letter ISO 3166-1 country code';
-                }
-                return null;
-              },
+              data: kCountries,
+              value: _country,
+              hint: 'Select country',
+              onChanged: (v) => setState(() => _country = v),
             ),
 
             // ── Preferences ───────────────────────────────────────────────
             const SizedBox(height: 24),
             const _SectionHeader('Preferences'),
             const SizedBox(height: 12),
-            _field(
+            _PickerField(
               label: 'Timezone',
-              controller: _timezoneCtrl,
               icon: Icons.schedule_outlined,
-              hint: 'e.g. America/New_York',
+              data: kTimezones,
+              value: _timezone,
+              hint: 'Select timezone',
+              onChanged: (v) => setState(() => _timezone = v),
             ),
             const SizedBox(height: 16),
-            _field(
+            _PickerField(
               label: 'Currency',
-              controller: _currencyCtrl,
               icon: Icons.attach_money_outlined,
-              hint: 'ISO 4217 · e.g. USD, EUR, JPY',
-              maxLength: 3,
-              validator: (v) {
-                if (v != null && v.trim().isNotEmpty && v.trim().length != 3) {
-                  return 'Use a 3-letter ISO 4217 currency code';
-                }
-                return null;
-              },
+              data: kCurrencies,
+              value: _currency,
+              hint: 'Select currency',
+              onChanged: (v) => setState(() => _currency = v),
             ),
             const SizedBox(height: 16),
-            _field(
+            _PickerField(
               label: 'Language',
-              controller: _languageCtrl,
               icon: Icons.translate_outlined,
-              hint: 'ISO 639-1 · e.g. en, fr, ja',
-              maxLength: 2,
-              validator: (v) {
-                if (v != null && v.trim().isNotEmpty && v.trim().length != 2) {
-                  return 'Use a 2-letter ISO 639-1 language code';
-                }
-                return null;
-              },
+              data: kLanguages,
+              value: _language,
+              hint: 'Select language',
+              onChanged: (v) => setState(() => _language = v),
             ),
             const SizedBox(height: 16),
             _UnitsToggle(
@@ -516,4 +490,204 @@ class _TagPicker extends StatelessWidget {
             )
             .toList(),
       );
+}
+
+// ── Searchable picker field ───────────────────────────────────────────────────
+
+class _PickerField extends StatelessWidget {
+  const _PickerField({
+    required this.label,
+    required this.icon,
+    required this.data,
+    required this.value,
+    required this.onChanged,
+    this.hint,
+  });
+
+  final String label;
+  final IconData icon;
+  final List<LookupEntry> data;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+  final String? hint;
+
+  String? _displayText() {
+    if (value == null || value!.isEmpty) {
+      return null;
+    }
+    final entry = data.where((e) => e.code == value).firstOrNull;
+    return entry != null ? '${entry.name}  ·  ${entry.code}' : value;
+  }
+
+  Future<void> _open(BuildContext context) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _LookupSheet(title: label, data: data, selected: value),
+    );
+    if (selected != null) {
+      onChanged(selected);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final display = _displayText();
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 6),
+        GestureDetector(
+          onTap: () => _open(context),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              hintText: hint,
+              prefixIcon: Icon(icon),
+              suffixIcon: display != null
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      tooltip: 'Clear',
+                      onPressed: () => onChanged(null),
+                    )
+                  : const Icon(Icons.expand_more),
+            ),
+            isEmpty: display == null,
+            child: display != null
+                ? Text(display, style: const TextStyle(fontSize: 16))
+                : const SizedBox.shrink(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Search bottom sheet ───────────────────────────────────────────────────────
+
+class _LookupSheet extends StatefulWidget {
+  const _LookupSheet({
+    required this.title,
+    required this.data,
+    this.selected,
+  });
+
+  final String title;
+  final List<LookupEntry> data;
+  final String? selected;
+
+  @override
+  State<_LookupSheet> createState() => _LookupSheetState();
+}
+
+class _LookupSheetState extends State<_LookupSheet> {
+  late List<LookupEntry> _filtered;
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filtered = widget.data;
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSearch(String query) {
+    final q = query.toLowerCase();
+    setState(() {
+      _filtered = q.isEmpty
+          ? widget.data
+          : widget.data
+              .where(
+                (e) =>
+                    e.name.toLowerCase().contains(q) ||
+                    e.code.toLowerCase().contains(q),
+              )
+              .toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, scrollCtrl) => Column(
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: colorScheme.outlineVariant,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: Text(
+              widget.title,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              controller: _searchCtrl,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Search…',
+                prefixIcon: Icon(Icons.search),
+                isDense: true,
+              ),
+              onChanged: _onSearch,
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView.builder(
+              controller: scrollCtrl,
+              itemCount: _filtered.length,
+              itemBuilder: (_, i) {
+                final entry = _filtered[i];
+                final isSelected = entry.code == widget.selected;
+                return ListTile(
+                  title: Text(entry.name),
+                  subtitle: Text(entry.code),
+                  trailing: isSelected
+                      ? Icon(Icons.check, color: colorScheme.primary)
+                      : null,
+                  selected: isSelected,
+                  onTap: () => Navigator.of(context).pop(entry.code),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
