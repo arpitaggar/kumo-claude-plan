@@ -242,6 +242,19 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     });
   }
 
+  void _onCountrySelected(String? code) {
+    setState(() {
+      _country = code;
+      if (code != null) {
+        final city = kCityData.where((c) => c.country == code).firstOrNull;
+        if (city != null) {
+          _currency ??= city.currency;
+          _timezone ??= city.timezone;
+        }
+      }
+    });
+  }
+
   Widget _cityFieldView(BuildContext context, TextEditingController controller,
           FocusNode focusNode, VoidCallback onFieldSubmitted) =>
       ListenableBuilder(
@@ -512,7 +525,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               data: kCountries,
               value: _country,
               hint: 'Select country',
-              onChanged: (v) => setState(() => _country = v),
+              onChanged: _onCountrySelected,
             ),
 
             // ── Preferences ───────────────────────────────────────────────
