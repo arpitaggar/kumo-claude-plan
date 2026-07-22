@@ -687,7 +687,7 @@ Three new columns on `public.expenses` (all `add column if not exists`, backward
 ### Edit Profile Field Pickers (Stage 16 extension)
 
 **Files:**
-- `lib/features/profile/presentation/pages/profile_field_data.dart` — offline lookup lists: 190+ countries (ISO 3166-1 alpha-2), 75 timezones (IANA), 48 currencies (ISO 4217), 69 languages (ISO 639-1)
+- `lib/features/profile/presentation/pages/profile_field_data.dart` — offline lookup lists: 190+ countries (ISO 3166-1 alpha-2), 75 timezones (IANA), 48 currencies (ISO 4217), 69 languages (ISO 639-1), 110+ cities with autofill metadata
 - `lib/features/profile/presentation/pages/edit_profile_page.dart` — updated
 
 **Changes to `EditProfilePage`:**
@@ -695,7 +695,39 @@ Three new columns on `public.expenses` (all `add column if not exists`, backward
 - `_LookupSheet`: `DraggableScrollableSheet` (75% initial, 95% max) with a live-search `TextField` and a `ListView.builder`; search filters by both name and ISO code; current selection highlighted with a checkmark; tapping an entry pops the sheet returning the ISO code
 - Clearing: ✕ `IconButton` shown when a value is selected; sets the state var back to `null`
 - The four `TextEditingController`s (`_countryCtrl` etc.) were removed; selected codes are held as `String?` state vars (`_country`, `_timezone`, `_currency`, `_language`); `_save()` passes them directly to `updateProfile()`
-- City remains a plain `TextFormField` (free text)
+- City uses `RawAutocomplete<CityEntry>` with 110+ entries in `kCityData`; selecting a suggestion auto-fills Country, Timezone, Currency (always overwrites); free-text city names work normally with no autofill
+- Selecting Country auto-fills Currency and Timezone via `kCityData` lookup using `??=` (only fills if the field is still empty)
+- Avatar displayed as a 112 px `CircleAvatar` at the top; pencil overlay opens an action sheet (gallery, camera, URL, remove); images uploaded to Supabase Storage `avatars/{userId}/avatar.{ext}` with cache-busted public URL
+
+### Avatar Storage + Profile Upsert Fix (Stage 18)
+
+**Migration:** `docs/supabase_migrations/stage18_avatar_storage_and_profile_upsert.sql`  
+Must be run in Supabase SQL editor.
+
+#### What it does
+
+**Avatars storage bucket:**
+- Creates `storage.buckets` entry `(id='avatars', public=true)`
+- RLS policies on `storage.objects`:
+  - `avatars_public_read` — `SELECT` with no auth (avatar URLs are embedded in UI)
+  - `avatars_owner_insert` / `_update` / `_delete` — scoped to `authenticated` where `(storage.foldername(name))[1] = auth.uid()::text`, meaning each user can only touch files under their own `{userId}/` prefix
+
+**Backfill missing profile rows:**
+- `INSERT INTO public.profiles (id, email, display_name) SELECT ... FROM auth.users WHERE NOT EXISTS (...)` — one-time fix for users who signed up before `handle_new_user` was deployed and have no profile row
+
+**`update_profile` RPC upsert guard:**
+- Adds `INSERT INTO public.profiles (id, display_name, email) ... ON CONFLICT (id) DO NOTHING` at the top of the function body, executed before the `UPDATE`
+- Root cause of "Profile not found" error: the old RPC ran `UPDATE ... WHERE id = _uid` which silently matched 0 rows when the profile didn't exist; the follow-up `getOwnProfile()` then found 0 rows and threw `ServerException('Profile not found')`
+- The upsert guard makes the function self-healing for any user without a profile row
+
+#### Flutter-side error flow (for reference)
+
+```
+updateProfile()                          // datasource
+  → rpc('update_profile', params)        // runs OK, upserts if needed
+  → getOwnProfile()                      // re-fetches the updated profile
+    → rows.isEmpty → throws ServerException('Profile not found')   ← fixed by migration
+```
 
 ---
 
