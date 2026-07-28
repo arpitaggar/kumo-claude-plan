@@ -14,9 +14,17 @@ class SendMessageUseCase {
     required String senderId,
     required String senderName,
     required String content,
+    String? attachmentStoragePath,
+    String? attachmentUrl,
+    String? attachmentFileName,
+    String? attachmentMimeType,
+    int? attachmentSizeBytes,
+    String? attachmentKind,
   }) async {
     final trimmed = content.trim();
-    if (trimmed.isEmpty) {
+    final hasAttachment = attachmentUrl != null;
+
+    if (trimmed.isEmpty && !hasAttachment) {
       return const Left(ValidationFailure('Message cannot be empty'));
     }
     if (trimmed.length > 4000) {
@@ -29,6 +37,12 @@ class SendMessageUseCase {
         senderId: senderId,
         senderName: senderName,
         content: trimmed,
+        attachmentStoragePath: attachmentStoragePath,
+        attachmentUrl: attachmentUrl,
+        attachmentFileName: attachmentFileName,
+        attachmentMimeType: attachmentMimeType,
+        attachmentSizeBytes: attachmentSizeBytes,
+        attachmentKind: attachmentKind,
       );
     } on ValidationException catch (e) {
       return Left(ValidationFailure(e.message));

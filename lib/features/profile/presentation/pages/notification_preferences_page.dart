@@ -116,6 +116,10 @@ class _PrefsBodyState extends ConsumerState<_PrefsBody> {
                 _toggle(ch, category, enabled: enabled),
             ),
           ),
+          const SizedBox(height: 8),
+          _MessagePreviewToggle(
+            chatPushEnabled: _get(NotifChannel.push, NotifCategory.chatMessages),
+          ),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -216,4 +220,83 @@ class _CategoryRow extends StatelessWidget {
           const Divider(height: 1, indent: 20),
         ],
       );
+}
+
+// ── "Show message preview" — only meaningful while chat push is enabled ──────
+
+class _MessagePreviewToggle extends ConsumerStatefulWidget {
+  const _MessagePreviewToggle({required this.chatPushEnabled});
+
+  final bool chatPushEnabled;
+
+  @override
+  ConsumerState<_MessagePreviewToggle> createState() =>
+      _MessagePreviewToggleState();
+}
+
+class _MessagePreviewToggleState extends ConsumerState<_MessagePreviewToggle> {
+  bool? _optimisticValue;
+
+  Future<void> _toggle(bool enabled) async {
+    setState(() => _optimisticValue = enabled);
+
+    final result = await ref
+        .read(userProfileRepositoryProvider)
+        .updateProfile(pushMessagePreviewEnabled: enabled);
+
+    result.fold(
+      (f) {
+        if (mounted) {
+          setState(() => _optimisticValue = !enabled);
+          context.showSnackBar(f.message, isError: true);
+        }
+      },
+      (_) => ref.invalidate(userProfileProvider),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = ref.watch(userProfileProvider).value;
+    final value = _optimisticValue ?? profile?.pushMessagePreviewEnabled ?? true;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Opacity(
+        opacity: widget.chatPushEnabled ? 1 : 0.4,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Show message preview',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: context.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Show the message text in chat notifications instead of '
+                    'just "New message".',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: value,
+              onChanged: widget.chatPushEnabled ? _toggle : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -20,6 +20,7 @@ class UserProfileModel extends UserProfile {
     super.preferredCurrency,
     super.preferredLanguage,
     super.usernameLastChangedAt,
+    super.pushMessagePreviewEnabled,
   });
 
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
@@ -51,6 +52,8 @@ class UserProfileModel extends UserProfile {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : DateTime.now(),
+      pushMessagePreviewEnabled:
+          (json['push_message_preview_enabled'] as bool?) ?? true,
     );
   }
 }

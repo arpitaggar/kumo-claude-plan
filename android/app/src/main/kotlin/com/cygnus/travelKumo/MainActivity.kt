@@ -1,4 +1,4 @@
-package com.example.kumo_claude
+package com.cygnus.travelKumo
 
 import io.flutter.embedding.android.FlutterActivity
 

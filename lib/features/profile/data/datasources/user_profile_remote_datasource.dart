@@ -22,6 +22,7 @@ abstract class UserProfileRemoteDataSource {
     String? profileVisibility,
     String? contactVisibility,
     String? avatarUrl,
+    bool? pushMessagePreviewEnabled,
   });
 
   Future<List<NotificationPreferenceModel>> getNotificationPreferences();
@@ -40,7 +41,8 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
       'id, email, display_name, username, avatar_url, bio, city, country, '
       'timezone, preferred_currency, preferred_language, units_preference, '
       'travel_preference_tags, profile_visibility, contact_visibility, '
-      'is_searchable, username_last_changed_at, updated_at';
+      'is_searchable, username_last_changed_at, updated_at, '
+      'push_message_preview_enabled';
 
   @override
   Future<UserProfileModel> getOwnProfile() async {
@@ -84,6 +86,7 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
     String? profileVisibility,
     String? contactVisibility,
     String? avatarUrl,
+    bool? pushMessagePreviewEnabled,
   }) async {
     if (KumoSupabaseClient.auth.currentUser == null) {
       throw AuthException(message: 'Not authenticated');
@@ -130,6 +133,9 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
       }
       if (avatarUrl != null) {
         params['p_avatar_url'] = avatarUrl;
+      }
+      if (pushMessagePreviewEnabled != null) {
+        params['p_push_message_preview'] = pushMessagePreviewEnabled;
       }
 
       await KumoSupabaseClient.client.rpc('update_profile', params: params);

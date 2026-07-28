@@ -2,21 +2,26 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.kumo_claude"
-    compileSdk = flutter.compileSdkVersion
+    namespace = "com.cygnus.travelKumo"
+    // Pinned explicitly rather than relying on flutter.compileSdkVersion
+    // (which resolves lower on this Flutter SDK): flutter_local_notifications
+    // requires compileSdk 36.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Required by flutter_local_notifications.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.kumo_claude"
+        applicationId = "com.cygnus.travelKumo"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -38,6 +43,11 @@ kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
 }
 
 flutter {

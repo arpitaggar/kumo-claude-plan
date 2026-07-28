@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # Vendored package sources (e.g. macOS SPM checkouts of Firebase
+    # packages) end up cached here and shouldn't be linted as our code.
+    - build/**
+
 linter:
   rules:
     # Error rules

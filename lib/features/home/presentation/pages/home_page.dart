@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../itinerary/domain/entities/travel_itinerary.dart';
 import '../../../itinerary/presentation/providers/itinerary_provider.dart';
 import '../../../itinerary/presentation/widgets/itinerary_card.dart';
-import '../../../../shared/extensions/context_extensions.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});

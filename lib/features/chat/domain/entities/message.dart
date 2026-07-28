@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'message_attachment.dart';
+
 class Message extends Equatable {
   const Message({
     required this.id,
@@ -9,6 +11,7 @@ class Message extends Equatable {
     required this.content,
     required this.createdAt,
     this.readBy = const [],
+    this.attachments = const [],
   });
 
   final String id;
@@ -18,8 +21,19 @@ class Message extends Equatable {
   final String content;
   final DateTime createdAt;
   final List<String> readBy;
+  final List<MessageAttachment> attachments;
+
+  bool get hasAttachments => attachments.isNotEmpty;
 
   @override
-  List<Object> get props =>
-      [id, itineraryId, senderId, senderName, content, createdAt, readBy];
+  List<Object> get props => [
+        id,
+        itineraryId,
+        senderId,
+        senderName,
+        content,
+        createdAt,
+        readBy,
+        attachments,
+      ];
 }

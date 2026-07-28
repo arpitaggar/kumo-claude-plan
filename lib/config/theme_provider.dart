@@ -1,7 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum KumoTheme { cherryBlossom, goldenHour, deepVoyage }
+enum KumoTheme {
+  cherryBlossom,
+  goldenHour,
+  deepVoyage,
+  synthwaveTokyo,
+  whiteAndCharcoal,
+  warmOatLightBlue,
+}
 
 final themeProvider = StateNotifierProvider<ThemeNotifier, KumoTheme>(
   (_) => ThemeNotifier(),

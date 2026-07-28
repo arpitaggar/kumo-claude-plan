@@ -28,10 +28,16 @@ class Brand {
   static const String _goldenHourLogo    = 'assets/icons/kumo_logo_golden_hour.svg';
   static const String _cherryBlossomLogo = 'assets/icons/kumo_logo_charcoal_depth_soft_faint_edge.svg';
   static const String _deepVoyageLogo    = 'assets/icons/kumo_logo_deep_voyage.svg';
+  static const String _synthwaveTokyoLogo   = 'assets/icons/kumo_logo_synthwave_tokyo.svg';
+  static const String _whiteAndCharcoalLogo = 'assets/icons/kumo_logo_charcoal_depth_soft_faint_edge.svg';
+  static const String _warmOatLightBlueLogo = 'assets/icons/kumo_logo_warm_oat_light_blue.svg';
 
   static String logoFor(KumoTheme theme) => switch (theme) {
-    KumoTheme.goldenHour    => _goldenHourLogo,
-    KumoTheme.cherryBlossom => _cherryBlossomLogo,
-    KumoTheme.deepVoyage    => _deepVoyageLogo,
+    KumoTheme.goldenHour       => _goldenHourLogo,
+    KumoTheme.cherryBlossom    => _cherryBlossomLogo,
+    KumoTheme.deepVoyage       => _deepVoyageLogo,
+    KumoTheme.synthwaveTokyo   => _synthwaveTokyoLogo,
+    KumoTheme.whiteAndCharcoal => _whiteAndCharcoalLogo,
+    KumoTheme.warmOatLightBlue => _warmOatLightBlueLogo,
   };
 }

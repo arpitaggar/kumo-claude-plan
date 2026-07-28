@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/extensions/context_extensions.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_theme.dart';
-import '../../../../shared/extensions/context_extensions.dart';
 
 class ItineraryCard extends StatelessWidget {
   const ItineraryCard({

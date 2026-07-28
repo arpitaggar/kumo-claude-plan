@@ -82,7 +82,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
               children: [
                 Icon(Icons.chat_bubble_outline,
                     size: 56, color: context.colorScheme.outlineVariant),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
                   'No trip chats yet',
                   style: TextStyle(
@@ -91,7 +91,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
                     color: context.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
                   'Create or join a trip to start chatting',
                   style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),

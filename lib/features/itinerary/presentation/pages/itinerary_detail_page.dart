@@ -397,7 +397,7 @@ class _ItineraryTab extends ConsumerWidget {
                   Icon(Icons.map_outlined,
                       size: 36,
                       color: context.colorScheme.outlineVariant),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'No activities yet',
                     style: TextStyle(color: context.colorScheme.onSurfaceVariant),
@@ -548,7 +548,7 @@ class _ExpensesTab extends ConsumerWidget {
             expensesAsync.when(
               loading: () => Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(32),
                   child: CircularProgressIndicator(
                       color: context.colorScheme.primary),
                 ),
@@ -840,7 +840,7 @@ class _ExpenseTile extends StatelessWidget {
                   GestureDetector(
                     onTap: onDelete,
                     child: Padding(
-                      padding: EdgeInsets.only(top: 2),
+                      padding: const EdgeInsets.only(top: 2),
                       child: Icon(Icons.delete_outline,
                           size: 16, color: context.colorScheme.outlineVariant),
                     ),
@@ -984,13 +984,13 @@ class _EmptyExpenses extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.only(top: 32),
+        padding: const EdgeInsets.only(top: 32),
         child: Center(
           child: Column(
             children: [
               Icon(Icons.receipt_long_outlined,
                   size: 48, color: context.colorScheme.outlineVariant),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
                 'No expenses yet',
                 style: TextStyle(
@@ -999,7 +999,7 @@ class _EmptyExpenses extends StatelessWidget {
                   color: context.colorScheme.onSurfaceVariant,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 'Tap + to log the first one',
                 style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
@@ -1197,7 +1197,7 @@ class _EmptyReviews extends StatelessWidget {
           children: [
             Icon(Icons.rate_review_outlined,
                 size: 48, color: context.colorScheme.outlineVariant),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
               'No reviews yet',
               style: TextStyle(
@@ -1206,7 +1206,7 @@ class _EmptyReviews extends StatelessWidget {
                 color: context.colorScheme.onSurfaceVariant,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               'Tap + to rate places from this trip',
               style:
@@ -1414,7 +1414,7 @@ class _MemberRow extends StatelessWidget {
                       child: Row(children: [
                         Icon(Icons.person_remove_outlined,
                             size: 18, color: context.colorScheme.primary),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text('Remove',
                             style: TextStyle(color: context.colorScheme.primary)),
                       ]),
@@ -2147,20 +2147,20 @@ class _AddItemRow extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'Add an item…',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
                     borderSide: BorderSide(color: context.colorScheme.outlineVariant),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
                     borderSide: BorderSide(color: context.colorScheme.outlineVariant),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
                     borderSide:
                         BorderSide(color: context.colorScheme.primary, width: 1.5),
                   ),
                   contentPadding:
-                      EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   isDense: true,
                 ),
               ),
@@ -2200,7 +2200,7 @@ class _EmptyPacking extends StatelessWidget {
           children: [
             Icon(Icons.checklist_outlined,
                 size: 48, color: context.colorScheme.outlineVariant),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
               'Nothing packed yet',
               style: TextStyle(
@@ -2209,7 +2209,7 @@ class _EmptyPacking extends StatelessWidget {
                 color: context.colorScheme.onSurfaceVariant,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               'Add items below to build your packing list',
               style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
@@ -2314,7 +2314,7 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
                               color: context.colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
                             'Saving…',
                             style: TextStyle(

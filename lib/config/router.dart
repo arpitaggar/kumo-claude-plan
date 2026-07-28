@@ -48,11 +48,16 @@ Page<T> _slidePage<T>(Widget child, GoRouterState state) =>
           ),
     );
 
+/// Lets code outside the widget tree (e.g. a notification-tap handler)
+/// navigate without needing a `WidgetRef`/`BuildContext` of its own.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier(ref);
   ref.onDispose(notifier.dispose);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     refreshListenable: notifier,
     redirect: notifier.redirect,

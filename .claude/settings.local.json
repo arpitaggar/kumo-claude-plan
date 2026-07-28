@@ -3,7 +3,9 @@
     "allow": [
       "Bash(flutter analyze *)",
       "Bash(xargs cat -n)",
-      "Bash(flutter pub *)"
+      "Bash(flutter pub *)",
+      "Bash(./gradlew :file_picker:compileDebugKotlin)",
+      "Bash(export JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\")"
     ]
   }
 }

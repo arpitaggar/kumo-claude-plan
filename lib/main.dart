@@ -57,9 +57,12 @@ class KumoApp extends ConsumerWidget {
       title: Brand.appName,
       debugShowCheckedModeBanner: false,
       theme: switch (kumoTheme) {
-        KumoTheme.goldenHour    => AppTheme.goldenHour,
-        KumoTheme.deepVoyage    => AppTheme.deepVoyage,
-        KumoTheme.cherryBlossom => AppTheme.light,
+        KumoTheme.goldenHour       => AppTheme.goldenHour,
+        KumoTheme.deepVoyage       => AppTheme.deepVoyage,
+        KumoTheme.cherryBlossom    => AppTheme.light,
+        KumoTheme.synthwaveTokyo   => AppTheme.synthwaveTokyo,
+        KumoTheme.whiteAndCharcoal => AppTheme.whiteAndCharcoal,
+        KumoTheme.warmOatLightBlue => AppTheme.warmOatLightBlue,
       },
       routerConfig: router,
     );

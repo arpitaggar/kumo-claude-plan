@@ -28,6 +28,7 @@ abstract class UserProfileRepository {
     String? profileVisibility,
     String? contactVisibility,
     String? avatarUrl,
+    bool? pushMessagePreviewEnabled,
   });
 
   /// Returns all notification preference rows for the authenticated user.

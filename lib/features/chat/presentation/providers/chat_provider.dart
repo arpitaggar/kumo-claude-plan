@@ -1,9 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/notifications/notification_providers.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../itinerary/presentation/providers/itinerary_provider.dart';
+import '../../../profile/domain/entities/notification_preference.dart';
+import '../../../profile/presentation/providers/user_profile_provider.dart';
 import '../../data/datasources/chat_remote_datasource.dart';
 import '../../data/repositories/chat_repository_impl.dart';
 import '../../domain/entities/message.dart';
+import '../../domain/entities/message_attachment.dart';
+import '../../domain/entities/message_read_receipt.dart';
 import '../../domain/usecases/send_message_usecase.dart';
 
 // ---------------------------------------------------------------------------
@@ -50,6 +56,21 @@ final chatRepositoryRefProvider = Provider<ChatRepositoryImpl>(
 );
 
 // ---------------------------------------------------------------------------
+// Read-receipt detail — fetched on demand when a sent message is long-pressed
+// ---------------------------------------------------------------------------
+
+final messageReadReceiptsProvider =
+    FutureProvider.family<List<MessageReadReceipt>, String>(
+        (ref, messageId) async {
+  final result =
+      await ref.watch(chatRepositoryProvider).getReadReceipts(messageId);
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (receipts) => receipts,
+  );
+});
+
+// ---------------------------------------------------------------------------
 // Inbox badge — tracks last visit time and whether there are unread messages
 // ---------------------------------------------------------------------------
 
@@ -79,3 +100,95 @@ final inboxHasUnreadProvider = Provider<bool>((ref) {
   }
   return false;
 });
+
+// ---------------------------------------------------------------------------
+// In-app new-message notifications — foreground/backgrounded-but-alive only.
+// Delivery when the app is fully killed still needs real OS push (blocked on
+// external Firebase/APNs setup).
+// ---------------------------------------------------------------------------
+
+/// The itinerary id of the chat currently on screen, if any. Set/cleared by
+/// ChatPage so the watcher below doesn't notify about a chat the user is
+/// already looking at.
+final activeChatIdProvider = StateProvider<String?>((_) => null);
+
+/// Watches every trip's chat stream for the lifetime it's kept alive (mounted
+/// once in `KumoShell`, which stays alive for the whole authenticated
+/// session) and fires a local notification for new messages from other
+/// people, subject to the user's notification preferences.
+final chatMessageWatcherProvider = Provider<void>((ref) {
+  final listState = ref.watch(itineraryListProvider);
+  if (listState is! ItineraryListLoaded) {
+    return;
+  }
+
+  for (final trip in listState.itineraries) {
+    ref.listen<AsyncValue<List<Message>>>(chatStreamProvider(trip.id),
+        (prev, next) {
+      // Only a data→data transition is a genuinely new message; the initial
+      // loading→data transition is just the existing history downloading.
+      if (prev is! AsyncData<List<Message>> ||
+          next is! AsyncData<List<Message>>) {
+        return;
+      }
+      if (next.value.isEmpty) {
+        return;
+      }
+      final latest = next.value.last;
+      final prevLatestId = prev.value.isNotEmpty ? prev.value.last.id : null;
+      if (latest.id == prevLatestId) {
+        return;
+      }
+      _maybeNotify(ref, tripId: trip.id, tripTitle: trip.title, message: latest);
+    });
+  }
+});
+
+void _maybeNotify(
+  Ref ref, {
+  required String tripId,
+  required String tripTitle,
+  required Message message,
+}) {
+  final authState = ref.read(authNotifierProvider);
+  final currentUserId =
+      authState is AuthAuthenticated ? authState.user.id : null;
+  if (currentUserId == null || message.senderId == currentUserId) {
+    return;
+  }
+  if (ref.read(activeChatIdProvider) == tripId) {
+    return;
+  }
+
+  final prefs = ref.read(notificationPreferencesProvider).value ?? const [];
+  NotificationPreference? chatPref;
+  for (final p in prefs) {
+    if (p.channel == NotifChannel.push && p.category == NotifCategory.chatMessages) {
+      chatPref = p;
+      break;
+    }
+  }
+  // Default to enabled if prefs haven't loaded yet or no row exists — matches
+  // the DB's own default (seed_notification_preferences seeds this true).
+  if (chatPref?.enabled == false) {
+    return;
+  }
+
+  final showPreview =
+      ref.read(userProfileProvider).value?.pushMessagePreviewEnabled ?? true;
+  final body = !showPreview
+      ? 'New message'
+      : message.content.isNotEmpty
+          ? message.content
+          : message.attachments.isNotEmpty &&
+                  message.attachments.first.kind == AttachmentKind.image
+              ? '📷 Photo'
+              : '📎 Attachment';
+
+  ref.read(notificationServiceProvider).value?.showChatMessageNotification(
+        tripId: tripId,
+        tripTitle: tripTitle,
+        senderName: message.senderName,
+        body: body,
+      );
+}

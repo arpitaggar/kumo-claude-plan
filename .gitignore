@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 **/**.env*
+FIREBASE_TOKEN
 # IntelliJ related
 *.iml
 *.ipr

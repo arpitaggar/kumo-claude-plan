@@ -24,6 +24,21 @@ const _kThemeMeta = {
     accent: Color(0xFFC88A2A),
     bg: Color(0xFF0E1B33),
   ),
+  KumoTheme.synthwaveTokyo: (
+    label: 'Synthwave Tokyo',
+    accent: Color(0xFFFF9152),
+    bg: Color(0xFF2A0F52),
+  ),
+  KumoTheme.whiteAndCharcoal: (
+    label: 'White & Charcoal',
+    accent: Color(0xFF2B2B2E),
+    bg: Color(0xFFFAFAFA),
+  ),
+  KumoTheme.warmOatLightBlue: (
+    label: 'Warm Oat & Light Blue',
+    accent: Color(0xFF3D84C6),
+    bg: Color(0xFFF6EFE2),
+  ),
 };
 
 class ProfilePage extends ConsumerWidget {
@@ -273,13 +288,19 @@ class _ThemePickerSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(themeProvider);
+    // The list of themes can grow past the screen height (6+ options), so
+    // the sheet is capped and the option list scrolls internally while the
+    // header stays fixed — the header itself was overflowing the sheet
+    // before this fix once a 4th+ theme was added.
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
 
     return Container(
+      constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,14 +333,23 @@ class _ThemePickerSheet extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
-          ...KumoTheme.values.map(
-            (t) => _ThemeOption(
-              theme: t,
-              isSelected: t == selected,
-              onTap: () {
-                currentRef.read(themeProvider.notifier).setTheme(t);
-                Navigator.of(context).pop();
-              },
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 32),
+              child: Column(
+                children: KumoTheme.values
+                    .map(
+                      (t) => _ThemeOption(
+                        theme: t,
+                        isSelected: t == selected,
+                        onTap: () {
+                          currentRef.read(themeProvider.notifier).setTheme(t);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
           ),
         ],

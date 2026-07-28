@@ -184,6 +184,160 @@ class AppTheme {
   );
 
   // ══════════════════════════════════════════════════════════════════════════
+  // Synthwave Tokyo — the app's first dark theme: magenta-purple dusk sky
+  // with an orange/gold sunset sun, matching the reference Tokyo skyline art.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  static const synthwaveBg        = Color(0xFF2A0F52); // scaffold background — deep dusk violet
+  static const synthwaveSurface   = Color(0xFF3D1B6E); // cards / nav / inputs — mid-sky purple
+  static const synthwaveOutline   = Color(0xFF4A2680); // dividers / borders
+  static const synthwaveOrange    = Color(0xFFFF9152); // primary — sunset-orange sun
+  static const synthwaveMagenta   = Color(0xFFE14FA0); // secondary — vivid sky magenta
+  static const synthwaveGold      = Color(0xFFFFD166); // tertiary — sun core gold
+  static const synthwaveOnSurface = Color(0xFFF5E9FF); // near-white lavender text
+  static const _synthwaveInk      = Color(0xFF2A1140);  // dark ink for text on bright accents
+
+  static const _synthwaveScheme = ColorScheme(
+    brightness: Brightness.dark,
+    primary:              synthwaveOrange,
+    onPrimary:            _synthwaveInk,
+    primaryContainer:     Color(0xFFFFC896),
+    onPrimaryContainer:   Color(0xFF5C2A00),
+    secondary:            synthwaveMagenta,
+    onSecondary:          cloudWhite,
+    secondaryContainer:   Color(0xFFFFD3EC),
+    onSecondaryContainer: Color(0xFF5C0A3C),
+    tertiary:             synthwaveGold,
+    onTertiary:           _synthwaveInk,
+    tertiaryContainer:    Color(0xFFFFF0C2),
+    onTertiaryContainer:  Color(0xFF4D3800),
+    surface:              synthwaveSurface,
+    onSurface:            synthwaveOnSurface,
+    surfaceContainerHighest: synthwaveOutline,
+    onSurfaceVariant:     Color(0xFFC9A8DE),
+    outline:              Color(0xFF8A5CB0),
+    outlineVariant:       synthwaveOutline,
+    // Material's standard *dark*-theme error pair — a light-theme error
+    // container would clash badly against this near-black scaffold.
+    error:                Color(0xFFFFB4AB),
+    onError:              Color(0xFF690005),
+    errorContainer:       Color(0xFF93000A),
+    onErrorContainer:     Color(0xFFFFDAD6),
+    shadow:               Color(0xFF000000),
+    scrim:                Color(0xFF000000),
+    inverseSurface:       synthwaveOnSurface,
+    onInverseSurface:     synthwaveSurface,
+    inversePrimary:       Color(0xFFC2410C),
+    surfaceTint:          synthwaveOrange,
+  );
+
+  static ThemeData get synthwaveTokyo => _buildTheme(
+    scheme:       _synthwaveScheme,
+    background:   synthwaveBg,
+    border:       synthwaveOutline,
+    navIndicator: synthwaveOrange.withValues(alpha: 0.35),
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // White & Charcoal — minimal monochrome light palette
+  // ══════════════════════════════════════════════════════════════════════════
+
+  static const whiteBg        = Color(0xFFFAFAFA); // scaffold background
+  static const charcoal       = Color(0xFF2B2B2E); // primary
+  static const charcoalGray   = Color(0xFF6E6E73); // secondary / medium text
+  static const charcoalDark   = Color(0xFF1C1C1E); // dark text
+
+  static const _whiteCharcoalScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary:              charcoal,
+    onPrimary:            cloudWhite,
+    primaryContainer:     Color(0xFFDCDCDE),
+    onPrimaryContainer:   charcoalDark,
+    secondary:            charcoalGray,
+    onSecondary:          cloudWhite,
+    secondaryContainer:   Color(0xFFE4E4E7),
+    onSecondaryContainer: Color(0xFF3A3A3D),
+    tertiary:             Color(0xFF8A7F72),
+    onTertiary:           cloudWhite,
+    tertiaryContainer:    Color(0xFFE9E4DE),
+    onTertiaryContainer:  Color(0xFF332D26),
+    surface:              cloudWhite,
+    onSurface:            charcoalDark,
+    surfaceContainerHighest: Color(0xFFEDEDEF),
+    onSurfaceVariant:     charcoalGray,
+    outline:              Color(0xFFB8B8BC),
+    outlineVariant:       Color(0xFFE5E5EA),
+    error:                Color(0xFFBA1A1A),
+    onError:              cloudWhite,
+    errorContainer:       Color(0xFFFFDAD6),
+    onErrorContainer:     Color(0xFF410002),
+    shadow:               Color(0xFF000000),
+    scrim:                Color(0xFF000000),
+    inverseSurface:       charcoal,
+    onInverseSurface:     Color(0xFFF5F5F5),
+    inversePrimary:       Color(0xFFC7C7CC),
+    surfaceTint:          charcoal,
+  );
+
+  static ThemeData get whiteAndCharcoal => _buildTheme(
+    scheme:       _whiteCharcoalScheme,
+    background:   whiteBg,
+    border:       const Color(0xFFE5E5EA),
+    navIndicator: charcoal.withValues(alpha: 0.12),
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Warm Oat & Light Blue — soft warm neutral background, sky-blue accent
+  // ══════════════════════════════════════════════════════════════════════════
+
+  static const oatBg        = Color(0xFFF6EFE2); // scaffold background
+  static const oatSurface   = Color(0xFFFFFCF5); // cards / inputs
+  static const oatBorder    = Color(0xFFEDE4D2); // dividers / subtle surfaces
+  static const skyBlue      = Color(0xFF3D84C6); // primary
+  static const oatTaupe     = Color(0xFF8A7A63); // secondary
+  static const oatSage      = Color(0xFF6E9A7B); // tertiary
+  static const oatOnSurface = Color(0xFF3A3226); // warm dark brown text
+
+  static const _oatSkyScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary:              skyBlue,
+    onPrimary:            cloudWhite,
+    primaryContainer:     Color(0xFFBFE0F7),
+    onPrimaryContainer:   Color(0xFF0B3A5C),
+    secondary:            oatTaupe,
+    onSecondary:          cloudWhite,
+    secondaryContainer:   Color(0xFFEDE1CE),
+    onSecondaryContainer: Color(0xFF3A3020),
+    tertiary:             oatSage,
+    onTertiary:           cloudWhite,
+    tertiaryContainer:    Color(0xFFD3E6D8),
+    onTertiaryContainer:  Color(0xFF1F3A28),
+    surface:              oatSurface,
+    onSurface:            oatOnSurface,
+    surfaceContainerHighest: oatBorder,
+    onSurfaceVariant:     Color(0xFF7A6F5B),
+    outline:              Color(0xFFC2B49A),
+    outlineVariant:       oatBorder,
+    error:                Color(0xFFBA1A1A),
+    onError:              cloudWhite,
+    errorContainer:       Color(0xFFFFDAD6),
+    onErrorContainer:     Color(0xFF410002),
+    shadow:               Color(0xFF000000),
+    scrim:                Color(0xFF000000),
+    inverseSurface:       oatOnSurface,
+    onInverseSurface:     oatBg,
+    inversePrimary:       Color(0xFF9BCBEF),
+    surfaceTint:          skyBlue,
+  );
+
+  static ThemeData get warmOatLightBlue => _buildTheme(
+    scheme:       _oatSkyScheme,
+    background:   oatBg,
+    border:       oatBorder,
+    navIndicator: skyBlue.withValues(alpha: 0.35),
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
   // Shared builder — keeps component styles DRY across themes
   // ══════════════════════════════════════════════════════════════════════════
 
@@ -211,7 +365,7 @@ class AppTheme {
       ),
 
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: cloudWhite,
+        backgroundColor: scheme.surface,
         elevation: 0,
         shadowColor: Colors.transparent,
         indicatorColor: navIndicator,
@@ -241,7 +395,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: cloudWhite,
+          foregroundColor: scheme.onPrimary,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,
@@ -255,7 +409,7 @@ class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: cloudWhite,
+          foregroundColor: scheme.onPrimary,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: const TextStyle(
@@ -284,7 +438,7 @@ class AppTheme {
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: cloudWhite,
+        fillColor: scheme.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: border),
@@ -303,7 +457,7 @@ class AppTheme {
 
       cardTheme: CardThemeData(
         elevation: 0,
-        color: cloudWhite,
+        color: scheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         margin: EdgeInsets.zero,
       ),

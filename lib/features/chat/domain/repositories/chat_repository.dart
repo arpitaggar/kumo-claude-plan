@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failure.dart';
 import '../entities/message.dart';
+import '../entities/message_read_receipt.dart';
 
 abstract class ChatRepository {
   Stream<Either<Failure, List<Message>>> watchMessages(String itineraryId);
@@ -17,5 +18,20 @@ abstract class ChatRepository {
     required String senderId,
     required String senderName,
     required String content,
+    String? attachmentStoragePath,
+    String? attachmentUrl,
+    String? attachmentFileName,
+    String? attachmentMimeType,
+    int? attachmentSizeBytes,
+    String? attachmentKind,
+  });
+
+  Future<Either<Failure, List<MessageReadReceipt>>> getReadReceipts(
+    String messageId,
+  );
+
+  Future<Either<Failure, void>> upsertPushToken({
+    required String token,
+    required String platform,
   });
 }

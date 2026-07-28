@@ -53,7 +53,7 @@ class _PasswordResetPageState extends ConsumerState<PasswordResetPage> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: LoadingWidget(message: 'Sending email…'),
+        body: const LoadingWidget(message: 'Sending email…'),
       );
     }
 

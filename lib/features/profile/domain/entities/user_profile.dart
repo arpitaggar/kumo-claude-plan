@@ -17,6 +17,7 @@ class UserProfile extends Equatable {
     required this.unitsPreference,
     required this.travelPreferenceTags,
     required this.updatedAt,
+    this.pushMessagePreviewEnabled = true,
     this.username,
     this.avatarUrl,
     this.bio,
@@ -62,6 +63,10 @@ class UserProfile extends Equatable {
   final DateTime? usernameLastChangedAt;
   final DateTime updatedAt;
 
+  /// Whether push-notification banners for chat messages show the message
+  /// text, or a generic "New message" placeholder.
+  final bool pushMessagePreviewEnabled;
+
   /// True when the 7-day username-change cooldown has elapsed (or never set).
   bool get canChangeUsername {
     final last = usernameLastChangedAt;
@@ -92,6 +97,7 @@ class UserProfile extends Equatable {
     String? contactVisibility,
     DateTime? usernameLastChangedAt,
     DateTime? updatedAt,
+    bool? pushMessagePreviewEnabled,
   }) =>
       UserProfile(
         id: id ?? this.id,
@@ -113,6 +119,8 @@ class UserProfile extends Equatable {
         usernameLastChangedAt:
             usernameLastChangedAt ?? this.usernameLastChangedAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        pushMessagePreviewEnabled:
+            pushMessagePreviewEnabled ?? this.pushMessagePreviewEnabled,
       );
 
   @override
@@ -135,5 +143,6 @@ class UserProfile extends Equatable {
         contactVisibility,
         usernameLastChangedAt,
         updatedAt,
+        pushMessagePreviewEnabled,
       ];
 }

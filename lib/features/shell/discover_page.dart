@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/utils/formatters.dart';
+import '../../shared/extensions/context_extensions.dart';
 import '../auth/presentation/providers/auth_provider.dart';
 import '../discover/presentation/providers/discover_provider.dart';
 import '../itinerary/domain/entities/travel_itinerary.dart';
-import '../../shared/extensions/context_extensions.dart';
 
 class DiscoverPage extends ConsumerStatefulWidget {
   const DiscoverPage({super.key});
@@ -242,7 +242,7 @@ class _PublicTripCard extends ConsumerWidget {
                             children: [
                               Icon(Icons.public,
                                   size: 11, color: context.colorScheme.primary),
-                              SizedBox(width: 3),
+                              const SizedBox(width: 3),
                               Text(
                                 'Public',
                                 style: TextStyle(

@@ -32,7 +32,29 @@
       "Bash(grep -v \"^warning\\\\|^error\\\\|^info\\\\|^  \\\\|^$\\\\|Analyzing\\\\|No issues\\\\|issues found\")",
       "Bash(grep -v \"^$\\\\|^Analyzing\\\\|^No issues\")",
       "Bash(python3 scripts/gen_icons.py all)",
-      "Bash(python3 scripts/gen_icons.py alternates)"
+      "Bash(python3 scripts/gen_icons.py alternates)",
+      "Bash(git commit -m ' *)",
+      "Bash(git add *)",
+      "Bash(find /Users/pitto/Documents/KUMO/kumo-claude-plan -name \"*.md\" -not -path \"*/node_modules/*\" | head -20)",
+      "Read(//Users/pitto/Documents/KUMO/kumo-claude-plan/**)",
+      "Bash(ls /Users/pitto/Documents/KUMO/kumo-claude-plan/)",
+      "Bash(sed -i '' 's/useCase\\(\\\\[/useCase\\([/g; s/useCase\\(\\\\\\(expenses\\\\\\)\\)/useCase\\(\\\\1, baseCurrency: '\\\\''USD'\\\\''\\)/g' /Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/test/features/expense_split/domain/usecases/calculate_settlements_usecase_test.dart)",
+      "Bash(perl -i '' 's/useCase\\\\\\(\\(\\\\[.*?\\\\]|expenses\\)\\\\\\)/useCase\\($1, baseCurrency: '\\\\''USD'\\\\''\\)/g' /Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/test/features/expense_split/domain/usecases/calculate_settlements_usecase_test.dart)",
+      "Bash(flutter devices *)",
+      "Bash(open /Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude/ios/Runner.xcworkspace)",
+      "Bash(grep -E \"^\\(android|ios|macos|web|linux|windows\\)$\")",
+      "Bash(flutter emulators *)",
+      "Bash(xcrun simctl *)",
+      "Bash(open -a Simulator)",
+      "Bash(flutter run *)",
+      "Bash(echo \"Launched in background with PID $!\")",
+      "Bash(pkill -f \"flutter run -d 39BA5F0E\")",
+      "Bash(adb devices *)",
+      "Bash(PKG=/Users/pitto/.pub-cache/hosted/pub.dev/file_picker-11.0.2 *)",
+      "Read(//Users/pitto/.pub-cache/hosted/pub.dev/file_picker-11.0.2/lib/src/**)",
+      "Bash(git check-ignore *)",
+      "Read(//Users/pitto/.pub-cache/hosted/pub.dev/file_picker-11.0.2/android/**)",
+      "Bash(cd /Users/pitto/Documents/KUMO/kumo-claude-plan/kumo_claude *)"
     ]
   }
 }

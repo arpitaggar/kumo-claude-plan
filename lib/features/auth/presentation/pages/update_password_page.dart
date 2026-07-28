@@ -53,7 +53,7 @@ class _UpdatePasswordPageState extends ConsumerState<UpdatePasswordPage> {
     if (authState is AuthLoading) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: LoadingWidget(message: 'Updating password…'),
+        body: const LoadingWidget(message: 'Updating password…'),
       );
     }
 

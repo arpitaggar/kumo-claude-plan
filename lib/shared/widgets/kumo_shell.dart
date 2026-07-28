@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../config/theme.dart';
+import '../../core/notifications/notification_providers.dart';
 import '../../features/chat/presentation/providers/chat_provider.dart';
+import '../extensions/context_extensions.dart';
 import 'offline_banner.dart';
 
 class KumoShell extends ConsumerWidget {
@@ -34,8 +35,16 @@ class KumoShell extends ConsumerWidget {
 
     final hasUnread = ref.watch(inboxHasUnreadProvider);
 
+    // Keeps the new-message watcher alive for the whole authenticated
+    // session, and requests notification permission once it's ready.
+    ref
+      ..watch(chatMessageWatcherProvider)
+      ..listen(notificationServiceProvider, (_, next) {
+        next.value?.requestPermissionOnce();
+      });
+
     return Scaffold(
-      backgroundColor: AppTheme.warmOatmeal,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           const OfflineBanner(),
@@ -44,10 +53,10 @@ class KumoShell extends ConsumerWidget {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: AppTheme.cloudWhite,
+          color: context.colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.darkEspresso.withValues(alpha: 0.06),
+              color: context.colorScheme.onSurface.withValues(alpha: 0.06),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -56,7 +65,6 @@ class KumoShell extends ConsumerWidget {
         child: NavigationBar(
           selectedIndex: activeIndex,
           onDestinationSelected: (i) => context.go(_destinations[i].path),
-          backgroundColor: AppTheme.cloudWhite,
           elevation: 0,
           height: 64,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -96,8 +104,8 @@ class _BadgedIcon extends StatelessWidget {
             child: Container(
               width: 8,
               height: 8,
-              decoration: const BoxDecoration(
-                color: AppTheme.softCoral,
+              decoration: BoxDecoration(
+                color: context.colorScheme.error,
                 shape: BoxShape.circle,
               ),
             ),
