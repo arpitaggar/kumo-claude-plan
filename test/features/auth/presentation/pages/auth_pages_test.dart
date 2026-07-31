@@ -34,7 +34,7 @@ void main() {
     testWidgets('shows tagline', (tester) async {
       await tester.pumpWidget(await authScope(const LoginPage()));
       await tester.pumpAndSettle();
-      expect(find.text('Plan. Explore. Go.'), findsOneWidget);
+      expect(find.text('Plan. Go. Explore.'), findsOneWidget);
     });
 
     testWidgets('shows subtitle', (tester) async {

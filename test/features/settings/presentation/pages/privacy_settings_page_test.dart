@@ -12,6 +12,16 @@ Widget _buildPage() => ProviderScope(
       child: const MaterialApp(home: PrivacySettingsPage()),
     );
 
+// The page's ListView has grown past one screen (Discoverability, Profile
+// visibility, and Contact visibility sections were added above Legal /
+// Danger zone) — Sliver-backed lists only build children within the current
+// viewport + cache extent, so anything below the fold must be scrolled into
+// view before `find.text` can see it.
+Future<void> _scrollToText(WidgetTester tester, String text) async {
+  await tester.scrollUntilVisible(find.text(text), 300);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('PrivacySettingsPage', () {
     testWidgets('renders without crash', (tester) async {
@@ -34,7 +44,12 @@ void main() {
     testWidgets('shows discoverability toggle', (tester) async {
       await tester.pumpWidget(_buildPage());
       await tester.pumpAndSettle();
-      expect(find.byType(SwitchListTile), findsOneWidget);
+      // Not findsOneWidget: Profile visibility / Contact visibility sections
+      // added their own SwitchListTiles alongside this one.
+      expect(
+        find.widgetWithText(SwitchListTile, 'Allow others to find me'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows Legal section heading', (tester) async {
@@ -52,18 +67,21 @@ void main() {
     testWidgets('shows Terms of Service tile', (tester) async {
       await tester.pumpWidget(_buildPage());
       await tester.pumpAndSettle();
+      await _scrollToText(tester, 'Terms of Service');
       expect(find.text('Terms of Service'), findsOneWidget);
     });
 
     testWidgets('shows Danger zone section heading', (tester) async {
       await tester.pumpWidget(_buildPage());
       await tester.pumpAndSettle();
+      await _scrollToText(tester, 'Danger zone');
       expect(find.text('Danger zone'), findsOneWidget);
     });
 
     testWidgets('shows Delete Account tile', (tester) async {
       await tester.pumpWidget(_buildPage());
       await tester.pumpAndSettle();
+      await _scrollToText(tester, 'Delete Account');
       expect(find.text('Delete Account'), findsOneWidget);
     });
 
@@ -71,6 +89,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_buildPage());
       await tester.pumpAndSettle();
+      await _scrollToText(tester, 'Delete Account');
       await tester.tap(find.text('Delete Account'));
       await tester.pumpAndSettle();
       expect(find.text('Delete account?'), findsOneWidget);
@@ -80,6 +99,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_buildPage());
       await tester.pumpAndSettle();
+      await _scrollToText(tester, 'Delete Account');
       await tester.tap(find.text('Delete Account'));
       await tester.pumpAndSettle();
       expect(find.text('Cancel'), findsOneWidget);
@@ -89,6 +109,7 @@ void main() {
     testWidgets('cancelling delete dialog dismisses it', (tester) async {
       await tester.pumpWidget(_buildPage());
       await tester.pumpAndSettle();
+      await _scrollToText(tester, 'Delete Account');
       await tester.tap(find.text('Delete Account'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancel'));
