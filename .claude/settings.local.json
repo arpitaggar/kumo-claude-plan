@@ -12,7 +12,8 @@
       "Bash(timeout 60 supabase functions deploy send-message-push --no-verify-jwt --dry-run)",
       "Bash(supabase functions *)",
       "Bash(grep -c '^```' CLAUDE.md)",
-      "Bash(grep -c '^```' docs/DEVELOPMENT_ROADMAP.md)"
+      "Bash(grep -c '^```' docs/DEVELOPMENT_ROADMAP.md)",
+      "Bash(git push *)"
     ]
   }
 }

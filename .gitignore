@@ -13,6 +13,14 @@
 migrate_working_dir/
 **/**.env*
 FIREBASE_TOKEN
+
+# Firebase platform config — contains a per-app API key. Not a traditional
+# secret (Google's own guidance is that these are safe to ship in a client
+# binary), but keeping it out of git avoids tripping secret scanners and
+# keeps key rotation simple. Real files stay on disk locally / in CI secrets;
+# see the checked-in *.example templates for the shape.
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
 # IntelliJ related
 *.iml
 *.ipr

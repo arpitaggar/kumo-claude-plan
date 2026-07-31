@@ -813,6 +813,10 @@ supabase functions deploy send-message-push
 - **No dependency on a notification-sending queue or cron.** Push is fired synchronously (fire-and-forget from the client's point of view) right after the message insert; a failure there never blocks or fails the send.
 - **`push_tokens` is a public multi-row table per user** (a user can have several devices), never a single column on `profiles` — matches how `username_history`/`profile_change_log` were modeled as separate tables in Stage 16 rather than bolted onto `profiles`.
 
+#### Platform config files are gitignored
+
+`android/app/google-services.json` and `ios/Runner/GoogleService-Info.plist` were committed when the Firebase project was first wired up (Stage 19), which tripped secret scanning on the embedded per-app API key. They're now gitignored; `*.example` templates next to each (with placeholder values) document the required shape. To build locally, download the real files from Firebase console → Project settings → your app, and drop them in place — no build config changes needed since the paths are unchanged.
+
 ---
 
 ## Useful Resources
