@@ -49,6 +49,18 @@ class NotificationService {
             importance: Importance.high,
           ),
         );
+
+    // `onDidReceiveNotificationResponse` above only covers the app already
+    // being alive (backgrounded) when the notification is tapped. If the app
+    // was fully killed and got launched *by* the tap, that launch detail has
+    // to be checked explicitly here instead.
+    final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+    if (launchDetails?.didNotificationLaunchApp ?? false) {
+      final response = launchDetails!.notificationResponse;
+      if (response != null) {
+        _onTap(response);
+      }
+    }
   }
 
   /// Requests OS notification permission once per install — safe to call

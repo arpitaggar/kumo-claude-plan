@@ -173,11 +173,24 @@ supabase functions deploy generate-itinerary
 
 ---
 
+### Stage 17 — Chat Attachments, Extended Profile, Dark Themes & Push Notifications ✅ (Android) / 🔧 (iOS)
+
+**Note on numbering:** this roadmap's stage count and the per-feature "Stage N" labels used in `CLAUDE.md` / `docs/supabase_migrations/` drifted apart after this document was first written — `CLAUDE.md`'s Stage 16–19 (Extended Profile, Expense Improvements, Avatar Storage, Chat Upgrade) all landed in the gap between this doc's Stage 16 and this entry. See `CLAUDE.md` for the authoritative, currently-maintained breakdown of what shipped in each; this entry only covers what's relevant to "what remains."
+
+**Shipped:** Extended user profile (username/bio/location/preferences, privacy controls), expense split-mode/multi-currency/settlement improvements, avatar upload to Supabase Storage, message photo attachments, per-user read-receipt detail, three new themes including the app's first dark theme (Synthwave Tokyo), and the Firebase project setup (app renamed to `com.cygnus.travelKumo`, `google-services.json` / `GoogleService-Info.plist` added).
+
+**Push notification delivery — Android done, iOS scaffolded but not live:**
+- Android: FCM token registration, an Edge Function (`supabase/functions/send-message-push`) that sends a data-only push on every chat message, and a background isolate handler that displays it via `flutter_local_notifications` even when the app is killed. Code-complete; needs `supabase secrets set FIREBASE_SERVICE_ACCOUNT_KEY=...` + `supabase functions deploy send-message-push` before it's live.
+- iOS: entitlements + Xcode project wiring done (validated with a real `flutter build ios --no-codesign`), and the Edge Function sends a proper APNs alert payload for iOS tokens. Gated behind `kIosPushReady` (`lib/core/notifications/push_config.dart`) until an APNs key is uploaded in Firebase and the Push Notifications capability is enabled in Xcode.
+
+---
+
 ## What Remains (Deferred / Not Implemented)
 
 | Feature | Why Deferred |
 |---------|-------------|
 | Katha AI (live) | Needs Anthropic API key — Edge Function ready to deploy |
+| Push notifications (live) | Android code-complete, needs Edge Function deployed + Firebase service-account secret set; iOS scaffolded but gated on an APNs key + Xcode capability, see Stage 17 |
 | Invite email (Resend branded) | Needs Resend account + domain — Supabase built-in fallback works today |
 | GitHub Pages for legal docs | Enable in repo Settings → Pages → /docs; submit URL to app stores |
 | WCAG 2.1 full accessibility audit | Partial (send button + dots done); full audit deferred |
@@ -209,7 +222,8 @@ Jun–Jul 2026
 ├── Stage 13: Katha AI Security + Branding   ✅ Week 6
 ├── Stage 14: App Icon & Launch Screen       ✅ Week 7
 ├── Stage 15: Privacy, GDPR & Legal          ✅ Week 7
-└── Stage 16: Chat Polish, Animations & A11y ✅ Week 7
+├── Stage 16: Chat Polish, Animations & A11y ✅ Week 7
+└── Stage 17: Profile/Expense/Chat/Push      ✅ Android / 🔧 iOS   Jul 2026
 ```
 
 ---

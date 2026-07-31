@@ -5,7 +5,14 @@
       "Bash(xargs cat -n)",
       "Bash(flutter pub *)",
       "Bash(./gradlew :file_picker:compileDebugKotlin)",
-      "Bash(export JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\")"
+      "Bash(export JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\")",
+      "Bash(xcodebuild -version)",
+      "Bash(deno --version)",
+      "Bash(supabase --version)",
+      "Bash(timeout 60 supabase functions deploy send-message-push --no-verify-jwt --dry-run)",
+      "Bash(supabase functions *)",
+      "Bash(grep -c '^```' CLAUDE.md)",
+      "Bash(grep -c '^```' docs/DEVELOPMENT_ROADMAP.md)"
     ]
   }
 }

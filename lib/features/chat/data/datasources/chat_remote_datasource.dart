@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/error/exception.dart';
 import '../../../../core/network/supabase_client.dart';
+import '../../../../core/utils/logger.dart';
 import '../models/message_attachment_model.dart';
 import '../models/message_model.dart';
 import '../models/message_read_receipt_model.dart';
@@ -161,6 +162,20 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           'size_bytes': attachmentSizeBytes,
           'kind': attachmentKind,
         });
+      }
+
+      // Best-effort push dispatch — failure here does not fail the send.
+      try {
+        final res = await KumoSupabaseClient.client.functions.invoke(
+          'send-message-push',
+          body: {'message_id': messageId},
+        );
+        AppLogger.info(
+            'send-message-push: status=${res.status} data=${res.data}');
+      } catch (e, st) {
+        // Edge function not deployed, or the caller is offline — the
+        // message itself already landed via the insert above.
+        AppLogger.warning('send-message-push invoke failed: $e\n$st');
       }
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);

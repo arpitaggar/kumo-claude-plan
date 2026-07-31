@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/notifications/notification_providers.dart';
+import '../../../../core/notifications/push_config.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../itinerary/presentation/providers/itinerary_provider.dart';
 import '../../../profile/domain/entities/notification_preference.dart';
@@ -102,9 +105,16 @@ final inboxHasUnreadProvider = Provider<bool>((ref) {
 });
 
 // ---------------------------------------------------------------------------
-// In-app new-message notifications — foreground/backgrounded-but-alive only.
-// Delivery when the app is fully killed still needs real OS push (blocked on
-// external Firebase/APNs setup).
+// In-app new-message notifications.
+//
+// Android: this watcher only fires while the app is actually foregrounded;
+// backgrounded/killed delivery goes through real OS push instead (FCM data
+// message → `push_message_handler.dart`, sent server-side by
+// `supabase/functions/send-message-push`).
+//
+// iOS: no background push wired yet (needs an APNs key uploaded in Firebase),
+// so this remains the only delivery mechanism there — best-effort,
+// foreground/backgrounded-but-alive only.
 // ---------------------------------------------------------------------------
 
 /// The itinerary id of the chat currently on screen, if any. Set/cleared by
@@ -157,6 +167,18 @@ void _maybeNotify(
     return;
   }
   if (ref.read(activeChatIdProvider) == tripId) {
+    return;
+  }
+  // Once real OS push is live for a platform (Android always; iOS once
+  // kIosPushReady flips on), it owns non-foreground delivery — showing a
+  // local notification here too would double up. Until then (iOS today),
+  // this best-effort in-process watcher is the only delivery mechanism, so
+  // it keeps firing regardless of lifecycle state.
+  final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+  final isIosPushLive =
+      defaultTargetPlatform == TargetPlatform.iOS && kIosPushReady;
+  if ((isAndroid || isIosPushLive) &&
+      WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
     return;
   }
 

@@ -1,3 +1,6 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +11,8 @@ import 'config/router.dart';
 import 'config/theme.dart';
 import 'config/theme_provider.dart';
 import 'core/network/supabase_client.dart';
+import 'core/notifications/push_config.dart';
+import 'core/notifications/push_message_handler.dart';
 import 'core/utils/logger.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/chat/presentation/providers/chat_provider.dart';
@@ -28,6 +33,29 @@ Future<void> main() async {
   } catch (e, st) {
     AppLogger.critical('Failed to initialize Supabase', error: e, stackTrace: st);
     rethrow;
+  }
+
+  final isIos = defaultTargetPlatform == TargetPlatform.iOS;
+  if (defaultTargetPlatform == TargetPlatform.android || (isIos && kIosPushReady)) {
+    try {
+      await Firebase.initializeApp();
+      if (isIos) {
+        // iOS shows push via a native APNs alert (see
+        // send-message-push/index.ts), not flutter_local_notifications, so
+        // there's no local-notification tap callback to hook into — tap
+        // navigation has to go through FCM's own open-app events instead.
+        FirebaseMessaging.onMessageOpenedApp.listen(handleIosPushTap);
+        final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+        if (initialMessage != null) {
+          handleIosPushTap(initialMessage);
+        }
+      } else {
+        FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      }
+      AppLogger.info('Firebase initialized');
+    } catch (e, st) {
+      AppLogger.warning('Firebase init failed: $e\n$st');
+    }
   }
 
   final sharedPreferences = await SharedPreferences.getInstance();

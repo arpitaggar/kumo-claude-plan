@@ -35,10 +35,12 @@ class KumoShell extends ConsumerWidget {
 
     final hasUnread = ref.watch(inboxHasUnreadProvider);
 
-    // Keeps the new-message watcher alive for the whole authenticated
-    // session, and requests notification permission once it's ready.
+    // Keeps the new-message watcher and FCM token registration alive for the
+    // whole authenticated session, and requests notification permission once
+    // it's ready.
     ref
       ..watch(chatMessageWatcherProvider)
+      ..watch(fcmTokenSyncProvider)
       ..listen(notificationServiceProvider, (_, next) {
         next.value?.requestPermissionOnce();
       });
