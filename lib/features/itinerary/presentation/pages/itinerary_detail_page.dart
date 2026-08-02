@@ -580,12 +580,12 @@ Future<void> _handleSegmentTap(
   }
 
   if (action == SegmentAction.continueFrom) {
-    context.push('/trip/${itinerary.id}/segment', extra: segment);
+    unawaited(context.push('/trip/${itinerary.id}/segment', extra: segment));
     return;
   }
 
   if (action == SegmentAction.edit) {
-    context.push('/trip/${itinerary.id}/segment/${segment.id}');
+    unawaited(context.push('/trip/${itinerary.id}/segment/${segment.id}'));
     return;
   }
 
