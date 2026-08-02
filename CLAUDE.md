@@ -868,7 +868,7 @@ A scalar API key can't be gitignored as a whole file the way the Firebase config
 
 - **`profile_status` as an audit log, not a column**, for the same reason `username_history`/`profile_change_log` exist — a mutable "current state" field can't explain itself later; an event log always can.
 - **Client calls `close_expired_premium_status()` lazily** rather than running a scheduled job, because this project has no cron/scheduled-function precedent yet; the function is cheap and idempotent, so calling it on every status read is simpler than standing up new infrastructure for it.
-- **`material_design_icons_flutter` (already an unused pubspec dependency since Stage 19) turned out to be incompatible with the current Flutter SDK** — its pinned version subclasses `IconData`, which is now a `final class`. Transport-mode icons use built-in `Icons.*` instead; the broken dependency is still sitting in `pubspec.yaml` unused and should be removed or upgraded separately.
+- **`material_design_icons_flutter` (an unused pubspec dependency since Stage 19) turned out to be incompatible with the current Flutter SDK** — its pinned version subclasses `IconData`, which is now a `final class`. Transport-mode icons use built-in `Icons.*` instead; the dependency itself has since been removed from `pubspec.yaml` since nothing used it.
 
 #### Not yet implemented — org/sub-org premium inheritance
 

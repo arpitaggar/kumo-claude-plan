@@ -266,7 +266,6 @@ Outstanding:
 - Widget tests and integration tests not yet written
 - No formal WCAG 2.1 accessibility audit
 - Solo development; no PR review process
-- `material_design_icons_flutter` pubspec dependency is unused and incompatible with the current Flutter SDK — remove or upgrade it
 
 ---
 
