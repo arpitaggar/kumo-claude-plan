@@ -47,6 +47,18 @@ class TripSegmentModel extends TripSegment {
     );
   }
 
+  factory TripSegmentModel.fromEntity(TripSegment segment) => TripSegmentModel(
+        id: segment.id,
+        itineraryId: segment.itineraryId,
+        orderIndex: segment.orderIndex,
+        mode: segment.mode,
+        origin: segment.origin,
+        destination: segment.destination,
+        departureTime: segment.departureTime,
+        arrivalTime: segment.arrivalTime,
+        notes: segment.notes,
+      );
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'itinerary_id': itineraryId,
@@ -63,16 +75,4 @@ class TripSegmentModel extends TripSegment {
         if (arrivalTime != null) 'arrival_time': arrivalTime!.toIso8601String(),
         if (notes != null) 'notes': notes,
       };
-
-  factory TripSegmentModel.fromEntity(TripSegment segment) => TripSegmentModel(
-        id: segment.id,
-        itineraryId: segment.itineraryId,
-        orderIndex: segment.orderIndex,
-        mode: segment.mode,
-        origin: segment.origin,
-        destination: segment.destination,
-        departureTime: segment.departureTime,
-        arrivalTime: segment.arrivalTime,
-        notes: segment.notes,
-      );
 }

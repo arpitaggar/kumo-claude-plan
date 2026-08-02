@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 import 'package:kumo_claude/core/notifications/notification_providers.dart';
 import 'package:kumo_claude/core/notifications/notification_service.dart';
@@ -28,6 +27,7 @@ import 'package:kumo_claude/features/itinerary/presentation/providers/itinerary_
 import 'package:kumo_claude/features/profile/domain/entities/notification_preference.dart';
 import 'package:kumo_claude/features/profile/domain/entities/user_profile.dart';
 import 'package:kumo_claude/features/profile/presentation/providers/user_profile_provider.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_helpers.dart';
 
@@ -123,10 +123,10 @@ Future<
   UserProfile? profile,
 }) async {
   final authRepo = MockAuthRepository();
-  when(() => authRepo.getCurrentUser()).thenAnswer((_) async => Right(User(
+  when(authRepo.getCurrentUser).thenAnswer((_) async => Right(User(
         id: _me,
         email: 'me@example.com',
-        createdAt: DateTime(2026, 1, 1),
+        createdAt: DateTime(2026),
       )));
 
   final fetchUseCase = MockFetchItinerariesUseCase();
@@ -149,6 +149,14 @@ Future<
 
   final controller = StreamController<List<Message>>();
 
+  // userProfileProvider/notificationPreferencesProvider are `.autoDispose` —
+  // pin them alive for the container's lifetime so a later `ref.read` inside
+  // `_maybeNotify` can't race a disposal/recreation cycle and see a fresh
+  // AsyncLoading (with a null `.value`) instead of the settled override data.
+  //
+  // Settle every async provider this scenario depends on before the test
+  // starts pushing stream events, so `_maybeNotify`'s synchronous `ref.read`
+  // calls see their final values rather than initial loading states.
   final container = ProviderContainer(overrides: [
     authNotifierProvider.overrideWith((ref) => AuthNotifier(
           loginUseCase: MockLoginUseCase(),
@@ -163,19 +171,10 @@ Future<
     userProfileProvider.overrideWith((ref) async => profile),
     notificationServiceProvider
         .overrideWith((ref) async => notificationService),
-  ]);
-
-  // userProfileProvider/notificationPreferencesProvider are `.autoDispose` —
-  // pin them alive for the container's lifetime so a later `ref.read` inside
-  // `_maybeNotify` can't race a disposal/recreation cycle and see a fresh
-  // AsyncLoading (with a null `.value`) instead of the settled override data.
-  container.listen(userProfileProvider, (_, _) {});
-  container.listen(notificationPreferencesProvider, (_, _) {});
-
-  // Settle every async provider this scenario depends on before the test
-  // starts pushing stream events, so `_maybeNotify`'s synchronous `ref.read`
-  // calls see their final values rather than initial loading states.
-  container.read(authNotifierProvider);
+  ])
+    ..listen(userProfileProvider, (_, _) {})
+    ..listen(notificationPreferencesProvider, (_, _) {})
+    ..read(authNotifierProvider);
   await itineraryNotifier.loadItineraries(_me);
   await container.read(notificationServiceProvider.future);
   await container.read(notificationPreferencesProvider.future);

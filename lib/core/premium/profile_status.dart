@@ -16,6 +16,17 @@ class ProfileStatus extends Equatable {
     this.expiresAt,
   });
 
+  factory ProfileStatus.fromJson(Map<String, dynamic> json) => ProfileStatus(
+        id: json['id'] as String,
+        userId: json['user_id'] as String,
+        status: json['status'] as String,
+        reason: json['reason'] as String,
+        expiresAt: json['expires_at'] != null
+            ? DateTime.parse(json['expires_at'] as String).toUtc()
+            : null,
+        createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
+      );
+
   final String id;
   final String userId;
 
@@ -35,17 +46,6 @@ class ProfileStatus extends Equatable {
   bool get isCurrentlyPremium =>
       status == 'premium' &&
       (expiresAt == null || expiresAt!.isAfter(DateTime.now()));
-
-  factory ProfileStatus.fromJson(Map<String, dynamic> json) => ProfileStatus(
-        id: json['id'] as String,
-        userId: json['user_id'] as String,
-        status: json['status'] as String,
-        reason: json['reason'] as String,
-        expiresAt: json['expires_at'] != null
-            ? DateTime.parse(json['expires_at'] as String).toUtc()
-            : null,
-        createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
-      );
 
   @override
   List<Object?> get props => [id, userId, status, reason, expiresAt, createdAt];

@@ -41,19 +41,18 @@ class TripSegment extends Equatable {
     DateTime? departureTime,
     DateTime? arrivalTime,
     String? notes,
-  }) {
-    return TripSegment(
-      id: id,
-      itineraryId: itineraryId,
-      orderIndex: orderIndex ?? this.orderIndex,
-      mode: mode ?? this.mode,
-      origin: origin ?? this.origin,
-      destination: destination ?? this.destination,
-      departureTime: departureTime ?? this.departureTime,
-      arrivalTime: arrivalTime ?? this.arrivalTime,
-      notes: notes ?? this.notes,
-    );
-  }
+  }) =>
+      TripSegment(
+        id: id,
+        itineraryId: itineraryId,
+        orderIndex: orderIndex ?? this.orderIndex,
+        mode: mode ?? this.mode,
+        origin: origin ?? this.origin,
+        destination: destination ?? this.destination,
+        departureTime: departureTime ?? this.departureTime,
+        arrivalTime: arrivalTime ?? this.arrivalTime,
+        notes: notes ?? this.notes,
+      );
 
   @override
   List<Object?> get props => [

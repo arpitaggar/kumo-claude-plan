@@ -51,14 +51,18 @@ class _LocationSearchSheetState extends ConsumerState<LocationSearchSheet> {
     setState(() => _loading = true);
     try {
       final results = await ref.read(geocodingServiceProvider).search(query);
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _results = results;
         _loading = false;
         _error = null;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _loading = false;
         _error = 'Search failed. Please try again.';

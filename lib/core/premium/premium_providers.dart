@@ -36,7 +36,8 @@ final isPremiumUserProvider = Provider<bool>((ref) {
   return status?.isCurrentlyPremium ?? false;
 });
 
-/// Whether the current user can use [featureKey] right now.
+/// Whether the current user can use the feature named by the family's
+/// `featureKey` argument right now.
 ///
 /// A feature with no matching row (not yet seeded, or flags still loading)
 /// defaults to allowed — missing data should never lock users out of a

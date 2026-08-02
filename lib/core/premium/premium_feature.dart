@@ -10,6 +10,14 @@ class PremiumFeature extends Equatable {
     this.freeUntil,
   });
 
+  factory PremiumFeature.fromJson(Map<String, dynamic> json) => PremiumFeature(
+        featureKey: json['feature_key'] as String,
+        requiresPremium: json['requires_premium'] as bool? ?? false,
+        freeUntil: json['free_until'] != null
+            ? DateTime.parse(json['free_until'] as String).toUtc()
+            : null,
+      );
+
   final String featureKey;
   final bool requiresPremium;
 
@@ -21,14 +29,6 @@ class PremiumFeature extends Equatable {
   /// non-premium user.
   bool get isGated =>
       requiresPremium && (freeUntil == null || DateTime.now().isAfter(freeUntil!));
-
-  factory PremiumFeature.fromJson(Map<String, dynamic> json) => PremiumFeature(
-        featureKey: json['feature_key'] as String,
-        requiresPremium: json['requires_premium'] as bool? ?? false,
-        freeUntil: json['free_until'] != null
-            ? DateTime.parse(json['free_until'] as String).toUtc()
-            : null,
-      );
 
   @override
   List<Object?> get props => [featureKey, requiresPremium, freeUntil];

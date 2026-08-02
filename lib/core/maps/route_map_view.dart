@@ -42,9 +42,9 @@ IconData iconForTransportMode(TransportMode mode) {
 /// hit-testing, so tapping the connecting line itself isn't supported.
 class RouteMapView extends ConsumerWidget {
   const RouteMapView({
-    super.key,
     required this.segments,
     required this.onSegmentTap,
+    super.key,
   });
 
   final List<TripSegment> segments;
@@ -70,17 +70,15 @@ class _EmptyRouteMap extends StatelessWidget {
   const _EmptyRouteMap();
 
   @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Center(
-        child: Text(
-          'Add a segment to see the route map',
-          style: Theme.of(context).textTheme.bodyMedium,
+  Widget build(BuildContext context) => ColoredBox(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Center(
+          child: Text(
+            'Add a segment to see the route map',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 /// Bounding box covering the origin/destination of every segment, with a
@@ -174,8 +172,6 @@ class _GoogleRouteMap extends StatefulWidget {
 }
 
 class _GoogleRouteMapState extends State<_GoogleRouteMap> {
-  gm.GoogleMapController? _controller;
-
   @override
   Widget build(BuildContext context) {
     final b = _bounds(widget.segments);
@@ -187,8 +183,7 @@ class _GoogleRouteMapState extends State<_GoogleRouteMap> {
     return gm.GoogleMap(
       initialCameraPosition: gm.CameraPosition(target: center, zoom: 4),
       onMapCreated: (controller) {
-        _controller = controller;
-        _controller!.animateCamera(
+        controller.animateCamera(
           gm.CameraUpdate.newLatLngBounds(
             gm.LatLngBounds(
               southwest: gm.LatLng(b.minLat, b.minLng),

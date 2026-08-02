@@ -5,7 +5,7 @@ import '../../../../core/maps/route_map_view.dart';
 import '../../domain/entities/trip_segment.dart';
 
 class SegmentCard extends StatelessWidget {
-  const SegmentCard({super.key, required this.segment, required this.onTap});
+  const SegmentCard({required this.segment, required this.onTap, super.key});
 
   final TripSegment segment;
   final VoidCallback onTap;
