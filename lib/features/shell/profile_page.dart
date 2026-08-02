@@ -56,6 +56,26 @@ const _kThemeMeta = {
     accent: Color(0xFF3D84C6),
     bg: Color(0xFFF6EFE2),
   ),
+  KumoTheme.sunsetCoral: (
+    label: 'Sunset Coral',
+    accent: Color(0xFFC1442C),
+    bg: Color(0xFFFBF1EB),
+  ),
+  KumoTheme.dawnFlight: (
+    label: 'Dawn Flight',
+    accent: Color(0xFFF2A65A),
+    bg: Color(0xFF1B2A4A),
+  ),
+  KumoTheme.verdigrisBronze: (
+    label: 'Verdigris Bronze',
+    accent: Color(0xFF3F7A6E),
+    bg: Color(0xFFF0F2EC),
+  ),
+  KumoTheme.cloudSilver: (
+    label: 'Cloud Silver',
+    accent: Color(0xFF1E9A85),
+    bg: Color(0xFFF3F6FA),
+  ),
 };
 
 class ProfilePage extends ConsumerWidget {

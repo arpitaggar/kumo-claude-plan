@@ -91,6 +91,10 @@ class KumoApp extends ConsumerWidget {
         KumoTheme.synthwaveTokyo   => AppTheme.synthwaveTokyo,
         KumoTheme.whiteAndCharcoal => AppTheme.whiteAndCharcoal,
         KumoTheme.warmOatLightBlue => AppTheme.warmOatLightBlue,
+        KumoTheme.sunsetCoral      => AppTheme.sunsetCoral,
+        KumoTheme.dawnFlight       => AppTheme.dawnFlight,
+        KumoTheme.verdigrisBronze  => AppTheme.verdigrisBronze,
+        KumoTheme.cloudSilver      => AppTheme.cloudSilver,
       },
       routerConfig: router,
     );

@@ -8,6 +8,10 @@ enum KumoTheme {
   synthwaveTokyo,
   whiteAndCharcoal,
   warmOatLightBlue,
+  sunsetCoral,
+  dawnFlight,
+  verdigrisBronze,
+  cloudSilver,
 }
 
 final themeProvider = StateNotifierProvider<ThemeNotifier, KumoTheme>(

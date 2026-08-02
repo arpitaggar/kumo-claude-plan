@@ -338,6 +338,234 @@ class AppTheme {
   );
 
   // ══════════════════════════════════════════════════════════════════════════
+  // Sunset Coral — warm terracotta-red / peach-orange palette
+  // ══════════════════════════════════════════════════════════════════════════
+
+  static const sunsetIvory = Color(0xFFFBF1EB); // scaffold background
+  static const sunsetBlush = Color(0xFFF4DDD0); // borders / subtle surfaces
+  static const sunsetRed   = Color(0xFFC1442C); // primary interactive
+  static const sunsetPeach = Color(0xFFF4A97E); // primary container
+  static const sunsetAmber = Color(0xFFE8973F); // secondary
+  static const sunsetTeal  = Color(0xFF5B8A82); // tertiary — cool complement
+  static const sunsetDeep  = Color(0xFF3A1F16); // dark text
+
+  static const sunsetCoralGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [sunsetPeach, Color(0xFFE06B4C), sunsetRed],
+  );
+
+  static const _sunsetCoralScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary:              sunsetRed,
+    onPrimary:            cloudWhite,
+    primaryContainer:     sunsetPeach,
+    onPrimaryContainer:   sunsetDeep,
+    secondary:            sunsetAmber,
+    onSecondary:          cloudWhite,
+    secondaryContainer:   Color(0xFFFBE0BE),
+    onSecondaryContainer: sunsetDeep,
+    tertiary:             sunsetTeal,
+    onTertiary:           cloudWhite,
+    tertiaryContainer:    Color(0xFFD3E6E2),
+    onTertiaryContainer:  Color(0xFF15332E),
+    surface:              cloudWhite,
+    onSurface:            sunsetDeep,
+    surfaceContainerHighest: sunsetBlush,
+    onSurfaceVariant:     Color(0xFF8A5C4A),
+    outline:              Color(0xFFD9AE9A),
+    outlineVariant:       sunsetBlush,
+    error:                Color(0xFFBA1A1A),
+    onError:              cloudWhite,
+    errorContainer:       Color(0xFFFFDAD6),
+    onErrorContainer:     Color(0xFF410002),
+    shadow:               Color(0xFF000000),
+    scrim:                Color(0xFF000000),
+    inverseSurface:       sunsetDeep,
+    onInverseSurface:     sunsetIvory,
+    inversePrimary:       sunsetPeach,
+    surfaceTint:          sunsetRed,
+  );
+
+  static ThemeData get sunsetCoral => _buildTheme(
+    scheme:       _sunsetCoralScheme,
+    background:   sunsetIvory,
+    border:       sunsetBlush,
+    navIndicator: sunsetPeach.withValues(alpha: 0.4),
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Dawn Flight — pre-dawn navy sky with a warm sunrise accent (dark theme)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  static const dawnBg      = Color(0xFF1B2A4A); // scaffold background — deep pre-dawn navy
+  static const dawnSurface = Color(0xFF243A5E); // cards / nav / inputs
+  static const dawnOutline = Color(0xFF2E4A73); // dividers / borders
+  static const dawnOrange  = Color(0xFFF2A65A); // primary — sunrise orange
+  static const dawnBlue    = Color(0xFF6FA0D8); // secondary — brightened sky blue
+  static const dawnGold    = Color(0xFFFFD37A); // tertiary — sunrise gold
+  static const dawnOnSurface = Color(0xFFEAF0FA); // pale ice-blue text
+  static const _dawnInk      = Color(0xFF1B2A4A); // dark ink for text on bright accents
+
+  static const dawnFlightGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [dawnGold, dawnOrange, Color(0xFFB5651D)],
+  );
+
+  static const _dawnFlightScheme = ColorScheme(
+    brightness: Brightness.dark,
+    primary:              dawnOrange,
+    onPrimary:            _dawnInk,
+    primaryContainer:     Color(0xFFFFD9AE),
+    onPrimaryContainer:   Color(0xFF5C2E00),
+    secondary:            dawnBlue,
+    onSecondary:          _dawnInk,
+    secondaryContainer:   Color(0xFFCFE2F5),
+    onSecondaryContainer: Color(0xFF0A2A4A),
+    tertiary:             dawnGold,
+    onTertiary:           _dawnInk,
+    tertiaryContainer:    Color(0xFFFFF0C8),
+    onTertiaryContainer:  Color(0xFF4D3800),
+    surface:              dawnSurface,
+    onSurface:            dawnOnSurface,
+    surfaceContainerHighest: dawnOutline,
+    onSurfaceVariant:     Color(0xFFAFC4E0),
+    outline:              Color(0xFF5C82AE),
+    outlineVariant:       dawnOutline,
+    // Material's standard *dark*-theme error pair — matches Synthwave Tokyo.
+    error:                Color(0xFFFFB4AB),
+    onError:              Color(0xFF690005),
+    errorContainer:       Color(0xFF93000A),
+    onErrorContainer:     Color(0xFFFFDAD6),
+    shadow:               Color(0xFF000000),
+    scrim:                Color(0xFF000000),
+    inverseSurface:       dawnOnSurface,
+    onInverseSurface:     dawnSurface,
+    inversePrimary:       Color(0xFFB5651D),
+    surfaceTint:          dawnOrange,
+  );
+
+  static ThemeData get dawnFlight => _buildTheme(
+    scheme:       _dawnFlightScheme,
+    background:   dawnBg,
+    border:       dawnOutline,
+    navIndicator: dawnOrange.withValues(alpha: 0.35),
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Verdigris Bronze — teal-green patina with warm bronze/rust accents
+  // ══════════════════════════════════════════════════════════════════════════
+
+  static const verdigrisBg     = Color(0xFFF0F2EC); // scaffold background
+  static const verdigrisBorder = Color(0xFFDDE3D8); // dividers / subtle surfaces
+  static const verdigrisTeal   = Color(0xFF3F7A6E); // primary
+  static const verdigrisCopper = Color(0xFF8A6A3A); // secondary
+  static const verdigrisRust   = Color(0xFFB5651D); // tertiary
+  static const verdigrisDark   = Color(0xFF1E2E28); // dark text
+
+  static const verdigrisBronzeGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFC9863F), verdigrisCopper, verdigrisTeal],
+  );
+
+  static const _verdigrisBronzeScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary:              verdigrisTeal,
+    onPrimary:            cloudWhite,
+    primaryContainer:     Color(0xFFBEDCD3),
+    onPrimaryContainer:   Color(0xFF0C2A22),
+    secondary:            verdigrisCopper,
+    onSecondary:          cloudWhite,
+    secondaryContainer:   Color(0xFFEBDCC0),
+    onSecondaryContainer: Color(0xFF332608),
+    tertiary:             verdigrisRust,
+    onTertiary:           cloudWhite,
+    tertiaryContainer:    Color(0xFFF6D9BC),
+    onTertiaryContainer:  Color(0xFF3D2000),
+    surface:              cloudWhite,
+    onSurface:            verdigrisDark,
+    surfaceContainerHighest: verdigrisBorder,
+    onSurfaceVariant:     Color(0xFF5C6E64),
+    outline:              Color(0xFFA8BCB2),
+    outlineVariant:       verdigrisBorder,
+    error:                Color(0xFFBA1A1A),
+    onError:              cloudWhite,
+    errorContainer:       Color(0xFFFFDAD6),
+    onErrorContainer:     Color(0xFF410002),
+    shadow:               Color(0xFF000000),
+    scrim:                Color(0xFF000000),
+    inverseSurface:       verdigrisDark,
+    onInverseSurface:     verdigrisBg,
+    inversePrimary:       Color(0xFFBEDCD3),
+    surfaceTint:          verdigrisTeal,
+  );
+
+  static ThemeData get verdigrisBronze => _buildTheme(
+    scheme:       _verdigrisBronzeScheme,
+    background:   verdigrisBg,
+    border:       verdigrisBorder,
+    navIndicator: verdigrisTeal.withValues(alpha: 0.3),
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Cloud Silver — cool teal + slate-blue palette on a pale sky background
+  // ══════════════════════════════════════════════════════════════════════════
+
+  static const cloudBg     = Color(0xFFF3F6FA); // scaffold background
+  static const cloudBorder = Color(0xFFDCE4EF); // dividers / subtle surfaces
+  static const cloudTeal   = Color(0xFF1E9A85); // primary
+  static const cloudSlate  = Color(0xFF5B6B8C); // secondary
+  static const cloudSky    = Color(0xFF6E8FBA); // tertiary
+  static const cloudDark   = Color(0xFF1E2733); // dark text
+
+  static const cloudSilverGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFC9D6E8), cloudSky, cloudTeal],
+  );
+
+  static const _cloudSilverScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary:              cloudTeal,
+    onPrimary:            cloudWhite,
+    primaryContainer:     Color(0xFFBEE8DE),
+    onPrimaryContainer:   Color(0xFF00332A),
+    secondary:            cloudSlate,
+    onSecondary:          cloudWhite,
+    secondaryContainer:   Color(0xFFDDE2ED),
+    onSecondaryContainer: cloudDark,
+    tertiary:             cloudSky,
+    onTertiary:           cloudWhite,
+    tertiaryContainer:    Color(0xFFD3E0F0),
+    onTertiaryContainer:  Color(0xFF14263C),
+    surface:              cloudWhite,
+    onSurface:            cloudDark,
+    surfaceContainerHighest: cloudBorder,
+    onSurfaceVariant:     Color(0xFF5B6B7C),
+    outline:              Color(0xFFAEBBD0),
+    outlineVariant:       cloudBorder,
+    error:                Color(0xFFBA1A1A),
+    onError:              cloudWhite,
+    errorContainer:       Color(0xFFFFDAD6),
+    onErrorContainer:     Color(0xFF410002),
+    shadow:               Color(0xFF000000),
+    scrim:                Color(0xFF000000),
+    inverseSurface:       cloudDark,
+    onInverseSurface:     cloudBg,
+    inversePrimary:       Color(0xFFBEE8DE),
+    surfaceTint:          cloudTeal,
+  );
+
+  static ThemeData get cloudSilver => _buildTheme(
+    scheme:       _cloudSilverScheme,
+    background:   cloudBg,
+    border:       cloudBorder,
+    navIndicator: cloudTeal.withValues(alpha: 0.3),
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
   // Shared builder — keeps component styles DRY across themes
   // ══════════════════════════════════════════════════════════════════════════
 
