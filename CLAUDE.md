@@ -487,14 +487,15 @@ cd android && fastlane deploy_google_play
 
 ### Theming System
 
-Kumo supports six visual themes: **Cherry Blossom**, **Golden Hour**, **Deep Voyage** (default), **Synthwave Tokyo**, **White & Charcoal**, and **Warm Oat & Light Blue** (added in Stage 19).
+Kumo supports ten visual themes: **Cherry Blossom**, **Golden Hour**, **Deep Voyage** (default), **Synthwave Tokyo**, **White & Charcoal**, **Warm Oat & Light Blue** (added in Stage 19), **Sunset Coral**, **Dawn Flight**, **Verdigris Bronze**, and **Cloud Silver** (added in Stage 20).
 
 - **Enum & provider:** `lib/config/theme_provider.dart` — `KumoTheme` enum + `ThemeNotifier extends StateNotifier<KumoTheme>`
 - **Persistence:** SharedPreferences key `kumo_theme` stores `KumoTheme.name`; loaded in `ThemeNotifier` constructor via `_loadSaved()`
 - **UI:** Theme picker is a bottom sheet on the Profile page (`lib/features/shell/profile_page.dart`); opened via `isScrollControlled: true, useSafeArea: true`
 - **Launcher icon:** Fixed as Deep Voyage on both platforms. Runtime icon switching via `PackageManager.setComponentEnabledSetting()` was removed because it clears the Android task stack (the app appears to close).
-- **Dark theme:** Synthwave Tokyo (`lib/config/theme.dart`, `_synthwaveScheme`) is the app's first `Brightness.dark` theme — magenta-purple dusk sky with an orange/gold sunset accent. All other five themes are `Brightness.light`.
+- **Dark themes:** Synthwave Tokyo (`lib/config/theme.dart`, `_synthwaveScheme`) — magenta-purple dusk sky, orange/gold sunset accent — was the app's first `Brightness.dark` theme. **Dawn Flight** (`_dawnFlightScheme`, Stage 20) is the second — a pre-dawn navy sky with a warm sunrise-orange/gold accent. All other eight themes are `Brightness.light`.
 - **Stage 19 fix:** the shell bottom nav bar and `OfflineBanner` had Cherry-Blossom colors hardcoded instead of reading from `Theme.of(context)`, which silently broke visuals under every other theme. Fixed to pull from the active `ColorScheme`.
+- **Stage 20 additions:** Sunset Coral (warm terracotta-red/peach), Verdigris Bronze (teal-green patina + bronze/rust), and Cloud Silver (cool teal/slate-blue on pale sky) round out the light themes; each pairs with a previously-unused pre-made logo SVG in `assets/icons/` (`kumo_logo_sunset_coral.svg`, `kumo_logo_dawn_flight.svg`, `kumo_logo_verdigris_bronze.svg`, `kumo_logo_cloud_silver.svg`) that existed in the asset tree before this stage but had no matching `KumoTheme` value or `ColorScheme` — several other unused logo variants (`kumo_logo_copper_patina.svg`, `kumo_logo_slate_mono.svg`, `kumo_logo_terracotta_clay.svg`, etc.) remain available for future themes.
 
 ### Router Architecture
 
@@ -859,7 +860,7 @@ RLS follows the `stage13_fix_member_jsonb_all_tables.sql` pattern (`EXISTS + jso
 #### Google Maps native key wiring
 
 A scalar API key can't be gitignored as a whole file the way the Firebase configs were, so it's indirected:
-- **Android:** gitignored `android/app/src/main/res/values/google_maps_api.xml` (+ `.example`) defines a `google_maps_key` string resource; the committed `AndroidManifest.xml` references it via `<meta-data android:name="com.google.android.geo.API_KEY" android:value="@string/google_maps_key"/>`.
+- **Android:** gitignored `android/app/src/main/res/values/google_maps_api.xml` defines a `google_maps_key` string resource; the committed `AndroidManifest.xml` references it via `<meta-data android:name="com.google.android.geo.API_KEY" android:value="@string/google_maps_key"/>`. The `.example` template lives at `android/app/google_maps_api.xml.example` — **not** inside `res/values/` — because Android's resource merger scans every file under `res/values/` and requires it to end in `.xml`; a `*.xml.example` placeholder there breaks the build (`Resource and asset merger: The file name must end with .xml`, hit for real during Stage 20's run-skill setup).
 - **iOS:** gitignored `ios/Runner/Secrets.xcconfig` (+ `.example`) defines `GOOGLE_MAPS_API_KEY`, `#include`d from `Debug.xcconfig`/`Release.xcconfig`, surfaced to `Info.plist` as `GMSApiKey`, read in `AppDelegate.swift` via `GMSServices.provideAPIKey(...)`.
 - No Android/iOS permission changes were needed — `INTERNET` is already merged in transitively (Firebase Messaging), and both tile/geocoding hosts are HTTPS.
 - The premium gate above is client-side only and doesn't stop a patched client from reaching the Google Maps code path; real protection is restricting the Maps API key in Google Cloud Console to this app's Android package+SHA-1 / iOS bundle ID, independent of the `feature_flags` system.
