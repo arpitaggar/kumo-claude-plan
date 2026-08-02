@@ -11,10 +11,18 @@ import 'geocoding_service.dart';
 /// field alone doesn't guarantee that (a fast typer can still burst past it),
 /// so requests are also throttled to a minimum spacing here.
 class NominatimGeocodingService implements GeocodingService {
-  NominatimGeocodingService({http.Client? client})
-      : _client = client ?? http.Client();
+  NominatimGeocodingService({http.Client? client, String? acceptLanguage})
+      : _client = client ?? http.Client(),
+        _acceptLanguage = acceptLanguage ?? 'en';
 
   final http.Client _client;
+
+  /// ISO 639-1 language code (e.g. 'en', 'de') sent as the Accept-Language
+  /// header so results come back in one consistent language/script instead
+  /// of each place's own local name (Nominatim defaults to returning
+  /// "München" for Munich but "กรุงเทพมหานคร" for Bangkok when no language
+  /// is requested, i.e. inconsistent per-result script).
+  final String _acceptLanguage;
 
   static const _userAgent = 'KumoTravelApp/1.0 (com.cygnus.travelKumo)';
   static const _minRequestSpacing = Duration(milliseconds: 1100);
@@ -49,7 +57,10 @@ class NominatimGeocodingService implements GeocodingService {
 
     final response = await _client.get(
       uri,
-      headers: {'User-Agent': _userAgent},
+      headers: {
+        'User-Agent': _userAgent,
+        'Accept-Language': _acceptLanguage,
+      },
     );
 
     if (response.statusCode != 200) {

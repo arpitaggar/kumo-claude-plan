@@ -279,6 +279,7 @@ class _AddEditTripSegmentPageState
                         avatar: Icon(iconForTransportMode(mode), size: 18),
                         label: Text(mode.label),
                         selected: _mode == mode,
+                        showCheckmark: false,
                         onSelected: (_) => setState(() => _mode = mode),
                       ),
                   ],
