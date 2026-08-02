@@ -8,6 +8,7 @@ import '../../features/itinerary/domain/entities/transport_mode.dart';
 import '../../features/itinerary/domain/entities/trip_segment.dart';
 import '../../features/itinerary/domain/entities/waypoint.dart';
 import 'kumo_map_provider.dart';
+import 'route_curve.dart';
 
 // Built-in Material icons only — material_design_icons_flutter's pinned
 // version (7.0.7296) subclasses IconData, which the current Flutter SDK
@@ -133,8 +134,14 @@ class _OsmRouteMap extends StatelessWidget {
             for (final s in segments)
               fm.Polyline(
                 points: [
-                  ll.LatLng(s.origin.latitude, s.origin.longitude),
-                  ll.LatLng(s.destination.latitude, s.destination.longitude),
+                  for (final (lat, lng) in curvedPath(
+                    startLat: s.origin.latitude,
+                    startLng: s.origin.longitude,
+                    endLat: s.destination.latitude,
+                    endLng: s.destination.longitude,
+                    curved: hasReverseLeg(segments, s),
+                  ))
+                    ll.LatLng(lat, lng),
                 ],
                 strokeWidth: 3,
                 color: Theme.of(context).colorScheme.primary,
@@ -198,8 +205,14 @@ class _GoogleRouteMapState extends State<_GoogleRouteMap> {
           gm.Polyline(
             polylineId: gm.PolylineId(s.id),
             points: [
-              gm.LatLng(s.origin.latitude, s.origin.longitude),
-              gm.LatLng(s.destination.latitude, s.destination.longitude),
+              for (final (lat, lng) in curvedPath(
+                startLat: s.origin.latitude,
+                startLng: s.origin.longitude,
+                endLat: s.destination.latitude,
+                endLng: s.destination.longitude,
+                curved: hasReverseLeg(widget.segments, s),
+              ))
+                gm.LatLng(lat, lng),
             ],
             width: 3,
             color: Theme.of(context).colorScheme.primary,
