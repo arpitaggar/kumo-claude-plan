@@ -70,16 +70,35 @@ serve(async (req) => {
 Travel style: ${travel_style}${interestLine}
 Trip dates: ${start_date} to ${end_date}
 
-Return ONLY a valid JSON array — no markdown, no explanation. Each element must have exactly these fields:
+Return ONLY a valid JSON object — no markdown, no explanation — with this exact shape:
 {
-  "item_type": "activity" | "flight" | "hotel" | "restaurant" | "transport",
-  "title": "string",
-  "start_time": "ISO 8601 datetime in UTC, e.g. 2026-06-10T09:00:00Z",
-  "end_time": "ISO 8601 datetime in UTC or null",
-  "location": "string or null"
+  "items": [
+    {
+      "item_type": "activity" | "flight" | "hotel" | "restaurant" | "transport",
+      "title": "string",
+      "start_time": "ISO 8601 datetime in UTC, e.g. 2026-06-10T09:00:00Z",
+      "end_time": "ISO 8601 datetime in UTC or null",
+      "location": "string or null"
+    }
+  ],
+  "segments": [
+    {
+      "mode": "flight" | "train" | "bus" | "car" | "motorcycle" | "ferry" | "walk" | "other",
+      "origin": "city name",
+      "destination": "city name",
+      "departure_time": "ISO 8601 datetime in UTC or null",
+      "arrival_time": "ISO 8601 datetime in UTC or null"
+    }
+  ]
 }
 
 Schedule 3-5 items per day, spread across realistic times. Use the actual trip dates.
+
+Only populate "segments" if the destination describes multiple stops travelled in
+sequence (e.g. "Munich, Bangkok, Chiang Mai, Pai") — one segment per leg between
+consecutive stops, in travel order, with a sensible transport mode for each leg
+(e.g. flight between countries, motorcycle/car/train/bus for shorter regional hops).
+For a single-destination trip, return an empty segments array.
 `
 
     // ── Call Anthropic ───────────────────────────────────────────────────────
@@ -114,38 +133,62 @@ Schedule 3-5 items per day, spread across realistic times. Use the actual trip d
     }
     const rawText = anthropicData.content?.[0]?.text ?? ''
 
-    // ── Parse JSON array from AI response ────────────────────────────────────
-    const items = parseItems(rawText)
-    if (items === null) {
+    // ── Parse JSON object from AI response ───────────────────────────────────
+    const parsed = parseResponse(rawText)
+    if (parsed === null) {
       console.error('Failed to parse AI response:', rawText.slice(0, 200))
       return json({ error: 'Could not parse AI response as JSON' }, 502)
     }
 
-    return json({ items })
+    return json({ items: parsed.items, segments: parsed.segments })
   } catch (e) {
     console.error('Unexpected error:', e)
     return json({ error: String(e) }, 500)
   }
 })
 
-function parseItems(text: string): unknown[] | null {
+interface ParsedResponse {
+  items: unknown[]
+  segments: unknown[]
+}
+
+function parseResponse(text: string): ParsedResponse | null {
   const cleaned = text
     .replace(/```json\s*/g, '')
     .replace(/```\s*/g, '')
     .trim()
 
-  try {
-    const parsed = JSON.parse(cleaned)
-    if (Array.isArray(parsed)) return parsed
-  } catch (_) {
-    // fallback: extract first [...] block
-    const match = /\[[\s\S]*\]/.exec(cleaned)
-    if (match) {
-      try {
-        const parsed = JSON.parse(match[0])
-        if (Array.isArray(parsed)) return parsed
-      } catch (_) { /* ignore */ }
+  const tryParse = (raw: string): ParsedResponse | null => {
+    try {
+      const value = JSON.parse(raw)
+      // Backward-compatible: a bare array (the pre-segments response shape)
+      // is treated as `items` with no segments.
+      if (Array.isArray(value)) {
+        return { items: value, segments: [] }
+      }
+      if (value && typeof value === 'object' && Array.isArray(value.items)) {
+        const segments = Array.isArray(value.segments) ? value.segments : []
+        return { items: value.items, segments }
+      }
+    } catch (_) {
+      // fall through to caller's fallback extraction
     }
+    return null
+  }
+
+  const direct = tryParse(cleaned)
+  if (direct) return direct
+
+  // fallback: extract the first {...} or [...] block
+  const objMatch = /\{[\s\S]*\}/.exec(cleaned)
+  if (objMatch) {
+    const parsed = tryParse(objMatch[0])
+    if (parsed) return parsed
+  }
+  const arrMatch = /\[[\s\S]*\]/.exec(cleaned)
+  if (arrMatch) {
+    const parsed = tryParse(arrMatch[0])
+    if (parsed) return parsed
   }
   return null
 }

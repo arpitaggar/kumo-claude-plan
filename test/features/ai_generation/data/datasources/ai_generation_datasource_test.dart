@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kumo_claude/features/ai_generation/data/datasources/ai_generation_datasource.dart';
+import 'package:kumo_claude/features/itinerary/domain/entities/transport_mode.dart';
 
 void main() {
   final tripStart = DateTime.utc(2026, 6, 10);
@@ -158,6 +159,101 @@ void main() {
     test('returns empty list for empty input', () {
       final items = AiGenerationDataSourceImpl.parseItems([], tripStart);
       expect(items, isEmpty);
+    });
+  });
+
+  group('AiGenerationDataSourceImpl.parseSegments', () {
+    test('parses a valid segment list', () {
+      final raw = [
+        {
+          'mode': 'flight',
+          'origin': 'Munich',
+          'destination': 'Bangkok',
+          'departure_time': '2026-06-10T09:00:00Z',
+          'arrival_time': '2026-06-10T22:00:00Z',
+        },
+        {
+          'mode': 'motorcycle',
+          'origin': 'Chiang Mai',
+          'destination': 'Pai',
+          'departure_time': null,
+          'arrival_time': null,
+        },
+      ];
+
+      final segments = AiGenerationDataSourceImpl.parseSegments(raw);
+
+      expect(segments, hasLength(2));
+      expect(segments[0].mode, TransportMode.flight);
+      expect(segments[0].originName, 'Munich');
+      expect(segments[0].destinationName, 'Bangkok');
+      expect(segments[0].departureTime, DateTime.utc(2026, 6, 10, 9));
+      expect(segments[1].mode, TransportMode.motorcycle);
+      expect(segments[1].departureTime, isNull);
+    });
+
+    test('defaults to TransportMode.other for an unknown mode', () {
+      final raw = [
+        {'mode': 'hot_air_balloon', 'origin': 'A', 'destination': 'B'},
+      ];
+
+      final segments = AiGenerationDataSourceImpl.parseSegments(raw);
+
+      expect(segments.single.mode, TransportMode.other);
+    });
+
+    test('defaults to TransportMode.other when mode is missing', () {
+      final raw = [
+        {'origin': 'A', 'destination': 'B'},
+      ];
+
+      final segments = AiGenerationDataSourceImpl.parseSegments(raw);
+
+      expect(segments.single.mode, TransportMode.other);
+    });
+
+    test('skips a leg missing an origin', () {
+      final raw = [
+        {'mode': 'flight', 'destination': 'Bangkok'},
+        {'mode': 'flight', 'origin': 'Bangkok', 'destination': 'Chiang Mai'},
+      ];
+
+      final segments = AiGenerationDataSourceImpl.parseSegments(raw);
+
+      expect(segments, hasLength(1));
+      expect(segments.single.originName, 'Bangkok');
+    });
+
+    test('skips a leg missing a destination', () {
+      final raw = [
+        {'mode': 'flight', 'origin': 'Munich'},
+      ];
+
+      final segments = AiGenerationDataSourceImpl.parseSegments(raw);
+
+      expect(segments, isEmpty);
+    });
+
+    test('ignores an unparseable departure/arrival time', () {
+      final raw = [
+        {
+          'mode': 'flight',
+          'origin': 'Munich',
+          'destination': 'Bangkok',
+          'departure_time': 'not-a-date',
+          'arrival_time': 'also-not-a-date',
+        },
+      ];
+
+      final segments = AiGenerationDataSourceImpl.parseSegments(raw);
+
+      expect(segments.single.departureTime, isNull);
+      expect(segments.single.arrivalTime, isNull);
+    });
+
+    test('returns empty list for empty input', () {
+      final segments = AiGenerationDataSourceImpl.parseSegments([]);
+      expect(segments, isEmpty);
     });
   });
 }

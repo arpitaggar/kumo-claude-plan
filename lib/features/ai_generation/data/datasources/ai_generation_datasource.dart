@@ -3,12 +3,15 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/error/exception.dart';
 import '../../../../core/network/supabase_client.dart';
+import '../../../itinerary/domain/entities/transport_mode.dart';
 import '../../../itinerary/domain/entities/travel_itinerary.dart';
+import '../../domain/entities/ai_generated_segment.dart';
 import '../../domain/entities/ai_generation_request.dart';
+import '../../domain/entities/ai_generation_result.dart';
 
 // ignore: one_member_abstracts
 abstract class AiGenerationDataSource {
-  Future<List<ItineraryItem>> generateItinerary(AiGenerationRequest request);
+  Future<AiGenerationResult> generateItinerary(AiGenerationRequest request);
 }
 
 class AiGenerationDataSourceImpl implements AiGenerationDataSource {
@@ -17,7 +20,7 @@ class AiGenerationDataSourceImpl implements AiGenerationDataSource {
   static const _uuid = Uuid();
 
   @override
-  Future<List<ItineraryItem>> generateItinerary(
+  Future<AiGenerationResult> generateItinerary(
       AiGenerationRequest request) async {
     try {
       final response = await KumoSupabaseClient.client.functions.invoke(
@@ -46,8 +49,12 @@ class AiGenerationDataSourceImpl implements AiGenerationDataSource {
       if (rawItems == null) {
         throw ServerException(message: 'Empty response from AI');
       }
+      final rawSegments = data['segments'] as List<dynamic>? ?? [];
 
-      return parseItems(rawItems, request.startDate);
+      return AiGenerationResult(
+        items: parseItems(rawItems, request.startDate),
+        segments: parseSegments(rawSegments),
+      );
     } on FunctionException catch (e) {
       throw ServerException(message: 'AI generation failed: ${e.reasonPhrase}');
     } catch (e) {
@@ -93,4 +100,45 @@ class AiGenerationDataSourceImpl implements AiGenerationDataSource {
       );
     }).toList()
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+  // ignore: prefer_constructors_over_static_methods
+  static List<AiGeneratedSegment> parseSegments(List<dynamic> raw) =>
+      raw
+          .map((e) {
+            final map = e as Map<String, dynamic>;
+            final origin = map['origin'] as String?;
+            final destination = map['destination'] as String?;
+            // Skip malformed entries rather than failing the whole response
+            // over one bad leg.
+            if (origin == null || destination == null) {
+              return null;
+            }
+
+            final modeStr = map['mode'] as String? ?? 'other';
+            final mode = TransportMode.values.firstWhere(
+              (m) => m.name == modeStr,
+              orElse: () => TransportMode.other,
+            );
+
+            return AiGeneratedSegment(
+              mode: mode,
+              originName: origin,
+              destinationName: destination,
+              departureTime: _tryParseUtc(map['departure_time'] as String?),
+              arrivalTime: _tryParseUtc(map['arrival_time'] as String?),
+            );
+          })
+          .whereType<AiGeneratedSegment>()
+          .toList();
+
+  static DateTime? _tryParseUtc(String? raw) {
+    if (raw == null) {
+      return null;
+    }
+    try {
+      return DateTime.parse(raw).toUtc();
+    } catch (_) {
+      return null;
+    }
+  }
 }

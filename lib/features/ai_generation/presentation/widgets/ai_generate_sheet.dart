@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/maps/route_map_view.dart';
 import '../../../../shared/extensions/context_extensions.dart';
-import '../../../itinerary/domain/entities/travel_itinerary.dart';
 import '../../domain/entities/ai_generation_request.dart';
+import '../../domain/entities/ai_generation_result.dart';
 import '../providers/ai_generation_provider.dart';
 
 /// Shows the AI generation bottom sheet and returns the generated
-/// [List<ItineraryItem>] when the user taps "Use this itinerary", or null
-/// if the user dismisses without generating.
-Future<List<ItineraryItem>?> showAiGenerateSheet(
+/// [AiGenerationResult] (itinerary items, plus any transport segments if the
+/// destination described a multi-stop trip) when the user taps "Use this
+/// itinerary", or null if the user dismisses without generating.
+Future<AiGenerationResult?> showAiGenerateSheet(
   BuildContext context, {
   required DateTime startDate,
   required DateTime endDate,
 }) =>
-    showModalBottomSheet<List<ItineraryItem>>(
+    showModalBottomSheet<AiGenerationResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colorScheme.surface,
@@ -89,9 +91,9 @@ class _AiGenerateSheetState extends ConsumerState<_AiGenerateSheet> {
       ),
       child: switch (state) {
         AiGenerationLoading() => const _LoadingView(),
-        AiGenerationSuccess(:final items) => _SuccessView(
-            items: items,
-            onUse: () => Navigator.of(context).pop(items),
+        AiGenerationSuccess(:final result) => _SuccessView(
+            result: result,
+            onUse: () => Navigator.of(context).pop(result),
             onRegenerate: () =>
                 ref.read(aiGenerationProvider.notifier).reset(),
           ),
@@ -155,58 +157,120 @@ class _LoadingView extends StatelessWidget {
 
 class _SuccessView extends StatelessWidget {
   const _SuccessView({
-    required this.items,
+    required this.result,
     required this.onUse,
     required this.onRegenerate,
   });
 
-  final List<ItineraryItem> items;
+  final AiGenerationResult result;
   final VoidCallback onUse;
   final VoidCallback onRegenerate;
 
   @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: context.featuredGradient,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.auto_awesome,
-                    color: context.colorScheme.surface, size: 18),
+  Widget build(BuildContext context) {
+    final items = result.items;
+    final segments = result.segments;
+    final subtitle = segments.isEmpty
+        ? '${items.length} activities generated'
+        : '${items.length} activities · ${segments.length} route legs generated';
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: context.featuredGradient,
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Itinerary ready!',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: context.colorScheme.onSurface,
-                      ),
+              child: Icon(Icons.auto_awesome,
+                  color: context.colorScheme.surface, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Itinerary ready!',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.colorScheme.onSurface,
                     ),
-                    Text(
-                      '${items.length} activities generated',
-                      style: TextStyle(
-                          fontSize: 12, color: context.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                        fontSize: 12, color: context.colorScheme.onSurfaceVariant),
+                  ),
+                ],
               ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          constraints: const BoxConstraints(maxHeight: 220),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(height: 16),
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(12),
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const Divider(height: 12),
+            itemBuilder: (_, i) {
+              final item = items[i];
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ItemTypeIcon(itemType: item.itemType),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: context.colorScheme.onSurface,
+                          ),
+                        ),
+                        if (item.location != null)
+                          Text(
+                            item.location!,
+                            style: TextStyle(
+                                fontSize: 11, color: context.colorScheme.onSurfaceVariant),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        if (segments.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Route',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
           Container(
-            constraints: const BoxConstraints(maxHeight: 260),
+            constraints: const BoxConstraints(maxHeight: 140),
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(12),
@@ -214,34 +278,24 @@ class _SuccessView extends StatelessWidget {
             child: ListView.separated(
               shrinkWrap: true,
               padding: const EdgeInsets.all(12),
-              itemCount: items.length,
+              itemCount: segments.length,
               separatorBuilder: (_, _) => const Divider(height: 12),
               itemBuilder: (_, i) {
-                final item = items[i];
+                final segment = segments[i];
                 return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ItemTypeIcon(itemType: item.itemType),
+                    Icon(iconForTransportMode(segment.mode),
+                        size: 16, color: context.colorScheme.primary),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: context.colorScheme.onSurface,
-                            ),
-                          ),
-                          if (item.location != null)
-                            Text(
-                              item.location!,
-                              style: TextStyle(
-                                  fontSize: 11, color: context.colorScheme.onSurfaceVariant),
-                            ),
-                        ],
+                      child: Text(
+                        '${segment.originName} → ${segment.destinationName}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: context.colorScheme.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -249,25 +303,27 @@ class _SuccessView extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: onUse,
-            style: FilledButton.styleFrom(
-              backgroundColor: context.colorScheme.primary,
-              foregroundColor: context.colorScheme.surface,
-            ),
-            child: const Text('Use this itinerary'),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: onRegenerate,
-            child: Text(
-              'Try again',
-              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-            ),
-          ),
         ],
-      );
+        const SizedBox(height: 16),
+        FilledButton(
+          onPressed: onUse,
+          style: FilledButton.styleFrom(
+            backgroundColor: context.colorScheme.primary,
+            foregroundColor: context.colorScheme.surface,
+          ),
+          child: const Text('Use this itinerary'),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: onRegenerate,
+          child: Text(
+            'Try again',
+            style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 // ── Form ──────────────────────────────────────────────────────────────────────

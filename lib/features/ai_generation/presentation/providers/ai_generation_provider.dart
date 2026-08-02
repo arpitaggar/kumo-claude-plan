@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../itinerary/domain/entities/travel_itinerary.dart';
+import '../../../../core/geocoding/geocoding_providers.dart';
+import '../../../itinerary/domain/entities/waypoint.dart';
+import '../../../itinerary/presentation/providers/trip_segment_provider.dart';
 import '../../data/datasources/ai_generation_datasource.dart';
 import '../../data/repositories/ai_generation_repository_impl.dart';
+import '../../domain/entities/ai_generated_segment.dart';
 import '../../domain/entities/ai_generation_request.dart';
+import '../../domain/entities/ai_generation_result.dart';
 import '../../domain/usecases/generate_itinerary_usecase.dart';
 
 // ---------------------------------------------------------------------------
@@ -44,8 +48,8 @@ class AiGenerationLoading extends AiGenerationState {
 }
 
 class AiGenerationSuccess extends AiGenerationState {
-  const AiGenerationSuccess(this.items);
-  final List<ItineraryItem> items;
+  const AiGenerationSuccess(this.result);
+  final AiGenerationResult result;
 }
 
 class AiGenerationError extends AiGenerationState {
@@ -78,3 +82,58 @@ final aiGenerationProvider =
     StateNotifierProvider.autoDispose<AiGenerationNotifier, AiGenerationState>(
   (ref) => AiGenerationNotifier(ref.watch(generateItineraryUseCaseProvider)),
 );
+
+// ---------------------------------------------------------------------------
+// Resolving AI-generated segments (city names) into real TripSegments
+// (geocoded lat/lng) and inserting them once an itinerary exists to attach
+// them to. Lives here rather than as a domain usecase because it composes
+// two other features' infrastructure (core/geocoding + itinerary's trip
+// segment repository) — matches how this app does cross-feature composition
+// at the presentation/provider layer elsewhere (e.g. itinerary_detail_page
+// wiring in chat/expense/packing/ratings providers directly).
+// ---------------------------------------------------------------------------
+
+final resolveAiSegmentsProvider = Provider<ResolveAiSegments>(ResolveAiSegments.new);
+
+class ResolveAiSegments {
+  const ResolveAiSegments(this._ref);
+
+  final Ref _ref;
+
+  /// Geocodes each [segments] leg's origin/destination city name (taking the
+  /// first search hit) and inserts the resolved segment in order. A leg whose
+  /// origin or destination can't be geocoded is skipped rather than failing
+  /// the whole batch — the rest of the trip's segments still get created.
+  Future<void> call(String itineraryId, List<AiGeneratedSegment> segments) async {
+    final geocoder = _ref.read(geocodingServiceProvider);
+    final addSegment = _ref.read(addTripSegmentUseCaseProvider);
+
+    var orderIndex = 0;
+    for (final segment in segments) {
+      final originHits = await geocoder.search(segment.originName);
+      final destinationHits = await geocoder.search(segment.destinationName);
+      if (originHits.isEmpty || destinationHits.isEmpty) {
+        continue;
+      }
+
+      await addSegment(
+        itineraryId: itineraryId,
+        orderIndex: orderIndex,
+        mode: segment.mode,
+        origin: Waypoint(
+          name: originHits.first.name,
+          latitude: originHits.first.latitude,
+          longitude: originHits.first.longitude,
+        ),
+        destination: Waypoint(
+          name: destinationHits.first.name,
+          latitude: destinationHits.first.latitude,
+          longitude: destinationHits.first.longitude,
+        ),
+        departureTime: segment.departureTime,
+        arrivalTime: segment.arrivalTime,
+      );
+      orderIndex++;
+    }
+  }
+}

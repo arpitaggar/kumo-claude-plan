@@ -199,6 +199,8 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 **Known gaps carried into "What Remains" below:** Google Maps needs a real API key dropped into the gitignored native config to actually render tiles; org/sub-org inheritance for premium defaults is explicitly deferred (no organisation entity exists yet to hang it off).
 
+**Follow-up (same stage):** added unit/widget test coverage for the new usecases, model, and widgets (usecase/model tests + `SegmentCard`/segment-actions-sheet/`RouteMapView`-empty-state/`AddEditTripSegmentPage`-add-mode widget tests), and made Katha AI's (still-dormant, see Stage 3) generation pipeline segment-aware — the `generate-itinerary` Edge Function and Flutter parsing now also produce transport legs for multi-stop destinations, geocoded and inserted via the same Route tab infrastructure. Nothing calls this yet since Katha AI's entry points are still placeholders pending Edge Function deployment.
+
 ---
 
 ## What Remains (Deferred / Not Implemented)
