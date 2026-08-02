@@ -4,6 +4,13 @@
         android:label="Kumo"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Google Maps API key — real value lives in the gitignored
+             res/values/google_maps_api.xml (see .example template next to it).
+             Only used when the user selects Google Maps as their map provider
+             (a premium-gated feature; OpenStreetMap is the free default). -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_maps_key" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

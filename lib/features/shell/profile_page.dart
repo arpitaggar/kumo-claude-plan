@@ -3,9 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../config/theme_provider.dart';
+import '../../core/maps/kumo_map_provider.dart';
+import '../../core/premium/premium_feature.dart';
+import '../../core/premium/premium_providers.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
 import '../../shared/extensions/context_extensions.dart';
+
+// Per-provider display metadata used in the map provider picker.
+const _kMapProviderMeta = {
+  KumoMapProvider.openStreetMap: (
+    label: 'OpenStreetMap',
+    subtitle: 'Free, no account needed',
+    icon: Icons.map_outlined,
+  ),
+  KumoMapProvider.googleMaps: (
+    label: 'Google Maps',
+    subtitle: 'Premium',
+    icon: Icons.map,
+  ),
+};
 
 // Per-theme display metadata used in the picker and the current-theme label.
 const _kThemeMeta = {
@@ -49,6 +66,7 @@ class ProfilePage extends ConsumerWidget {
     final authState = ref.watch(authNotifierProvider);
     final user = authState is AuthAuthenticated ? authState.user : null;
     final currentTheme = ref.watch(themeProvider);
+    final currentMapProvider = ref.watch(mapProviderConfigProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -121,6 +139,13 @@ class ProfilePage extends ConsumerWidget {
             trailing: _ThemeSwatch(theme: currentTheme),
             onTap: () => _showThemePicker(context, ref),
           ),
+          const SizedBox(height: 8),
+          _tile(
+            context,
+            icon: _kMapProviderMeta[currentMapProvider]!.icon,
+            label: 'Map: ${_kMapProviderMeta[currentMapProvider]!.label}',
+            onTap: () => _showMapProviderPicker(context, ref),
+          ),
           const SizedBox(height: 24),
           const _SectionHeader('Account'),
           const SizedBox(height: 8),
@@ -160,6 +185,16 @@ class ProfilePage extends ConsumerWidget {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => _ThemePickerSheet(currentRef: ref),
+    );
+  }
+
+  void _showMapProviderPicker(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _MapProviderPickerSheet(currentRef: ref),
     );
   }
 
@@ -424,6 +459,156 @@ class _ThemeOption extends StatelessWidget {
                   ),
                 ),
                 if (isSelected)
+                  Icon(Icons.check_circle_rounded,
+                      color: context.colorScheme.primary)
+                else
+                  Icon(Icons.circle_outlined,
+                      color: context.colorScheme.outlineVariant),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Map provider picker bottom sheet ───────────────────────────────────────────
+
+class _MapProviderPickerSheet extends ConsumerWidget {
+  const _MapProviderPickerSheet({required this.currentRef});
+
+  final WidgetRef currentRef;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(mapProviderConfigProvider);
+    final canUseGoogleMaps =
+        ref.watch(canUseFeatureProvider(PremiumFeatureKeys.googleMaps));
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Route Map',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: context.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Choose which map renders your trip route.',
+            style: TextStyle(
+              fontSize: 13,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 20),
+          for (final provider in KumoMapProvider.values)
+            _MapProviderOption(
+              provider: provider,
+              isSelected: provider == selected,
+              isLocked:
+                  provider == KumoMapProvider.googleMaps && !canUseGoogleMaps,
+              onTap: () {
+                if (provider == KumoMapProvider.googleMaps &&
+                    !canUseGoogleMaps) {
+                  context.showSnackBar(
+                    'Google Maps is a premium feature. Upgrade to unlock it.',
+                  );
+                  return;
+                }
+                currentRef
+                    .read(mapProviderConfigProvider.notifier)
+                    .setProvider(provider);
+                Navigator.of(context).pop();
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapProviderOption extends StatelessWidget {
+  const _MapProviderOption({
+    required this.provider,
+    required this.isSelected,
+    required this.isLocked,
+    required this.onTap,
+  });
+
+  final KumoMapProvider provider;
+  final bool isSelected;
+  final bool isLocked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final meta = _kMapProviderMeta[provider]!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: isSelected
+            ? context.colorScheme.primaryContainer.withValues(alpha: 0.4)
+            : context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(meta.icon, color: context.colorScheme.onSurface),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        meta.label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: context.colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        meta.subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isLocked)
+                  Icon(Icons.lock_outline,
+                      color: context.colorScheme.onSurfaceVariant)
+                else if (isSelected)
                   Icon(Icons.check_circle_rounded,
                       color: context.colorScheme.primary)
                 else

@@ -21,6 +21,11 @@ FIREBASE_TOKEN
 # see the checked-in *.example templates for the shape.
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
+
+# Google Maps API key — same rationale as above. Real key stays local/CI-only;
+# see the *.example templates for the shape.
+android/app/src/main/res/values/google_maps_api.xml
+ios/Runner/Secrets.xcconfig
 # IntelliJ related
 *.iml
 *.ipr

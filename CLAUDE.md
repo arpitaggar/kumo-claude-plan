@@ -2,7 +2,7 @@
 
 **Project:** Kumo - Collaborative Travel Super-App  
 **Version:** 1.0.0  
-**Last Updated:** June 2026
+**Last Updated:** August 2026
 
 ---
 
@@ -816,6 +816,63 @@ supabase functions deploy send-message-push
 #### Platform config files are gitignored
 
 `android/app/google-services.json` and `ios/Runner/GoogleService-Info.plist` were committed when the Firebase project was first wired up (Stage 19), which tripped secret scanning on the embedded per-app API key. They're now gitignored; `*.example` templates next to each (with placeholder values) document the required shape. To build locally, download the real files from Firebase console → Project settings → your app, and drop them in place — no build config changes needed since the paths are unchanged.
+
+---
+
+### Trip Route Segments, Pluggable Map & Premium Feature Flags (Stage 20)
+
+**Migration:** `docs/supabase_migrations/stage21_trip_segments.sql` (numbered 21 to match the file's own stage — `stage20_push_tokens_conflict_fix.sql` already existed).
+Must be run in Supabase SQL editor before deploying the corresponding app build.
+
+#### What it does
+
+Lets a trip be planned as an ordered sequence of transport legs — e.g. Flight Munich→Bangkok, Flight Bangkok→Chiang Mai, Motorcycle Chiang Mai→Pai, Motorcycle Pai→Chiang Mai, Flight Chiang Mai→Bangkok, Flight Bangkok→Munich — rendered as a map with per-mode icons. This is additive: it does **not** touch the existing flat `items` (`ItineraryItem`) list, which has no ordering or origin/destination concept to retrofit.
+
+#### Database schema additions
+
+**`public.trip_segments`** — one row per leg: `itinerary_id` (FK cascade), `order_index int`, `transport_mode text` (`check in ('flight','train','bus','car','motorcycle','ferry','walk','other')`), `origin_name/lat/lng`, `destination_name/lat/lng`, `departure_time`/`arrival_time timestamptz`, `notes`. Origin/destination are **denormalised full waypoints on every row**, not a shared/linked waypoint id — editing one segment's destination does not retroactively update the next segment's origin; continuity between legs is a UI convenience at creation time only ("Continue trip from here", see below), not an enforced invariant. No unique constraint on `(itinerary_id, order_index)` — every add/delete/reorder mutation renumbers the whole list 0..n-1 and writes it back as one batched `upsert`, which is simpler and self-healing at the realistic scale (a handful to a few dozen segments per trip) rather than doing incremental index-shifting.
+
+RLS follows the `stage13_fix_member_jsonb_all_tables.sql` pattern (`EXISTS + jsonb_array_elements`, checking both `user_id` and `userId`), with write access open to any **editor/owner member** — segments are shared trip content like the itinerary row itself, not creator-only content like an expense.
+
+**`public.profile_status`** — an **append-only history log** of premium grants/expirations (`user_id`, `status` [`premium`|`normal`], `reason`, `expires_at`, `created_at`), not a flat `is_premium`/`premium_until` column on `profiles`. Mirrors the existing `username_history`/`profile_change_log` (Stage 16) pattern: "is this user premium right now" is always the single most recent row for that user, checked against `expires_at`, so a look at the table six months from now always has a reason attached instead of an unexplained date. Owner-only read RLS; rows are written only by `handle_new_user` (grants a signup trial) and `close_expired_premium_status()` (both `SECURITY DEFINER`), or directly by the service role for goodwill/subscription grants.
+
+**`public.feature_flags`** — small, admin-controlled table (`feature_key` PK, `requires_premium bool`, `free_until timestamptz`, `description`) gating premium features generically, not just Google Maps. Read-all RLS, no write policy (service role only). Seeded with `google_maps` at `requires_premium = false` — free for everyone today; flipping it to `true` later gates it for non-premium users, and `free_until` grants a temporary grace-period override without touching `requires_premium`.
+
+**`public.app_config`** — generic key/value table for small tunables, first used for `trial_duration_days` (default `14`) so the signup trial length is an ops change (`UPDATE` one row), not a deploy. Same read-all/service-role-write pattern as `feature_flags`.
+
+#### RPCs / functions
+
+- **`close_expired_premium_status()`** — `SECURITY DEFINER`, no params (uses `auth.uid()` internally). Lazily inserts the terminating `'normal'` row when the caller's latest `profile_status` row is an expired `'premium'` grant. Called by the client right before it reads its own status, so the log self-heals with no cron/scheduled job needed; idempotent once the terminating row exists.
+- **`handle_new_user()`** — reissued to also insert a `'premium'` / `"{trial_duration_days}-day trial on signup"` row with `expires_at = now() + trial_duration_days` (read from `app_config`) for every new profile.
+- Existing users are backfilled with the same trial grant (idempotent — only inserts where no `profile_status` row exists yet).
+
+#### Flutter layer
+
+- **Domain:** `lib/features/itinerary/domain/entities/` — `transport_mode.dart`, `waypoint.dart`, `trip_segment.dart`; `trip_segment_repository.dart`; usecases for add/update/delete/reorder (no "fetch" usecase — the stream goes straight from repository to provider, matching the `expense_split` convention).
+- **Data:** `trip_segment_model.dart` (manual `fromJson`/`toJson`, no code-gen — matches every other feature model in this codebase), `trip_segment_remote_datasource.dart`, `trip_segment_repository_impl.dart`.
+- **Map abstraction** (`lib/core/maps/`): `kumo_map_provider.dart` — `KumoMapProvider` enum (`openStreetMap` | `googleMaps`) + `MapProviderNotifier`, cloned from `theme_provider.dart`'s exact StateNotifier/SharedPreferences pattern (pref key `kumo_map_provider`, default `openStreetMap`). `route_map_view.dart` — public `RouteMapView` widget dispatching to a private `_OsmRouteMap` (`flutter_map` + `latlong2`) or `_GoogleRouteMap` (`google_maps_flutter`); callers never touch a specific map package. Tap targets are markers only — `flutter_map`'s `PolylineLayer` has no hit-testing, so tapping the connecting line itself isn't supported.
+- **Geocoding** (`lib/core/geocoding/`): `geocoding_service.dart` abstract interface + `nominatim_geocoding_service.dart`, a free OSM Nominatim-based implementation used for location search regardless of which map provider is active (so typing a city name never needs a Google key). Sets a descriptive `User-Agent` and throttles to Nominatim's 1 req/sec policy — debounce alone doesn't guarantee that for a fast typer.
+- **Premium** (`lib/core/premium/`): `profile_status.dart` (entity, `isCurrentlyPremium` getter), `profile_status_datasource.dart` (calls `close_expired_premium_status()` then reads the latest row), `premium_feature.dart` (`PremiumFeature`, `PremiumFeatureKeys.googleMaps`), `premium_datasource.dart` (fetches all `feature_flags`), `premium_providers.dart` (`featureFlagsProvider`, `currentProfileStatusProvider`, `isPremiumUserProvider`, `canUseFeatureProvider` family — a feature with no matching row defaults to *allowed*, since missing data should never lock users out of something meant to ship free).
+- **Presentation:** new "Route" tab in `itinerary_detail_page.dart` (`_RouteTab`) showing `RouteMapView` + an ordered `SegmentCard` list. Tapping a segment card or its destination marker opens a unified **segment actions sheet** (`segment_actions_sheet.dart`): *Continue trip from here* (prefills the next leg's origin with this segment's destination, inserts after it, renumbers), *Edit*, *Delete*. `add_edit_trip_segment_page.dart` mirrors `add_edit_item_page.dart`'s shape, with a `TransportMode` icon-chip picker and `location_search_sheet.dart` (adapted from `edit_profile_page.dart`'s `_LookupSheet`, swapping its static-list filter for a debounced, network-backed `GeocodingService.search`). New router entries `/trip/:id/segment` (add, optional `extra: TripSegment` for the "continue from" prefill) and `/trip/:id/segment/:segmentId` (edit), mirroring the existing `item`/`item/:itemId` pair.
+- **Settings:** "Map Provider" tile + picker sheet in `profile_page.dart` (`_MapProviderPickerSheet`, cloned from `_ThemePickerSheet`). The Google Maps option shows a lock icon and an upsell snackbar instead of switching when `canUseFeatureProvider(PremiumFeatureKeys.googleMaps)` is false.
+
+#### Google Maps native key wiring
+
+A scalar API key can't be gitignored as a whole file the way the Firebase configs were, so it's indirected:
+- **Android:** gitignored `android/app/src/main/res/values/google_maps_api.xml` (+ `.example`) defines a `google_maps_key` string resource; the committed `AndroidManifest.xml` references it via `<meta-data android:name="com.google.android.geo.API_KEY" android:value="@string/google_maps_key"/>`.
+- **iOS:** gitignored `ios/Runner/Secrets.xcconfig` (+ `.example`) defines `GOOGLE_MAPS_API_KEY`, `#include`d from `Debug.xcconfig`/`Release.xcconfig`, surfaced to `Info.plist` as `GMSApiKey`, read in `AppDelegate.swift` via `GMSServices.provideAPIKey(...)`.
+- No Android/iOS permission changes were needed — `INTERNET` is already merged in transitively (Firebase Messaging), and both tile/geocoding hosts are HTTPS.
+- The premium gate above is client-side only and doesn't stop a patched client from reaching the Google Maps code path; real protection is restricting the Maps API key in Google Cloud Console to this app's Android package+SHA-1 / iOS bundle ID, independent of the `feature_flags` system.
+
+#### Key design decisions
+
+- **`profile_status` as an audit log, not a column**, for the same reason `username_history`/`profile_change_log` exist — a mutable "current state" field can't explain itself later; an event log always can.
+- **Client calls `close_expired_premium_status()` lazily** rather than running a scheduled job, because this project has no cron/scheduled-function precedent yet; the function is cheap and idempotent, so calling it on every status read is simpler than standing up new infrastructure for it.
+- **`material_design_icons_flutter` (already an unused pubspec dependency since Stage 19) turned out to be incompatible with the current Flutter SDK** — its pinned version subclasses `IconData`, which is now a `final class`. Transport-mode icons use built-in `Icons.*` instead; the broken dependency is still sitting in `pubspec.yaml` unused and should be removed or upgraded separately.
+
+#### Not yet implemented — org/sub-org premium inheritance
+
+Raised during Stage 20 planning: rather than a single global `trial_duration_days` value in `app_config`, premium defaults (trial length, feature-flag overrides) could eventually be inherited from a global default and overridden per-organisation/sub-org once a multi-tenant/organisation concept exists in this app (it doesn't yet — see B2B portal in the roadmap's "What Remains"). The natural implementation is **not** an OOP-style abstract-class inheritance model — it's a priority lookup (check an org-scoped config row first, fall back to the global `app_config`/`feature_flags` row if none exists). Deferred until an organisation entity actually exists; building it blind now would be speculative.
 
 ---
 

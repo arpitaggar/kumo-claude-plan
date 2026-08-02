@@ -10,7 +10,9 @@ import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/chat/presentation/pages/chat_page.dart';
 import '../features/expense_split/presentation/pages/add_expense_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
+import '../features/itinerary/domain/entities/trip_segment.dart';
 import '../features/itinerary/presentation/pages/add_edit_item_page.dart';
+import '../features/itinerary/presentation/pages/add_edit_trip_segment_page.dart';
 import '../features/itinerary/presentation/pages/create_itinerary_page.dart';
 import '../features/itinerary/presentation/pages/invite_member_page.dart';
 import '../features/itinerary/presentation/pages/itinerary_detail_page.dart';
@@ -203,6 +205,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'expense/new',
             pageBuilder: (context, state) => _slidePage(
               AddExpensePage(itineraryId: state.pathParameters['id']!),
+              state,
+            ),
+          ),
+          GoRoute(
+            path: 'segment',
+            pageBuilder: (context, state) => _slidePage(
+              AddEditTripSegmentPage(
+                itineraryId: state.pathParameters['id']!,
+                continueFromSegment: state.extra as TripSegment?,
+              ),
+              state,
+            ),
+          ),
+          GoRoute(
+            path: 'segment/:segmentId',
+            pageBuilder: (context, state) => _slidePage(
+              AddEditTripSegmentPage(
+                itineraryId: state.pathParameters['id']!,
+                segmentId: state.pathParameters['segmentId'],
+              ),
               state,
             ),
           ),

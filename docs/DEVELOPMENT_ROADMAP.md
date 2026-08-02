@@ -185,6 +185,22 @@ supabase functions deploy generate-itinerary
 
 ---
 
+### Stage 18 — Trip Route Segments, Pluggable Map & Premium Feature Flags ✅
+
+**Note on numbering:** same drift called out in Stage 17 — this entry's "Stage 18" is this roadmap doc's own sequence. `CLAUDE.md` labels the equivalent work "Stage 20" in its own (separately-drifted) numbering; see `CLAUDE.md` → *Trip Route Segments, Pluggable Map & Premium Feature Flags* for the authoritative technical breakdown.
+
+**Shipped:** A trip's transport can now be planned as an ordered sequence of legs (e.g. Flight Munich→Bangkok → Flight Bangkok→Chiang Mai → Motorcycle Chiang Mai→Pai → ... → Flight Bangkok→Munich), each with a transport mode, shown on a new "Route" tab as a map with per-mode icons plus a segment list. Tapping a segment (card or map marker) opens an actions sheet to continue the trip from that stop, edit, or delete it. Map rendering is pluggable: `flutter_map`/OpenStreetMap ships as the free default; `google_maps_flutter` is a second implementation behind the same interface, switchable from a new Settings picker.
+
+Also added a general-purpose, DB-backed premium feature-flag system (`feature_flags` table) and an append-only premium-status audit log (`profile_status` table, replacing what would otherwise have been a flat `is_premium` column) — modeled after the existing `username_history`/`profile_change_log` pattern so a look at any user's premium history always has a reason attached. Ships a 14-day signup trial (length configurable via a new `app_config` key/value table) with everything currently free (`google_maps` flag unset).
+
+**vs. v1.0:** Not in the original plan — added based on user request during development.
+
+**SQL migration:** `docs/supabase_migrations/stage21_trip_segments.sql` — run in Supabase SQL editor before deploying this build.
+
+**Known gaps carried into "What Remains" below:** Google Maps needs a real API key dropped into the gitignored native config to actually render tiles; org/sub-org inheritance for premium defaults is explicitly deferred (no organisation entity exists yet to hang it off).
+
+---
+
 ## What Remains (Deferred / Not Implemented)
 
 | Feature | Why Deferred |
@@ -200,6 +216,8 @@ supabase functions deploy generate-itinerary
 | Social feed (likes, comments, follows) | Separate product surface |
 | Gamification (XP, achievements, badges) | Post-retention-baseline |
 | B2B portal | Requires pilot customer |
+| Google Maps route rendering (live) | Code-complete behind the map-provider abstraction (Stage 18); needs a real Google Cloud Maps API key dropped into the gitignored `google_maps_api.xml` (Android) / `Secrets.xcconfig` (iOS) — currently builds with a placeholder key so tiles won't render |
+| Org/sub-org premium config inheritance | Premium defaults (trial length, feature-flag overrides) are a single global `app_config`/`feature_flags` value today; per-organisation overrides need an organisation entity first (see B2B portal above) — the right shape is a fallback lookup (org row → global row), not class-style inheritance |
 
 ---
 
@@ -223,7 +241,8 @@ Jun–Jul 2026
 ├── Stage 14: App Icon & Launch Screen       ✅ Week 7
 ├── Stage 15: Privacy, GDPR & Legal          ✅ Week 7
 ├── Stage 16: Chat Polish, Animations & A11y ✅ Week 7
-└── Stage 17: Profile/Expense/Chat/Push      ✅ Android / 🔧 iOS   Jul 2026
+├── Stage 17: Profile/Expense/Chat/Push      ✅ Android / 🔧 iOS   Jul 2026
+└── Stage 18: Route Segments + Premium Flags ✅                   Aug 2026
 ```
 
 ---
@@ -237,14 +256,17 @@ Jun–Jul 2026
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
 - Signup consent checkbox before account creation ✅
-- 154 unit tests passing ✅
+- 227 unit/widget tests passing ✅
 
 Outstanding:
 - Run `stage14_delete_user_rpc.sql` migration in Supabase SQL editor
+- Run `stage21_trip_segments.sql` migration in Supabase SQL editor (Stage 18)
+- Drop a real Google Maps API key into the gitignored native config files to make that map provider actually render (Stage 18)
 - Enable GitHub Pages → submit legal URLs to App Store Connect / Google Play Console
 - Widget tests and integration tests not yet written
 - No formal WCAG 2.1 accessibility audit
 - Solo development; no PR review process
+- `material_design_icons_flutter` pubspec dependency is unused and incompatible with the current Flutter SDK — remove or upgrade it
 
 ---
 

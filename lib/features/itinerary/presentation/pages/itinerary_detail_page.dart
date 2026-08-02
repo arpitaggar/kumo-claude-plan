@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../core/maps/route_map_view.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
@@ -17,8 +18,12 @@ import '../../../ratings/domain/entities/rating.dart';
 import '../../../ratings/presentation/providers/rating_provider.dart';
 import '../../../ratings/presentation/widgets/add_rating_sheet.dart';
 import '../../domain/entities/travel_itinerary.dart';
+import '../../domain/entities/trip_segment.dart';
 import '../../domain/entities/trip_theme.dart';
 import '../providers/itinerary_provider.dart';
+import '../providers/trip_segment_provider.dart';
+import '../widgets/segment_actions_sheet.dart';
+import '../widgets/segment_card.dart';
 
 class ItineraryDetailPage extends ConsumerWidget {
   const ItineraryDetailPage({required this.id, super.key});
@@ -70,7 +75,7 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 5, vsync: this);
+    _tabs = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -224,8 +229,11 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
                     fontFamily: 'Poppins',
                     fontSize: 13,
                   ),
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
                   tabs: const [
                     Tab(text: 'Itinerary'),
+                    Tab(text: 'Route'),
                     Tab(text: 'Notes'),
                     Tab(text: 'Expenses'),
                     Tab(text: 'Reviews'),
@@ -247,6 +255,9 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
               onAddAiItems: canEdit ? _addAiItems : null,
               currentUserId: currentUserId,
             ),
+
+            // ── Route tab ──────────────────────────────────────────────────
+            _RouteTab(itinerary: it),
 
             // ── Notes tab ─────────────────────────────────────────────────
             _NotesTab(itinerary: it, currentUserId: currentUserId),
@@ -450,6 +461,169 @@ class _ItineraryTab extends ConsumerWidget {
         ),
       ],
     );
+}
+
+// ── Route tab ──────────────────────────────────────────────────────────────────
+
+class _RouteTab extends ConsumerWidget {
+  const _RouteTab({required this.itinerary});
+
+  final TravelItinerary itinerary;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final segmentsAsync = ref.watch(tripSegmentsStreamProvider(itinerary.id));
+
+    return segmentsAsync.when(
+      loading: () => const LoadingWidget(message: 'Loading route…'),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(e.toString(), textAlign: TextAlign.center),
+        ),
+      ),
+      data: (segments) {
+        final sorted = [...segments]
+          ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Text(
+                    'Route',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.colorScheme.onSurface,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () =>
+                        context.push('/trip/${itinerary.id}/segment'),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Add'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: context.colorScheme.primary,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 260,
+              child: RouteMapView(
+                segments: sorted,
+                onSegmentTap: (segment) =>
+                    _handleSegmentTap(context, ref, itinerary, segment),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (sorted.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.route_outlined,
+                            size: 36, color: context.colorScheme.outlineVariant),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add your first segment to build the route',
+                          style:
+                              TextStyle(color: context.colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              ...sorted.map(
+                (segment) => SegmentCard(
+                  segment: segment,
+                  onTap: () =>
+                      _handleSegmentTap(context, ref, itinerary, segment),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+Future<void> _handleSegmentTap(
+  BuildContext context,
+  WidgetRef ref,
+  TravelItinerary itinerary,
+  TripSegment segment,
+) async {
+  final action = await showSegmentActionsSheet(
+    context,
+    destinationName: segment.destination.name,
+  );
+  if (action == null || !context.mounted) {
+    return;
+  }
+
+  if (action == SegmentAction.continueFrom) {
+    context.push('/trip/${itinerary.id}/segment', extra: segment);
+    return;
+  }
+
+  if (action == SegmentAction.edit) {
+    context.push('/trip/${itinerary.id}/segment/${segment.id}');
+    return;
+  }
+
+  // SegmentAction.delete
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete segment?'),
+      content: Text(
+        'This will remove "${segment.origin.name} → ${segment.destination.name}" '
+        'from the route.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => ctx.pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(ctx).colorScheme.error,
+          ),
+          onPressed: () => ctx.pop(true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) {
+    return;
+  }
+
+  final current =
+      ref.read(tripSegmentsStreamProvider(itinerary.id)).value ?? [];
+  await ref.read(deleteTripSegmentUseCaseProvider).call(segment.id);
+  final remaining = current.where((s) => s.id != segment.id).toList();
+  await ref
+      .read(reorderTripSegmentsUseCaseProvider)
+      .call(itinerary.id, remaining);
 }
 
 // ── Expenses tab ──────────────────────────────────────────────────────────────
