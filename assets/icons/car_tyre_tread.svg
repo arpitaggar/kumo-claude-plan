@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 200" width="100%" height="100%">
+  <defs>
+    <!-- Single Repeating Module for Seamless Map Path Tracing -->
+    <pattern id="tyre-tracer-pattern" width="100" height="40" patternUnits="userSpaceOnUse">
+      <!-- High-contrast tread mark color (Adjust fill/stroke for your map theme) -->
+      <g fill="#222222" stroke="none">
+        
+        <!-- Left Shoulder Block -->
+        <path d="M 5,5 L 22,5 L 20,18 L 5,18 Z" />
+        <path d="M 5,22 L 20,22 L 22,35 L 5,35 Z" />
+
+        <!-- Right Shoulder Block -->
+        <path d="M 95,5 L 78,5 L 80,18 L 95,18 Z" />
+        <path d="M 95,22 L 80,22 L 78,35 L 95,35 Z" />
+
+        <!-- Left Chevron/V-Groove Block -->
+        <path d="M 28,6 L 44,15 L 44,22 L 28,13 Z" />
+        <path d="M 28,23 L 44,32 L 44,39 L 28,30 Z" />
+
+        <!-- Right Chevron/V-Groove Block -->
+        <path d="M 72,6 L 56,15 L 56,22 L 72,13 Z" />
+        <path d="M 72,23 L 56,32 L 56,39 L 72,30 Z" />
+
+        <!-- Center Traction Strip -->
+        <rect x="47.5" y="2" width="5" height="15" rx="1" />
+        <rect x="47.5" y="22" width="5" height="15" rx="1" />
+        
+      </g>
+    </pattern>
+  </defs>
+
+  <!-- Canvas Path Rect using the tiled pattern -->
+  <rect x="0" y="0" width="100" height="100%" fill="url(#tyre-tracer-pattern)" />
+</svg>
