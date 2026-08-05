@@ -186,18 +186,6 @@ class AuthRepositoryImpl implements AuthRepository {
   bool isAuthenticated() => remoteDataSource.isAuthenticated();
 
   @override
-  Future<Either<Failure, Map<String, dynamic>?>> getSession() async {
-    try {
-      final session = await remoteDataSource.getSession();
-      return Right(session);
-    } on AuthException catch (e) {
-      return Left(AuthFailure(e.message));
-    } catch (e) {
-      return Left(UnexpectedFailure(e.toString()));
-    }
-  }
-
-  @override
   Future<Either<Failure, void>> deleteAccount() async {
     try {
       await remoteDataSource.deleteAccount();

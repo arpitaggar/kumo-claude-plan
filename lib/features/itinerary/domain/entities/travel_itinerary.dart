@@ -68,6 +68,7 @@ class TravelItinerary extends Equatable {
     this.isPublic = false,
     this.notes,
     this.themeKey = 'classic',
+    this.originPostId,
   });
 
   /// Unique identifier for this itinerary (UUID format).
@@ -175,6 +176,13 @@ class TravelItinerary extends Equatable {
   /// Key identifying the destination-based visual theme (e.g. 'sakura', 'alpine').
   final String themeKey;
 
+  /// ID of the `itinerary_posts` row this itinerary was forked from, if any.
+  ///
+  /// Set when the itinerary is created via `ForkPostUseCase`. Read back when
+  /// this itinerary is later published, so the new post's `forkedFromPostId`
+  /// chains to the original without the caller having to track lineage.
+  final String? originPostId;
+
   /// Creates a copy of this [TravelItinerary] with optionally replaced fields.
   ///
   /// Useful for immutable updates without modifying original.
@@ -207,6 +215,7 @@ class TravelItinerary extends Equatable {
     bool? isPublic,
     String? notes,
     String? themeKey,
+    String? originPostId,
   }) => TravelItinerary(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -225,6 +234,7 @@ class TravelItinerary extends Equatable {
     isPublic: isPublic ?? this.isPublic,
     notes: notes ?? this.notes,
     themeKey: themeKey ?? this.themeKey,
+    originPostId: originPostId ?? this.originPostId,
   );
 
   @override
@@ -246,6 +256,7 @@ class TravelItinerary extends Equatable {
     isPublic,
     notes,
     themeKey,
+    originPostId,
   ];
 }
 

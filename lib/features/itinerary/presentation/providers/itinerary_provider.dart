@@ -18,7 +18,7 @@ final itineraryRemoteDataSourceProvider =
     Provider<ItineraryRemoteDataSource>((_) => const ItineraryRemoteDataSourceImpl());
 
 final itineraryLocalDataSourceProvider =
-    Provider<ItineraryLocalDataSource>((_) => ItineraryLocalDataSource());
+    Provider<ItineraryLocalDataSource>((_) => const ItineraryLocalDataSource());
 
 final itineraryRepositoryProvider = Provider<ItineraryRepositoryImpl>(
   (ref) => ItineraryRepositoryImpl(

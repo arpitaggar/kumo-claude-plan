@@ -28,6 +28,17 @@ final userProfileProvider = FutureProvider.autoDispose<UserProfile?>((ref) async
   return result.fold((_) => null, (profile) => profile);
 });
 
+// ── Other users' profiles ───────────────────────────────────────────────────
+
+/// Full profile row for a user other than the caller, e.g. for viewing a
+/// post author's public profile page.
+final profileByIdProvider =
+    FutureProvider.autoDispose.family<UserProfile?, String>((ref, userId) async {
+  final result =
+      await ref.read(userProfileRepositoryProvider).getProfileById(userId);
+  return result.fold((_) => null, (profile) => profile);
+});
+
 // ── Notification preferences ─────────────────────────────────────────────────
 
 final notificationPreferencesProvider =

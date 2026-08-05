@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../../core/error/exception.dart';
 import '../models/user_model.dart';
@@ -13,15 +13,23 @@ abstract class AuthLocalDataSource {
   Future<void> clearCachedUser();
 }
 
+/// Caches the signed-in user's own profile fields for offline-fallback reads
+/// (see `AuthRepositoryImpl.getCurrentUser`). Backed by secure storage
+/// (Android Keystore / iOS Keychain), not SharedPreferences — this cache can
+/// include PII (email, phone number), which SharedPreferences stores as
+/// plaintext on disk (see docs/SECURITY_AUDIT.md SEC-011).
 class AuthLocalDataSourceImpl implements AuthLocalDataSource {
-  const AuthLocalDataSourceImpl(this._prefs);
+  const AuthLocalDataSourceImpl(this._storage);
 
-  final SharedPreferences _prefs;
+  final FlutterSecureStorage _storage;
 
   @override
   Future<void> cacheUser(UserModel user) async {
     try {
-      await _prefs.setString(_kCachedUserKey, jsonEncode(user.toJson()));
+      await _storage.write(
+        key: _kCachedUserKey,
+        value: jsonEncode(user.toJson()),
+      );
     } catch (e) {
       throw LocalStorageException.failedToSave();
     }
@@ -30,7 +38,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<UserModel?> getCachedUser() async {
     try {
-      final json = _prefs.getString(_kCachedUserKey);
+      final json = await _storage.read(key: _kCachedUserKey);
       if (json == null) {
         return null;
       }
@@ -43,7 +51,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> clearCachedUser() async {
     try {
-      await _prefs.remove(_kCachedUserKey);
+      await _storage.delete(key: _kCachedUserKey);
     } catch (e) {
       throw LocalStorageException.failedToDelete();
     }

@@ -185,11 +185,6 @@ abstract class AuthRepository {
   /// @returns true if valid session exists, false otherwise
   bool isAuthenticated();
 
-  /// Gets current authentication session details.
-  ///
-  /// @returns Session object or null if not authenticated
-  Future<Either<Failure, Map<String, dynamic>?>> getSession();
-
   /// Permanently deletes the current user's account and all associated data.
   ///
   /// Calls the `delete_user` Supabase RPC (SECURITY DEFINER) which removes the

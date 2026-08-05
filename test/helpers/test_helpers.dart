@@ -1,3 +1,5 @@
+import 'package:flutter_secure_storage/test/test_flutter_secure_storage_platform.dart';
+import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kumo_claude/core/network/supabase_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +19,13 @@ const _kTestAnonKey =
 Future<void> initTestSupabase() async {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues({});
+  // flutter_secure_storage (used by AuthLocalDataSource/KumoSupabaseClient's
+  // session storage, see docs/SECURITY_AUDIT.md SEC-007/SEC-011) talks to a
+  // real platform channel with no test-environment implementation — without
+  // this, any widget that touches it during a test hangs pumpAndSettle
+  // forever. The package ships this in-memory fake for exactly this case.
+  FlutterSecureStoragePlatform.instance =
+      TestFlutterSecureStoragePlatform(<String, String>{});
   late Supabase instance;
   try {
     instance = await Supabase.initialize(

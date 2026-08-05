@@ -17,6 +17,7 @@ import '../../../packing/presentation/providers/packing_provider.dart';
 import '../../../ratings/domain/entities/rating.dart';
 import '../../../ratings/presentation/providers/rating_provider.dart';
 import '../../../ratings/presentation/widgets/add_rating_sheet.dart';
+import '../../../social/presentation/providers/social_provider.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_segment.dart';
 import '../../domain/entities/trip_theme.dart';
@@ -1896,21 +1897,82 @@ class _StatusRow extends ConsumerWidget {
     );
   }
 
-  Future<void> _togglePublic(
-    BuildContext context,
-    WidgetRef ref, {
-    required bool value,
-  }) async {
-    final result = await ref
-        .read(updateItineraryUseCaseProvider)
-        .call(itinerary.copyWith(isPublic: value));
-    result.fold(
-      (f) {
+  Future<void> _publish(BuildContext context, WidgetRef ref) async {
+    final auth = ref.read(authNotifierProvider);
+    if (auth is! AuthAuthenticated) {
+      return;
+    }
+
+    // Confirm what becomes public before the first publish — the title,
+    // description, and itinerary stops are free text that may have been
+    // written with no expectation of being broadcast (SEC-013). Skipped on
+    // "Publish update" since the user already made this choice once.
+    if (!itinerary.isPublic) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Publish this trip?'),
+          content: const Text(
+            'Your title, description, and itinerary stops will become '
+            'visible to everyone on Discover. Trip notes and member names '
+            'stay private. This cannot be undone once published.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => ctx.pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => ctx.pop(true),
+              child: const Text('Publish'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) {
+        return;
+      }
+    }
+
+    // Read the current route segments directly from the repository stream
+    // rather than tripSegmentsStreamProvider — the Route tab may not have
+    // been visited yet, in which case that provider has no cached value.
+    final segmentsEither = await ref
+        .read(tripSegmentRepositoryProvider)
+        .watchSegments(itinerary.id)
+        .first;
+    final segments = segmentsEither.fold(
+      (_) => const <TripSegment>[],
+      (list) => list,
+    );
+
+    final result = await ref.read(publishItineraryUseCaseProvider).call(
+          itinerary: itinerary,
+          segments: segments,
+          authorName: auth.user.displayName ?? auth.user.email,
+          authorAvatarUrl: auth.user.avatarUrl,
+        );
+
+    if (!context.mounted) {
+      return;
+    }
+
+    await result.fold(
+      (f) async {
+        context.showSnackBar(f.message, isError: true);
+      },
+      (_) async {
+        if (!itinerary.isPublic) {
+          await ref
+              .read(updateItineraryUseCaseProvider)
+              .call(itinerary.copyWith(isPublic: true));
+        }
         if (context.mounted) {
-          context.showSnackBar(f.message, isError: true);
+          context.showSnackBar(
+            'Published! Anyone can find and use it from Discover.',
+          );
         }
       },
-      (_) {},
     );
   }
 
@@ -2016,17 +2078,23 @@ class _StatusRow extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Public on Discover',
+                    itinerary.isPublic
+                        ? 'Published to Discover'
+                        : 'Not published',
                     style: TextStyle(
                         fontSize: 13, color: context.colorScheme.onSurfaceVariant),
                   ),
                 ),
-                Switch(
-                  value: itinerary.isPublic,
-                  onChanged: (v) =>
-                      _togglePublic(context, ref, value: v),
-                  activeThumbColor: context.colorScheme.primary,
-                ),
+                if (itinerary.isPublic)
+                  TextButton(
+                    onPressed: () => _publish(context, ref),
+                    child: const Text('Publish update'),
+                  )
+                else
+                  FilledButton(
+                    onPressed: () => _publish(context, ref),
+                    child: const Text('Publish'),
+                  ),
               ],
             ),
           ],

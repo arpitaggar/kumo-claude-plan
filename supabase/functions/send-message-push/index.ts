@@ -30,7 +30,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://kumo.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -230,7 +230,8 @@ serve(async (req) => {
 
     return json({ sent, recipients: enabledRecipients.length })
   } catch (e) {
-    return json({ error: String(e) }, 500)
+    console.error('Unexpected error:', e)
+    return json({ error: 'Internal server error' }, 500)
   }
 })
 

@@ -16,7 +16,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://kumo.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -58,9 +58,13 @@ serve(async (req) => {
     }
 
     // ── Fetch trip + inviter ─────────────────────────────────────────────────
+    // This client uses the service-role key (bypasses RLS), so — unlike a
+    // normal client query — authorization has to be re-checked explicitly
+    // here: the caller must actually be a member/owner of itinerary_id, not
+    // just any authenticated Kumo user (SEC-006).
     const [{ data: trip }, { data: inviter }] = await Promise.all([
       supabaseAdmin.from('itineraries')
-        .select('title, start_date, end_date')
+        .select('title, start_date, end_date, owner_id, members')
         .eq('id', itinerary_id)
         .single(),
       supabaseAdmin.from('profiles')
@@ -71,6 +75,14 @@ serve(async (req) => {
 
     if (!trip) {
       return json({ error: 'Trip not found' }, 404)
+    }
+
+    const memberIds: string[] = (trip.members ?? [])
+      .map((m: { userId?: string; user_id?: string }) => m.userId ?? m.user_id)
+      .filter((id: string | undefined): id is string => !!id)
+    const isAuthorized = trip.owner_id === user.id || memberIds.includes(user.id)
+    if (!isAuthorized) {
+      return json({ error: 'Forbidden' }, 403)
     }
 
     const inviterName = inviter?.display_name || inviter?.email || 'A Kumo traveller'
@@ -136,7 +148,7 @@ serve(async (req) => {
     return json({ sent: true, method: 'supabase_invite' })
   } catch (e) {
     console.error('Unexpected error:', e)
-    return json({ error: String(e) }, 500)
+    return json({ error: 'Internal server error' }, 500)
   }
 })
 

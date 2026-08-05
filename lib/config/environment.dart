@@ -1,7 +1,10 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 enum AppEnvironment { development, staging, production }
 
+/// Configuration resolved entirely at build time via `--dart-define`/
+/// `--dart-define-from-file`, never from a bundled asset file (see
+/// docs/SECURITY_AUDIT.md SEC-002 — a file declared under pubspec.yaml's
+/// `assets:` ships verbatim inside the compiled APK/IPA, which is exactly
+/// the property a "local secrets file" must not have).
 class Environment {
   Environment._();
 
@@ -17,12 +20,8 @@ class Environment {
   static bool get isDevelopment => current == AppEnvironment.development;
   static bool get isProduction => current == AppEnvironment.production;
 
-  static String get supabaseUrl =>
-      dotenv.env['SUPABASE_URL'] ?? const String.fromEnvironment('SUPABASE_URL');
+  static String get supabaseUrl => const String.fromEnvironment('SUPABASE_URL');
 
   static String get supabaseAnonKey =>
-      dotenv.env['SUPABASE_PUBLISHABLE_KEY'] ??
-      dotenv.env['SUPABASE_ANON_KEY'] ??
       const String.fromEnvironment('SUPABASE_ANON_KEY');
-
 }

@@ -8,6 +8,11 @@ abstract class UserProfileRepository {
   /// Fetches the authenticated user's own full profile from the profiles table.
   Future<Either<Failure, UserProfile>> getOwnProfile();
 
+  /// Fetches another user's profile by id, for viewing their public profile
+  /// page. Backed by the same `profiles_select` RLS policy that already
+  /// allows any authenticated user to read any profile row.
+  Future<Either<Failure, UserProfile>> getProfileById(String userId);
+
   /// Calls the `update_profile` RPC to atomically update any subset of fields.
   /// Only non-null arguments are written; null means "leave unchanged".
   /// Throws [ServerFailure] with a user-facing message for:

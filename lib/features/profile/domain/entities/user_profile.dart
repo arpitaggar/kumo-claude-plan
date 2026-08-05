@@ -17,7 +17,11 @@ class UserProfile extends Equatable {
     required this.unitsPreference,
     required this.travelPreferenceTags,
     required this.updatedAt,
-    this.pushMessagePreviewEnabled = true,
+    // Privacy by default (SEC-017) — matches the profiles table's own
+    // column default (see stage23_security_hardening.sql). New users start
+    // with chat content hidden from lock-screen/notification-shade previews
+    // and must opt in, rather than opting out after the fact.
+    this.pushMessagePreviewEnabled = false,
     this.username,
     this.avatarUrl,
     this.bio,

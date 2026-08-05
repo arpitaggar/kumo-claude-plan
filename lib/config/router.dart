@@ -23,10 +23,11 @@ import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../features/profile/presentation/pages/edit_profile_page.dart';
 import '../features/profile/presentation/pages/notification_preferences_page.dart';
 import '../features/settings/presentation/pages/privacy_settings_page.dart';
-import '../features/shell/discover_page.dart';
 import '../features/shell/inbox_page.dart';
 import '../features/shell/profile_page.dart';
 import '../features/shell/trips_page.dart';
+import '../features/social/presentation/pages/discover_page.dart';
+import '../features/social/presentation/pages/public_profile_page.dart';
 import '../features/splash/presentation/pages/splash_page.dart';
 import '../shared/widgets/kumo_shell.dart';
 
@@ -157,6 +158,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/notifications',
         pageBuilder: (context, state) =>
             _slidePage(const NotificationPreferencesPage(), state),
+      ),
+      GoRoute(
+        path: '/u/:userId',
+        pageBuilder: (context, state) => _slidePage(
+          PublicProfilePage(userId: state.pathParameters['userId']!),
+          state,
+        ),
       ),
       GoRoute(
         path: '/settings/privacy',

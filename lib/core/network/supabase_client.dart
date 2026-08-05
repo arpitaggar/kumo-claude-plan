@@ -1,7 +1,35 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/environment.dart';
 import '../utils/logger.dart';
+
+/// Persists the Supabase session (access/refresh tokens) via secure storage
+/// (Android Keystore / iOS Keychain) instead of supabase_flutter's default
+/// SharedPreferences-backed store, which writes the token pair in plaintext
+/// on disk (see docs/SECURITY_AUDIT.md SEC-007).
+class _SecureSessionStorage extends LocalStorage {
+  const _SecureSessionStorage();
+
+  static const _storage = FlutterSecureStorage();
+  static const _key = 'supabase.session';
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<String?> accessToken() => _storage.read(key: _key);
+
+  @override
+  Future<bool> hasAccessToken() async => (await _storage.read(key: _key)) != null;
+
+  @override
+  Future<void> persistSession(String persistSessionString) =>
+      _storage.write(key: _key, value: persistSessionString);
+
+  @override
+  Future<void> removePersistedSession() => _storage.delete(key: _key);
+}
 
 /// Supabase client initialization and configuration.
 ///
@@ -22,6 +50,9 @@ class KumoSupabaseClient {
       _supabaseInstance = await Supabase.initialize(
         url: Environment.supabaseUrl,
         publishableKey: Environment.supabaseAnonKey,
+        authOptions: const FlutterAuthClientOptions(
+          localStorage: _SecureSessionStorage(),
+        ),
       );
       AppLogger.info('Supabase initialized successfully');
     } catch (e, st) {

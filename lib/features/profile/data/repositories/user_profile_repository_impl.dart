@@ -26,6 +26,19 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
   }
 
   @override
+  Future<Either<Failure, UserProfile>> getProfileById(String userId) async {
+    try {
+      return Right(await _remote.getProfileById(userId));
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on UnexpectedException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, UserProfile>> updateProfile({
     String? displayName,
     String? username,

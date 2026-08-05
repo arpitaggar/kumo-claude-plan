@@ -29,8 +29,6 @@ abstract class AuthRemoteDataSource {
 
   bool isAuthenticated();
 
-  Future<Map<String, dynamic>?> getSession();
-
   Future<void> deleteAccount();
 }
 
@@ -204,16 +202,4 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-  @override
-  Future<Map<String, dynamic>?> getSession() async {
-    final session = KumoSupabaseClient.auth.currentSession;
-    if (session == null) {
-      return null;
-    }
-    return {
-      'access_token': session.accessToken,
-      'refresh_token': session.refreshToken,
-      'expires_at': session.expiresAt,
-    };
-  }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
@@ -28,9 +29,13 @@ final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>(
   (_) => const AuthRemoteDataSourceImpl(),
 );
 
+final secureStorageProvider = Provider<FlutterSecureStorage>(
+  (_) => const FlutterSecureStorage(),
+);
+
 final authLocalDataSourceProvider = Provider<AuthLocalDataSource>(
   (ref) => AuthLocalDataSourceImpl(
-    ref.watch(sharedPreferencesProvider),
+    ref.watch(secureStorageProvider),
   ),
 );
 

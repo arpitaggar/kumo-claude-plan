@@ -1,0 +1,345 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../shared/extensions/context_extensions.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../profile/domain/entities/user_profile.dart';
+import '../../../profile/presentation/providers/user_profile_provider.dart';
+import '../../domain/entities/follow_stats.dart';
+import '../../domain/entities/itinerary_post.dart';
+import '../providers/social_provider.dart';
+import '../widgets/post_card.dart';
+
+class PublicProfilePage extends ConsumerWidget {
+  const PublicProfilePage({required this.userId, super.key});
+
+  final String userId;
+
+  Future<void> _fork(
+    BuildContext context,
+    WidgetRef ref,
+    ItineraryPost post,
+  ) async {
+    final auth = ref.read(authNotifierProvider);
+    if (auth is! AuthAuthenticated) {
+      return;
+    }
+
+    final result = await ref.read(forkPostUseCaseProvider).call(
+      postId: post.id,
+      newOwnerId: auth.user.id,
+      newOwnerName: auth.user.displayName ?? auth.user.email,
+    );
+
+    if (!context.mounted) {
+      return;
+    }
+
+    result.fold(
+      (f) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(f.message), backgroundColor: Colors.redAccent),
+      ),
+      (forked) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to My Trips!')),
+        );
+        context.push('/trip/${forked.id}');
+      },
+    );
+  }
+
+  Future<void> _toggleLike(WidgetRef ref, ItineraryPost post) async {
+    final auth = ref.read(authNotifierProvider);
+    if (auth is! AuthAuthenticated) {
+      return;
+    }
+    await ref.read(toggleLikeUseCaseProvider).call(
+      postId: post.id,
+      userId: auth.user.id,
+      like: !post.likedByMe,
+    );
+    ref.invalidate(authorPostsProvider(userId));
+  }
+
+  Future<void> _toggleFollow(WidgetRef ref, FollowStats stats) async {
+    final auth = ref.read(authNotifierProvider);
+    if (auth is! AuthAuthenticated) {
+      return;
+    }
+    await ref.read(toggleFollowUseCaseProvider).call(
+      followerId: auth.user.id,
+      followeeId: userId,
+      follow: !stats.isFollowedByMe,
+    );
+    ref.invalidate(followStatsProvider(userId));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authNotifierProvider);
+    final isOwnProfile =
+        auth is AuthAuthenticated && auth.user.id == userId;
+    final profileAsync = ref.watch(profileByIdProvider(userId));
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(title: const Text('Profile')),
+      body: profileAsync.when(
+        loading: () =>
+            Center(child: CircularProgressIndicator(color: context.colorScheme.primary)),
+        error: (_, _) => const Center(child: Text('Could not load profile')),
+        data: (profile) {
+          if (profile == null) {
+            return const Center(child: Text('Profile not found'));
+          }
+          return _ProfileBody(
+            profile: profile,
+            isOwnProfile: isOwnProfile,
+            onFollowToggle: (stats) => _toggleFollow(ref, stats),
+            onLike: (post) => _toggleLike(ref, post),
+            onFork: (post) => _fork(context, ref, post),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ProfileBody extends ConsumerWidget {
+  const _ProfileBody({
+    required this.profile,
+    required this.isOwnProfile,
+    required this.onFollowToggle,
+    required this.onLike,
+    required this.onFork,
+  });
+
+  final UserProfile profile;
+  final bool isOwnProfile;
+  final void Function(FollowStats stats) onFollowToggle;
+  final void Function(ItineraryPost post) onLike;
+  final void Function(ItineraryPost post) onFork;
+
+  bool get _isPrivate =>
+      !isOwnProfile && profile.profileVisibility == 'private';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(followStatsProvider(profile.id));
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+      children: [
+        Center(
+          child: Column(
+            children: [
+              CircleAvatar(
+                radius: 44,
+                backgroundColor: context.colorScheme.primaryContainer,
+                backgroundImage: profile.avatarUrl != null
+                    ? NetworkImage(profile.avatarUrl!)
+                    : null,
+                child: profile.avatarUrl == null
+                    ? Text(
+                        profile.displayName.isNotEmpty
+                            ? profile.displayName[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                          color: context.colorScheme.primary,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                profile.displayName,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: context.colorScheme.onSurface,
+                ),
+              ),
+              if (profile.username != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  '@${profile.username}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (!_isPrivate &&
+                  profile.bio != null &&
+                  profile.bio!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  profile.bio!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 14),
+              statsAsync.when(
+                loading: () => const SizedBox(height: 20),
+                error: (_, _) => const SizedBox.shrink(),
+                data: (stats) {
+                  if (stats == null) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _StatCount(
+                            label: 'Followers',
+                            count: stats.followerCount,
+                          ),
+                          const SizedBox(width: 24),
+                          _StatCount(
+                            label: 'Following',
+                            count: stats.followingCount,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      if (isOwnProfile)
+                        OutlinedButton(
+                          onPressed: () => context.push('/profile/edit'),
+                          child: const Text('Edit Profile'),
+                        )
+                      else
+                        FilledButton.icon(
+                          onPressed: () => onFollowToggle(stats),
+                          icon: Icon(
+                            stats.isFollowedByMe
+                                ? Icons.person_remove_outlined
+                                : Icons.person_add_alt_1,
+                            size: 16,
+                          ),
+                          label: Text(
+                            stats.isFollowedByMe ? 'Unfollow' : 'Follow',
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        if (_isPrivate)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 40,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'This profile is private',
+                    style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          _AuthorPosts(authorId: profile.id, onLike: onLike, onFork: onFork),
+      ],
+    );
+  }
+}
+
+class _StatCount extends StatelessWidget {
+  const _StatCount({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Text(
+        '$count',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: context.colorScheme.onSurface,
+        ),
+      ),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    ],
+  );
+}
+
+class _AuthorPosts extends ConsumerWidget {
+  const _AuthorPosts({
+    required this.authorId,
+    required this.onLike,
+    required this.onFork,
+  });
+
+  final String authorId;
+  final void Function(ItineraryPost post) onLike;
+  final void Function(ItineraryPost post) onFork;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final postsAsync = ref.watch(authorPostsProvider(authorId));
+
+    return postsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, _) => Center(
+        child: Text(
+          'Could not load trips',
+          style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+        ),
+      ),
+      data: (posts) {
+        if (posts.isEmpty) {
+          return Center(
+            child: Text(
+              'No published trips yet',
+              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+            ),
+          );
+        }
+        return Column(
+          children: [
+            for (final post in posts) ...[
+              PostCard(
+                post: post,
+                onAuthorTap: () {},
+                onLike: () => onLike(post),
+                onFork: () => onFork(post),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}

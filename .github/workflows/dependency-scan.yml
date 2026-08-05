@@ -1,0 +1,43 @@
+# Recurring dependency-vulnerability scan (docs/SECURITY_AUDIT.md SEC-025).
+#
+# This is the first CI workflow in this repo — there was none before. It's
+# intentionally scoped to just this one check rather than a full CI pipeline
+# (tests/analyze/build), which is a separate decision for the team to make.
+#
+# NOTE: pin osv-scanner-action to the version current at the time you first
+# enable this workflow — check https://github.com/google/osv-scanner-action
+# for the latest tag, since GitHub Actions from third-party repos should
+# always be pinned rather than tracking a floating major-version tag.
+name: Dependency vulnerability scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1' # weekly, Monday 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  osv-scan:
+    permissions:
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2
+    with:
+      scan-args: |-
+        --recursive
+        --skip-git
+        ./
+
+  pub-outdated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter pub outdated || true

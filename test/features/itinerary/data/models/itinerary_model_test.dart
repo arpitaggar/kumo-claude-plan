@@ -137,4 +137,63 @@ void main() {
       expect(copy.themeKey, 'alpine');
     });
   });
+
+  group('ItineraryModel — originPostId (Stage 22 social feed)', () {
+    Map<String, dynamic> baseJson() => {
+          'id': 'itin-1',
+          'title': 'Tokyo Trip',
+          'owner_id': 'owner-uid',
+          'start_date': '2026-06-10T00:00:00.000Z',
+          'end_date': '2026-06-15T00:00:00.000Z',
+          'total_budget': 2000.0,
+          'currency_code': 'USD',
+          'members': <dynamic>[],
+          'items': <dynamic>[],
+          'expense_summary': {
+            'total_spent': 0,
+            'spent_by_category': <String, dynamic>{},
+            'member_balances': <String, dynamic>{},
+          },
+          'created_at': '2026-06-01T00:00:00.000Z',
+          'updated_at': '2026-06-01T00:00:00.000Z',
+          'status': 'draft',
+          'is_public': false,
+        };
+
+    test('reads origin_post_id from JSON when present', () {
+      final json = baseJson()..['origin_post_id'] = 'post-1';
+      final model = ItineraryModel.fromJson(json);
+      expect(model.originPostId, 'post-1');
+    });
+
+    test('defaults originPostId to null when key is absent', () {
+      final model = ItineraryModel.fromJson(baseJson());
+      expect(model.originPostId, isNull);
+    });
+
+    test('toJson omits origin_post_id when null', () {
+      final model = ItineraryModel.fromJson(baseJson());
+      expect(model.toJson().containsKey('origin_post_id'), isFalse);
+    });
+
+    test('toJson includes origin_post_id when set', () {
+      final json = baseJson()..['origin_post_id'] = 'post-2';
+      final model = ItineraryModel.fromJson(json);
+      expect(model.toJson()['origin_post_id'], 'post-2');
+    });
+
+    test('fromEntity preserves originPostId', () {
+      final json = baseJson()..['origin_post_id'] = 'post-3';
+      final source = ItineraryModel.fromJson(json);
+      final copy = ItineraryModel.fromEntity(source);
+      expect(copy.originPostId, 'post-3');
+    });
+
+    test('copyWith updates originPostId (used by ForkPostUseCase)', () {
+      final model = ItineraryModel.fromJson(baseJson());
+      final forked = model.copyWith(originPostId: 'post-4');
+      expect(forked.originPostId, 'post-4');
+      expect(model.originPostId, isNull, reason: 'copyWith must not mutate the original');
+    });
+  });
 }

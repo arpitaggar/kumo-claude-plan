@@ -31,7 +31,10 @@ class UserProfileModel extends UserProfile {
 
     return UserProfileModel(
       id:                  json['id']           as String,
-      email:               json['email']         as String,
+      // Absent (not '' by accident) when fetched via getProfileById's
+      // restricted column set for another user's profile — email is never
+      // selected for anyone but the caller's own row (SEC-008).
+      email:               (json['email'] as String?) ?? '',
       displayName:         (json['display_name'] as String?) ?? '',
       username:            json['username']       as String?,
       avatarUrl:           json['avatar_url']     as String?,
@@ -53,7 +56,7 @@ class UserProfileModel extends UserProfile {
           ? DateTime.parse(json['updated_at'] as String)
           : DateTime.now(),
       pushMessagePreviewEnabled:
-          (json['push_message_preview_enabled'] as bool?) ?? true,
+          (json['push_message_preview_enabled'] as bool?) ?? false,
     );
   }
 }
