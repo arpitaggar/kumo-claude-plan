@@ -14,6 +14,15 @@ migrate_working_dir/
 **/**.env*
 FIREBASE_TOKEN
 
+# Build-time config passed via --dart-define-from-file (see
+# lib/config/environment.dart / docs/SECURITY_AUDIT.md SEC-002). Real values
+# live only in env.local.json on disk / CI secrets — never bundled as a
+# Flutter asset. env.example.json is intentionally NOT ignored: it holds only
+# placeholders and documents which keys are required.
+env.local.json
+env.*.json
+!env.example.json
+
 # Firebase platform config — contains a per-app API key. Not a traditional
 # secret (Google's own guidance is that these are safe to ship in a client
 # binary), but keeping it out of git avoids tripping secret scanners and
@@ -36,6 +45,12 @@ ios/Runner/Secrets.xcconfig
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
 #.vscode/
+# ...except settings.json currently bakes in a machine-specific absolute path
+# (cmake.sourceDirectory), so it's ignored until that's made portable.
+.vscode/
+
+# Per-workspace Flutter DevTools settings — local/personal, not shared.
+devtools_options.yaml
 
 # Flutter/Dart/Pub related
 **/doc/api/
