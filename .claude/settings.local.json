@@ -13,7 +13,30 @@
       "Bash(supabase functions *)",
       "Bash(grep -c '^```' CLAUDE.md)",
       "Bash(grep -c '^```' docs/DEVELOPMENT_ROADMAP.md)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(bc)",
+      "Bash(python3 -c ' *)",
+      "Read(//Users/pitto/.claude/plugins/marketplaces/claude-plugins-official/plugins/**)",
+      "Read(//Users/pitto/.claude/plugins/marketplaces/claude-plugins-official/plugins/swift-lsp/.claude-plugin/**)",
+      "Read(//Users/pitto/.claude/plugins/marketplaces/claude-plugins-official/plugins/swift-lsp/**)",
+      "Bash(xargs -0 ls -t)",
+      "Read(//tmp/**)",
+      "Bash(xargs ls -la)",
+      "Bash(grep -v '^$')",
+      "Bash(timeout 90 flutter test test/core/maps/_visual_check_test.dart)",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(kill 18215)",
+      "Bash(pkill -f \"flutter run -d macos -t lib/dev_icon_check_main.dart\")",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(pkill -f \"lib/dev_icon_check_main.dart\")",
+      "Bash(pkill -f \"kumo_claude.app/Contents/MacOS/kumo_claude\")",
+      "WebSearch",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "Bash(rm -f /tmp/icon_check_run*.log /tmp/icon_orientation_test.log /tmp/icon_orientation_real.png)",
+      "Bash(dart format *)"
     ]
+  },
+  "enabledPlugins": {
+    "swift-lsp@claude-plugins-official": false
   }
 }
