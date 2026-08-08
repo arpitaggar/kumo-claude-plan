@@ -69,6 +69,7 @@ class TravelItinerary extends Equatable {
     this.notes,
     this.themeKey = 'classic',
     this.originPostId,
+    this.orgId,
   });
 
   /// Unique identifier for this itinerary (UUID format).
@@ -183,6 +184,12 @@ class TravelItinerary extends Equatable {
   /// chains to the original without the caller having to track lineage.
   final String? originPostId;
 
+  /// The organization this trip is tagged with, if any — null means a
+  /// personal trip. See stage28's migration: only the owner can set this,
+  /// and only to an org they belong to; an org admin/owner gets narrow
+  /// oversight (this row's existence, not its content) of org-tagged trips.
+  final String? orgId;
+
   /// Creates a copy of this [TravelItinerary] with optionally replaced fields.
   ///
   /// Useful for immutable updates without modifying original.
@@ -216,6 +223,7 @@ class TravelItinerary extends Equatable {
     String? notes,
     String? themeKey,
     String? originPostId,
+    String? orgId,
   }) => TravelItinerary(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -235,6 +243,7 @@ class TravelItinerary extends Equatable {
     notes: notes ?? this.notes,
     themeKey: themeKey ?? this.themeKey,
     originPostId: originPostId ?? this.originPostId,
+    orgId: orgId ?? this.orgId,
   );
 
   @override
@@ -257,6 +266,7 @@ class TravelItinerary extends Equatable {
     notes,
     themeKey,
     originPostId,
+    orgId,
   ];
 }
 

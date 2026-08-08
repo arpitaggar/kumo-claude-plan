@@ -42,6 +42,7 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
         splitMode: expense.splitMode,
         exchangeRateToBase: expense.exchangeRateToBase,
         isSettlement: expense.isSettlement,
+        notes: expense.notes,
       );
       final saved = await dataSource.addExpense(model);
       return Right(saved);
@@ -56,6 +57,20 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
   Future<Either<Failure, void>> deleteExpense(String expenseId) async {
     try {
       await dataSource.deleteExpense(expenseId);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> submitForApproval(
+    List<String> expenseIds,
+  ) async {
+    try {
+      await dataSource.submitForApproval(expenseIds);
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

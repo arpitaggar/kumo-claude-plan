@@ -129,7 +129,10 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
     } catch (_) {}
   }
 
-  Future<bool> createItinerary({
+  /// Returns the created trip on success (so a caller can attach further
+  /// per-trip data, e.g. cost-tracking field values, using its id) or null
+  /// on failure.
+  Future<TravelItinerary?> createItinerary({
     required String title,
     required String ownerId,
     required String ownerName,
@@ -140,6 +143,7 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
     String? description,
     List<ItineraryItem>? items,
     String themeKey = 'classic',
+    String? orgId,
   }) async {
     final result = await createUseCase(
       title: title,
@@ -152,18 +156,19 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
       description: description,
       items: items,
       themeKey: themeKey,
+      orgId: orgId,
     );
     return result.fold(
       (failure) {
         state = ItineraryListError(failure.message);
-        return false;
+        return null;
       },
       (newItinerary) {
         final existing = state is ItineraryListLoaded
             ? (state as ItineraryListLoaded).itineraries
             : <TravelItinerary>[];
         state = ItineraryListLoaded([newItinerary, ...existing]);
-        return true;
+        return newItinerary;
       },
     );
   }

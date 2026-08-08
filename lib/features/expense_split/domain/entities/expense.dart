@@ -17,6 +17,14 @@ class Expense extends Equatable {
     this.splitMode = SplitMode.equal,
     this.exchangeRateToBase = 1.0,
     this.isSettlement = false,
+    this.isOfficial = false,
+    this.approvalStatus = ExpenseApprovalStatus.notSubmitted,
+    this.notes,
+    this.rejectionReason,
+    this.submittedAt,
+    this.reviewedAt,
+    this.reviewedBy,
+    this.costCenterCode,
   });
 
   final String id;
@@ -44,8 +52,35 @@ class Expense extends Equatable {
   /// in the settlement calculator so debts cancel out correctly.
   final bool isSettlement;
 
+  /// Whether this is work/official spending, submitted (or submittable) for
+  /// an org admin to approve — see stage29's migration. Meaningless on a
+  /// trip with no `orgId`.
+  final bool isOfficial;
+
+  final ExpenseApprovalStatus approvalStatus;
+
+  /// Free-text context for the approver — doesn't exist for personal
+  /// expenses, but available on any expense (not gated on [isOfficial]).
+  final String? notes;
+
+  /// Set by the approver on rejection; cleared on resubmit.
+  final String? rejectionReason;
+
+  final DateTime? submittedAt;
+  final DateTime? reviewedAt;
+
+  /// UUID of the org admin/owner who approved/rejected this, if reviewed.
+  final String? reviewedBy;
+
+  /// Snapshotted from the trip's org cost-tracking fields at submit/resubmit
+  /// time (see stage30's migration) — never live-derived, so correcting the
+  /// trip's assignment later doesn't retroactively change an already-
+  /// submitted/approved expense's account. Null on a personal trip, an org
+  /// with no generated field configured, or an incomplete assignment.
+  final String? costCenterCode;
+
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         id,
         itineraryId,
         title,
@@ -59,8 +94,18 @@ class Expense extends Equatable {
         splitMode,
         exchangeRateToBase,
         isSettlement,
+        isOfficial,
+        approvalStatus,
+        notes,
+        rejectionReason,
+        submittedAt,
+        reviewedAt,
+        reviewedBy,
+        costCenterCode,
       ];
 }
+
+enum ExpenseApprovalStatus { notSubmitted, pending, approved, rejected }
 
 class ExpenseSplit extends Equatable {
   const ExpenseSplit({

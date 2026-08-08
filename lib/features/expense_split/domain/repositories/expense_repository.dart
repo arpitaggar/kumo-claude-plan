@@ -9,4 +9,6 @@ abstract class ExpenseRepository {
   Future<Either<Failure, Expense>> addExpense(Expense expense);
 
   Future<Either<Failure, void>> deleteExpense(String expenseId);
+
+  Future<Either<Failure, void>> submitForApproval(List<String> expenseIds);
 }

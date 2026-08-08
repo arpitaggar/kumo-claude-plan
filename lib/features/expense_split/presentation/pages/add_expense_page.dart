@@ -29,6 +29,7 @@ class AddExpensePage extends ConsumerStatefulWidget {
 class _AddExpensePageState extends ConsumerState<AddExpensePage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
+  final _notesController = TextEditingController();
   final _amountController = TextEditingController();
   final _exchangeRateController = TextEditingController(text: '1.0');
 
@@ -47,6 +48,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
   @override
   void dispose() {
     _titleController.dispose();
+    _notesController.dispose();
     _amountController.dispose();
     _exchangeRateController.dispose();
     for (final c in _splitCtrl.values) {
@@ -241,6 +243,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
           exchangeRateToBase: _expenseCurrency == itinerary.currencyCode
               ? 1.0
               : exchangeRate,
+          notes: _notesController.text,
         );
 
     if (!mounted) {
@@ -357,6 +360,20 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                             ),
                             validator: (v) =>
                                 v == null || v.trim().isEmpty ? 'Required' : null,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // ── Notes (optional) ─────────────────────────────
+                          TextFormField(
+                            controller: _notesController,
+                            textCapitalization: TextCapitalization.sentences,
+                            textInputAction: TextInputAction.next,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Notes (optional)',
+                              hintText: 'e.g. Client dinner with Acme Corp',
+                              prefixIcon: Icon(Icons.notes_outlined),
+                            ),
                           ),
                           const SizedBox(height: 16),
 

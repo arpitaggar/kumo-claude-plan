@@ -73,6 +73,58 @@ void main() {
       expect(model.amount, 90.0);
       expect(model.amount, isA<double>());
     });
+
+    test('defaults isOfficial/approvalStatus/notes when absent (old rows)', () {
+      final model = ExpenseModel.fromJson(fullJson);
+      expect(model.isOfficial, isFalse);
+      expect(model.approvalStatus, ExpenseApprovalStatus.notSubmitted);
+      expect(model.notes, isNull);
+      expect(model.rejectionReason, isNull);
+      expect(model.submittedAt, isNull);
+      expect(model.reviewedAt, isNull);
+      expect(model.reviewedBy, isNull);
+    });
+
+    test('parses a pending, official, submitted expense', () {
+      final json = Map<String, dynamic>.from(fullJson)
+        ..['is_official'] = true
+        ..['approval_status'] = 'pending'
+        ..['notes'] = 'Client dinner'
+        ..['submitted_at'] = '2026-06-02T09:00:00.000Z';
+      final model = ExpenseModel.fromJson(json);
+
+      expect(model.isOfficial, isTrue);
+      expect(model.approvalStatus, ExpenseApprovalStatus.pending);
+      expect(model.notes, 'Client dinner');
+      expect(model.submittedAt, DateTime.utc(2026, 6, 2, 9));
+    });
+
+    test('parses a rejected expense with a reviewer and reason', () {
+      final json = Map<String, dynamic>.from(fullJson)
+        ..['is_official'] = true
+        ..['approval_status'] = 'rejected'
+        ..['rejection_reason'] = 'Missing receipt'
+        ..['reviewed_by'] = 'admin-1'
+        ..['reviewed_at'] = '2026-06-03T09:00:00.000Z';
+      final model = ExpenseModel.fromJson(json);
+
+      expect(model.approvalStatus, ExpenseApprovalStatus.rejected);
+      expect(model.rejectionReason, 'Missing receipt');
+      expect(model.reviewedBy, 'admin-1');
+      expect(model.reviewedAt, DateTime.utc(2026, 6, 3, 9));
+    });
+
+    test('defaults costCenterCode to null when absent', () {
+      final model = ExpenseModel.fromJson(fullJson);
+      expect(model.costCenterCode, isNull);
+    });
+
+    test('parses a snapshotted cost_center_code', () {
+      final json = Map<String, dynamic>.from(fullJson)
+        ..['cost_center_code'] = 'SAL-FAL';
+      final model = ExpenseModel.fromJson(json);
+      expect(model.costCenterCode, 'SAL-FAL');
+    });
   });
 
   group('ExpenseModel.toJson', () {
@@ -105,6 +157,31 @@ void main() {
       expect(model2.title, model.title);
       expect(model2.category, model.category);
       expect(model2.splits.length, model.splits.length);
+    });
+
+    test('always includes is_official and approval_status', () {
+      final json = model.toJson();
+      expect(json['is_official'], isFalse);
+      expect(json['approval_status'], 'not_submitted');
+    });
+
+    test('omits notes when null', () {
+      expect(model.toJson().containsKey('notes'), isFalse);
+    });
+
+    test('round-trip preserves isOfficial/approvalStatus/notes', () {
+      final official = ExpenseModel.fromJson(
+        Map<String, dynamic>.from(fullJson)
+          ..['is_official'] = true
+          ..['approval_status'] = 'approved'
+          ..['notes'] = 'Conference ticket',
+      );
+
+      final roundTripped = ExpenseModel.fromJson(official.toJson());
+
+      expect(roundTripped.isOfficial, isTrue);
+      expect(roundTripped.approvalStatus, ExpenseApprovalStatus.approved);
+      expect(roundTripped.notes, 'Conference ticket');
     });
   });
 }

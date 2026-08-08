@@ -15,6 +15,14 @@ class ExpenseModel extends Expense {
     super.splitMode,
     super.exchangeRateToBase,
     super.isSettlement,
+    super.isOfficial,
+    super.approvalStatus,
+    super.notes,
+    super.rejectionReason,
+    super.submittedAt,
+    super.reviewedAt,
+    super.reviewedBy,
+    super.costCenterCode,
   });
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +36,10 @@ class ExpenseModel extends Expense {
     final splitMode = SplitMode.values.firstWhere(
       (m) => m.name == splitModeStr,
       orElse: () => SplitMode.equal,
+    );
+
+    final approvalStatus = _approvalStatusFromJson(
+      json['approval_status'] as String?,
     );
 
     final rawSplits = json['splits'] as List<dynamic>? ?? [];
@@ -57,6 +69,18 @@ class ExpenseModel extends Expense {
       exchangeRateToBase:
           (json['exchange_rate_to_base'] as num?)?.toDouble() ?? 1.0,
       isSettlement: json['is_settlement'] as bool? ?? false,
+      isOfficial: json['is_official'] as bool? ?? false,
+      approvalStatus: approvalStatus,
+      notes: json['notes'] as String?,
+      rejectionReason: json['rejection_reason'] as String?,
+      submittedAt: json['submitted_at'] != null
+          ? DateTime.parse(json['submitted_at'] as String).toUtc()
+          : null,
+      reviewedAt: json['reviewed_at'] != null
+          ? DateTime.parse(json['reviewed_at'] as String).toUtc()
+          : null,
+      reviewedBy: json['reviewed_by'] as String?,
+      costCenterCode: json['cost_center_code'] as String?,
     );
   }
 
@@ -81,5 +105,25 @@ class ExpenseModel extends Expense {
         'split_mode': splitMode.name,
         'exchange_rate_to_base': exchangeRateToBase,
         'is_settlement': isSettlement,
+        'is_official': isOfficial,
+        'approval_status': _approvalStatusToJson(approvalStatus),
+        if (notes != null) 'notes': notes,
       };
 }
+
+/// `ExpenseApprovalStatus.notSubmitted` <-> `'not_submitted'` — every other
+/// value's Dart name already matches its DB value verbatim.
+ExpenseApprovalStatus _approvalStatusFromJson(String? raw) => switch (raw) {
+      'pending' => ExpenseApprovalStatus.pending,
+      'approved' => ExpenseApprovalStatus.approved,
+      'rejected' => ExpenseApprovalStatus.rejected,
+      _ => ExpenseApprovalStatus.notSubmitted,
+    };
+
+String _approvalStatusToJson(ExpenseApprovalStatus status) =>
+    switch (status) {
+      ExpenseApprovalStatus.notSubmitted => 'not_submitted',
+      ExpenseApprovalStatus.pending => 'pending',
+      ExpenseApprovalStatus.approved => 'approved',
+      ExpenseApprovalStatus.rejected => 'rejected',
+    };

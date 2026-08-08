@@ -6,6 +6,7 @@ import '../../domain/entities/expense.dart';
 import '../../domain/usecases/add_expense_usecase.dart';
 import '../../domain/usecases/calculate_settlements_usecase.dart';
 import '../../domain/usecases/delete_expense_usecase.dart';
+import '../../domain/usecases/submit_expenses_for_approval_usecase.dart';
 
 // ---------------------------------------------------------------------------
 // Infrastructure
@@ -36,6 +37,12 @@ final deleteExpenseUseCaseProvider = Provider<DeleteExpenseUseCase>(
 final calculateSettlementsUseCaseProvider =
     Provider<CalculateSettlementsUseCase>(
   (_) => const CalculateSettlementsUseCase(),
+);
+
+final submitExpensesForApprovalUseCaseProvider =
+    Provider<SubmitExpensesForApprovalUseCase>(
+  (ref) =>
+      SubmitExpensesForApprovalUseCase(ref.watch(expenseRepositoryProvider)),
 );
 
 // ---------------------------------------------------------------------------

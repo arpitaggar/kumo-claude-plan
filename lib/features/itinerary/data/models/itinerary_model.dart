@@ -21,6 +21,7 @@ class ItineraryModel extends TravelItinerary {
     super.notes,
     super.themeKey,
     super.originPostId,
+    super.orgId,
   });
 
   factory ItineraryModel.fromJson(Map<String, dynamic> json) => ItineraryModel(
@@ -52,6 +53,7 @@ class ItineraryModel extends TravelItinerary {
     notes: json['notes'] as String?,
     themeKey: json['theme_key'] as String? ?? 'classic',
     originPostId: json['origin_post_id'] as String?,
+    orgId: json['org_id'] as String?,
   );
 
   factory ItineraryModel.fromEntity(TravelItinerary e) => ItineraryModel(
@@ -73,6 +75,7 @@ class ItineraryModel extends TravelItinerary {
     notes: e.notes,
     themeKey: e.themeKey,
     originPostId: e.originPostId,
+    orgId: e.orgId,
   );
 
   Map<String, dynamic> toJson() => {
@@ -98,6 +101,7 @@ class ItineraryModel extends TravelItinerary {
     if (notes != null) 'notes': notes,
     'theme_key': themeKey,
     if (originPostId != null) 'origin_post_id': originPostId,
+    if (orgId != null) 'org_id': orgId,
   };
 }
 

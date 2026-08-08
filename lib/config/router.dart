@@ -20,6 +20,11 @@ import '../features/legal/presentation/pages/privacy_policy_page.dart';
 import '../features/legal/presentation/pages/terms_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
+import '../features/organization/presentation/pages/create_organization_page.dart';
+import '../features/organization/presentation/pages/org_cost_fields_settings_page.dart';
+import '../features/organization/presentation/pages/org_pending_approvals_page.dart';
+import '../features/organization/presentation/pages/organization_members_page.dart';
+import '../features/organization/presentation/pages/organizations_list_page.dart';
 import '../features/profile/presentation/pages/edit_profile_page.dart';
 import '../features/profile/presentation/pages/notification_preferences_page.dart';
 import '../features/settings/presentation/pages/privacy_settings_page.dart';
@@ -170,6 +175,37 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/settings/privacy',
         pageBuilder: (context, state) =>
             _slidePage(const PrivacySettingsPage(), state),
+      ),
+      GoRoute(
+        path: '/organizations',
+        pageBuilder: (context, state) =>
+            _slidePage(const OrganizationsListPage(), state),
+      ),
+      GoRoute(
+        path: '/organizations/new',
+        pageBuilder: (context, state) =>
+            _slidePage(const CreateOrganizationPage(), state),
+      ),
+      GoRoute(
+        path: '/organizations/:id/members',
+        pageBuilder: (context, state) => _slidePage(
+          OrganizationMembersPage(orgId: state.pathParameters['id']!),
+          state,
+        ),
+      ),
+      GoRoute(
+        path: '/organizations/:id/approvals',
+        pageBuilder: (context, state) => _slidePage(
+          OrgPendingApprovalsPage(orgId: state.pathParameters['id']!),
+          state,
+        ),
+      ),
+      GoRoute(
+        path: '/organizations/:id/cost-fields',
+        pageBuilder: (context, state) => _slidePage(
+          OrgCostFieldsSettingsPage(orgId: state.pathParameters['id']!),
+          state,
+        ),
       ),
       GoRoute(
         path: '/trip/:id',

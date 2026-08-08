@@ -25,8 +25,10 @@ import '../../domain/entities/trip_segment.dart';
 import '../../domain/entities/trip_theme.dart';
 import '../../domain/trip_segment_order.dart';
 import '../providers/itinerary_provider.dart';
+import '../providers/trip_cost_field_value_provider.dart';
 import '../providers/trip_email_alias_provider.dart';
 import '../providers/trip_segment_provider.dart';
+import '../widgets/cost_field_picker.dart';
 import '../widgets/segment_actions_sheet.dart';
 import '../widgets/segment_card.dart';
 
@@ -668,17 +670,74 @@ Future<void> _toggleSegmentVisibility(
 
 // ── Expenses tab ──────────────────────────────────────────────────────────────
 
-class _ExpensesTab extends ConsumerWidget {
+class _ExpensesTab extends ConsumerStatefulWidget {
   const _ExpensesTab({required this.itinerary});
 
   final TravelItinerary itinerary;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ExpensesTab> createState() => _ExpensesTabState();
+}
+
+class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
+  TravelItinerary get itinerary => widget.itinerary;
+
+  /// Expenses picked for the next "submit for approval" batch — meaningless
+  /// (and never shown) on a personal trip. Cleared after a successful
+  /// submit or when the tab is left.
+  final Set<String> _selectedForSubmission = {};
+
+  /// Unsaved edits to this trip's cost-tracking field values, overlaid on
+  /// top of `tripCostFieldValuesProvider`'s saved ones — lets the org add
+  /// cost fields after a trip already exists and this trip backfill them.
+  Map<String, String> _costFieldEdits = {};
+
+  Future<void> _saveCostFieldValues() async {
+    final result = await ref
+        .read(setTripCostFieldValuesUseCaseProvider)
+        .call(itinerary.id, _costFieldEdits);
+    if (!mounted) {
+      return;
+    }
+    result.fold(
+      (f) => context.showSnackBar(f.message, isError: true),
+      (_) {
+        ref.invalidate(tripCostFieldValuesProvider(itinerary.id));
+        setState(_costFieldEdits.clear);
+        context.showSnackBar('Cost tracking saved');
+      },
+    );
+  }
+
+  Future<void> _submitSelected() async {
+    if (_selectedForSubmission.isEmpty) {
+      return;
+    }
+    final ids = _selectedForSubmission.toList();
+    final result = await ref
+        .read(submitExpensesForApprovalUseCaseProvider)
+        .call(ids);
+    if (!mounted) {
+      return;
+    }
+    result.fold(
+      (f) => context.showSnackBar(f.message, isError: true),
+      (_) {
+        setState(_selectedForSubmission.clear);
+        context.showSnackBar(
+          '${ids.length} expense${ids.length == 1 ? '' : 's'} submitted for approval',
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final expensesAsync =
         ref.watch(expenseStreamProvider(itinerary.id));
     final settlements = ref.watch(
         settlementsProvider((itinerary.id, itinerary.currencyCode)));
+    final isWorkTrip = itinerary.orgId != null;
 
     final budget = itinerary.totalBudget;
     final spent = itinerary.expenseSummary.totalSpent;
@@ -756,6 +815,53 @@ class _ExpensesTab extends ConsumerWidget {
                 ],
               ),
             ),
+
+            if (isWorkTrip) ...[
+              const SizedBox(height: 20),
+              Builder(
+                builder: (context) {
+                  final saved = ref
+                          .watch(tripCostFieldValuesProvider(itinerary.id))
+                          .value ??
+                      const [];
+                  final savedMap = {for (final v in saved) v.fieldId: v.optionId};
+                  final effective = {...savedMap, ..._costFieldEdits};
+
+                  return Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        CostFieldPicker(
+                          orgId: itinerary.orgId!,
+                          values: effective,
+                          onChanged: (fieldId, optionId) => setState(() {
+                            _costFieldEdits = {
+                              ..._costFieldEdits,
+                              fieldId: optionId,
+                            };
+                          }),
+                        ),
+                        if (_costFieldEdits.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: FilledButton(
+                              onPressed: _saveCostFieldValues,
+                              child: const Text('Save'),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: 20),
 
             // ── Expense list ─────────────────────────────────────────
@@ -794,19 +900,59 @@ class _ExpensesTab extends ConsumerWidget {
                                   ),
                                 ),
                               ),
-                              TextButton.icon(
-                                onPressed: () => _exportCsv(expenses),
-                                icon: const Icon(
-                                  Icons.download_outlined,
-                                  size: 15,
+                              if (isWorkTrip)
+                                PopupMenuButton<bool>(
+                                  tooltip: 'Export CSV',
+                                  onSelected: (officialOnly) => _exportCsv(
+                                    officialOnly
+                                        ? expenses
+                                            .where((e) =>
+                                                e.isOfficial &&
+                                                e.approvalStatus ==
+                                                    ExpenseApprovalStatus
+                                                        .approved)
+                                            .toList()
+                                        : expenses,
+                                  ),
+                                  itemBuilder: (_) => const [
+                                    PopupMenuItem(
+                                      value: false,
+                                      child: Text('Export all expenses'),
+                                    ),
+                                    PopupMenuItem(
+                                      value: true,
+                                      child: Text('Export approved official only'),
+                                    ),
+                                  ],
+                                  child: IgnorePointer(
+                                    child: TextButton.icon(
+                                      onPressed: () {},
+                                      icon: const Icon(
+                                          Icons.download_outlined,
+                                          size: 15),
+                                      label: const Text('CSV'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: context
+                                            .colorScheme.onSurfaceVariant,
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                TextButton.icon(
+                                  onPressed: () => _exportCsv(expenses),
+                                  icon: const Icon(
+                                    Icons.download_outlined,
+                                    size: 15,
+                                  ),
+                                  label: const Text('CSV'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor:
+                                        context.colorScheme.onSurfaceVariant,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
                                 ),
-                                label: const Text('CSV'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor:
-                                      context.colorScheme.onSurfaceVariant,
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -814,6 +960,16 @@ class _ExpensesTab extends ConsumerWidget {
                                 expense: e,
                                 onDelete: () =>
                                     _deleteExpense(context, ref, e),
+                                showOfficialControls: isWorkTrip,
+                                isSelected:
+                                    _selectedForSubmission.contains(e.id),
+                                onToggleSelected: (selected) => setState(() {
+                                  if (selected) {
+                                    _selectedForSubmission.add(e.id);
+                                  } else {
+                                    _selectedForSubmission.remove(e.id);
+                                  }
+                                }),
                               )),
                           if (settlements.isNotEmpty) ...[
                             const SizedBox(height: 24),
@@ -830,19 +986,54 @@ class _ExpensesTab extends ConsumerWidget {
           ],
         ),
 
-        // ── FAB ──────────────────────────────────────────────────────
-        Positioned(
-          right: 20,
-          bottom: 24,
-          child: FloatingActionButton(
-            heroTag: 'add_expense',
-            onPressed: () =>
-                context.push('/trip/${itinerary.id}/expense/new'),
-            backgroundColor: context.colorScheme.primary,
-            foregroundColor: context.colorScheme.surface,
-            child: const Icon(Icons.add),
+        // ── Submit-for-approval bar ─────────────────────────────────
+        if (_selectedForSubmission.isNotEmpty)
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 24,
+            child: Material(
+              borderRadius: BorderRadius.circular(28),
+              color: context.colorScheme.primary,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(28),
+                onTap: _submitSelected,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.send_outlined,
+                          size: 18, color: context.colorScheme.surface),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Submit ${_selectedForSubmission.length} for approval',
+                        style: TextStyle(
+                          color: context.colorScheme.surface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          // ── FAB ──────────────────────────────────────────────────────
+          Positioned(
+            right: 20,
+            bottom: 24,
+            child: FloatingActionButton(
+              heroTag: 'add_expense',
+              onPressed: () =>
+                  context.push('/trip/${itinerary.id}/expense/new'),
+              backgroundColor: context.colorScheme.primary,
+              foregroundColor: context.colorScheme.surface,
+              child: const Icon(Icons.add),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -972,12 +1163,12 @@ class _ExpensesTab extends ConsumerWidget {
 
   void _exportCsv(List<Expense> expenses) {
     final buf = StringBuffer()
-      ..writeln('Date,Title,Category,Amount,Currency,Paid By');
+      ..writeln('Date,Title,Category,Amount,Currency,Paid By,Cost Center');
     for (final e in expenses) {
       final date = e.createdAt.toLocal().toString().split(' ').first;
       final title = e.title.replaceAll(',', ' ');
       buf.writeln(
-        '$date,$title,${e.category.name},${e.amount.toStringAsFixed(2)},${e.currencyCode},${e.payerName}',
+        '$date,$title,${e.category.name},${e.amount.toStringAsFixed(2)},${e.currencyCode},${e.payerName},${e.costCenterCode ?? ''}',
       );
     }
     Share.share(buf.toString(), subject: 'Expenses — ${itinerary.title}');
@@ -990,10 +1181,27 @@ class _ExpenseTile extends StatelessWidget {
   const _ExpenseTile({
     required this.expense,
     required this.onDelete,
+    this.showOfficialControls = false,
+    this.isSelected = false,
+    this.onToggleSelected,
   });
 
   final Expense expense;
   final VoidCallback onDelete;
+
+  /// Whether to show the official-flag checkbox / approval status chip at
+  /// all — false on a personal trip, where `is_official`/`approval_status`
+  /// are meaningless (see stage29's migration).
+  final bool showOfficialControls;
+  final bool isSelected;
+  final ValueChanged<bool>? onToggleSelected;
+
+  /// A submitted/reviewed expense can't be re-selected for another submit
+  /// (pending is already awaiting review; approved is done) — only
+  /// `notSubmitted` and `rejected` (resubmit) are selectable.
+  bool get _isSelectable =>
+      expense.approvalStatus == ExpenseApprovalStatus.notSubmitted ||
+      expense.approvalStatus == ExpenseApprovalStatus.rejected;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -1004,63 +1212,85 @@ class _ExpenseTile extends StatelessWidget {
             color: context.colorScheme.surface,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Color(expense.category.colorValue).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _iconFor(expense.category),
-                  size: 20,
-                  color: Color(expense.category.colorValue),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      expense.title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: context.colorScheme.onSurface,
+              Row(
+                children: [
+                  if (showOfficialControls && _isSelectable)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Checkbox(
+                        value: isSelected,
+                        onChanged: (v) => onToggleSelected?.call(v ?? false),
                       ),
                     ),
-                    Text(
-                      'Paid by ${expense.payerName} · ${expense.category.label}',
-                      style: TextStyle(
-                          fontSize: 12, color: context.colorScheme.onSurfaceVariant),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Color(expense.category.colorValue)
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    Formatters.formatCurrency(expense.amount, expense.currencyCode),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: context.colorScheme.onSurface,
+                    child: Icon(
+                      _iconFor(expense.category),
+                      size: 20,
+                      color: Color(expense.category.colorValue),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: onDelete,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Icon(Icons.delete_outline,
-                          size: 16, color: context.colorScheme.outlineVariant),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          expense.title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: context.colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          'Paid by ${expense.payerName} · ${expense.category.label}',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: context.colorScheme.onSurfaceVariant),
+                        ),
+                      ],
                     ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        Formatters.formatCurrency(
+                            expense.amount, expense.currencyCode),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: context.colorScheme.onSurface,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: onDelete,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Icon(Icons.delete_outline,
+                              size: 16,
+                              color: context.colorScheme.outlineVariant),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
+              if (showOfficialControls && expense.isOfficial)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _ApprovalStatusChip(expense: expense),
+                ),
             ],
           ),
         ),
@@ -1074,6 +1304,56 @@ class _ExpenseTile extends StatelessWidget {
         ExpenseCategory.shopping => Icons.shopping_bag_outlined,
         ExpenseCategory.other => Icons.receipt_long_outlined,
       };
+}
+
+class _ApprovalStatusChip extends StatelessWidget {
+  const _ApprovalStatusChip({required this.expense});
+
+  final Expense expense;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (expense.approvalStatus) {
+      ExpenseApprovalStatus.pending => ('Pending review', const Color(0xFFB8860B)),
+      ExpenseApprovalStatus.approved => ('Approved', const Color(0xFF2E7D52)),
+      ExpenseApprovalStatus.rejected => ('Rejected — tap for reason', context.colorScheme.error),
+      ExpenseApprovalStatus.notSubmitted => ('Official', context.colorScheme.onSurfaceVariant),
+    };
+
+    return GestureDetector(
+      onTap: expense.approvalStatus == ExpenseApprovalStatus.rejected &&
+              expense.rejectionReason != null
+          ? () => showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Rejected'),
+                  content: Text(expense.rejectionReason!),
+                  actions: [
+                    TextButton(
+                      onPressed: () => ctx.pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              )
+          : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ── Settlements card ──────────────────────────────────────────────────────────
