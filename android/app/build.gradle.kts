@@ -8,9 +8,10 @@ plugins {
 android {
     namespace = "com.cygnus.travelKumo"
     // Pinned explicitly rather than relying on flutter.compileSdkVersion
-    // (which resolves lower on this Flutter SDK): flutter_local_notifications
-    // requires compileSdk 36.
-    compileSdk = 36
+    // (which resolves lower on this Flutter SDK): flutter_secure_storage
+    // requires compileSdk 37 (flutter_local_notifications only needed 36,
+    // which is why this used to be pinned at 36).
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
