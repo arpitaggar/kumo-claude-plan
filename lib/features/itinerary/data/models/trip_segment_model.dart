@@ -13,6 +13,8 @@ class TripSegmentModel extends TripSegment {
     super.departureTime,
     super.arrivalTime,
     super.notes,
+    super.routeGeometry,
+    super.isVisible,
   });
 
   factory TripSegmentModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,8 @@ class TripSegmentModel extends TripSegment {
           ? DateTime.parse(json['arrival_time'] as String).toUtc()
           : null,
       notes: json['notes'] as String?,
+      routeGeometry: _routeGeometryFromJson(json['route_geometry']),
+      isVisible: json['is_visible'] as bool? ?? true,
     );
   }
 
@@ -57,6 +61,8 @@ class TripSegmentModel extends TripSegment {
         departureTime: segment.departureTime,
         arrivalTime: segment.arrivalTime,
         notes: segment.notes,
+        routeGeometry: segment.routeGeometry,
+        isVisible: segment.isVisible,
       );
 
   Map<String, dynamic> toJson() => {
@@ -74,5 +80,24 @@ class TripSegmentModel extends TripSegment {
           'departure_time': departureTime!.toIso8601String(),
         if (arrivalTime != null) 'arrival_time': arrivalTime!.toIso8601String(),
         if (notes != null) 'notes': notes,
+        if (routeGeometry != null)
+          'route_geometry': [
+            for (final (lat, lng) in routeGeometry!) [lat, lng],
+          ],
+        'is_visible': isVisible,
       };
+}
+
+/// `route_geometry` is a `jsonb` array of `[lat, lng]` pairs, or null.
+List<(double, double)>? _routeGeometryFromJson(Object? raw) {
+  if (raw is! List) {
+    return null;
+  }
+  return [
+    for (final point in raw)
+      (
+        ((point as List<dynamic>)[0] as num).toDouble(),
+        (point[1] as num).toDouble(),
+      ),
+  ];
 }

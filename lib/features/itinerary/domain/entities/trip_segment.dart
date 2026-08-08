@@ -21,6 +21,8 @@ class TripSegment extends Equatable {
     this.departureTime,
     this.arrivalTime,
     this.notes,
+    this.routeGeometry,
+    this.isVisible = true,
   });
 
   final String id;
@@ -33,6 +35,18 @@ class TripSegment extends Equatable {
   final DateTime? arrivalTime;
   final String? notes;
 
+  /// The real road/footpath route as (lat, lng) points, fetched via
+  /// `RoutingService` and cached here — see stage24's migration comment.
+  /// Null means "not fetched yet" or "not a routable mode"; the map falls
+  /// back to a straight/curved line (`route_map_view.dart`'s `_geoPath`).
+  final List<(double, double)>? routeGeometry;
+
+  /// Whether this leg is drawn on the Route tab's map — toggled from the
+  /// segment card, e.g. to declutter the map for a leg the traveller
+  /// already knows by heart. The segment itself (and its card) still exists
+  /// either way; this never deletes anything. See stage25's migration.
+  final bool isVisible;
+
   TripSegment copyWith({
     int? orderIndex,
     TransportMode? mode,
@@ -41,6 +55,8 @@ class TripSegment extends Equatable {
     DateTime? departureTime,
     DateTime? arrivalTime,
     String? notes,
+    List<(double, double)>? routeGeometry,
+    bool? isVisible,
   }) =>
       TripSegment(
         id: id,
@@ -52,6 +68,8 @@ class TripSegment extends Equatable {
         departureTime: departureTime ?? this.departureTime,
         arrivalTime: arrivalTime ?? this.arrivalTime,
         notes: notes ?? this.notes,
+        routeGeometry: routeGeometry ?? this.routeGeometry,
+        isVisible: isVisible ?? this.isVisible,
       );
 
   @override
@@ -65,5 +83,7 @@ class TripSegment extends Equatable {
         departureTime,
         arrivalTime,
         notes,
+        routeGeometry,
+        isVisible,
       ];
 }

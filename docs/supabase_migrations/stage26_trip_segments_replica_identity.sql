@@ -1,0 +1,28 @@
+-- =============================================================================
+-- Stage 26 — Fix route_geometry vanishing on unrelated trip_segments updates
+-- Safe to re-run: ALTER TABLE ... REPLICA IDENTITY is idempotent.
+-- =============================================================================
+
+-- Bug: toggling a segment's visibility (or any other single-column patch —
+-- see TripSegmentRemoteDataSource.setVisibility/updateRouteGeometry, both
+-- deliberately partial `update({col: value})` calls so they can't clobber a
+-- concurrent edit to the rest of the row) made that segment's real routed
+-- path revert to a straight/curved fallback line on the Route tab map.
+--
+-- Cause: `route_geometry` is `jsonb` and a real routed road/footpath can
+-- easily hold 100+ [lat, lng] points — well past Postgres's ~2KB TOAST
+-- threshold, so it's frequently stored out-of-line. With the default
+-- REPLICA IDENTITY (DEFAULT), Postgres's logical replication (what
+-- Supabase Realtime reads to build postgres_changes payloads) omits
+-- *unchanged* TOASTed column values from an UPDATE's WAL record. So a
+-- `{is_visible: ...}`-only update broadcasts a realtime row where
+-- `route_geometry` is missing/null — even though the actual table still
+-- has the real value — and the client's `.stream()`-backed cache
+-- (trip_segment_provider.dart's tripSegmentsStreamProvider) merges that
+-- incomplete row in, nulling the cached geometry until the next full
+-- re-fetch.
+--
+-- Fix: REPLICA IDENTITY FULL makes every WAL record for this table carry
+-- every column's actual current value regardless of TOAST or which columns
+-- changed, so Realtime always broadcasts the complete row.
+alter table public.trip_segments replica identity full;

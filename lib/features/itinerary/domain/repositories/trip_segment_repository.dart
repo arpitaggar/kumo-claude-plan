@@ -17,4 +17,19 @@ abstract class TripSegmentRepository {
     String itineraryId,
     List<TripSegment> reordered,
   );
+
+  /// Patches only the segment's cached routed geometry — see
+  /// `TripSegmentRemoteDataSource.updateRouteGeometry` for why this isn't a
+  /// full-row `updateSegment` call.
+  Future<Either<Failure, void>> updateRouteGeometry(
+    String segmentId,
+    List<(double, double)> geometry,
+  );
+
+  /// Patches only the segment's `isVisible` map-display flag — see
+  /// `TripSegmentRemoteDataSource.setVisibility`.
+  Future<Either<Failure, void>> setSegmentVisibility(
+    String segmentId,
+    bool isVisible,
+  );
 }

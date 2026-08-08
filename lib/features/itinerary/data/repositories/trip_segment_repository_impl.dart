@@ -83,4 +83,34 @@ class TripSegmentRepositoryImpl implements TripSegmentRepository {
       return Left(UnexpectedFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> updateRouteGeometry(
+    String segmentId,
+    List<(double, double)> geometry,
+  ) async {
+    try {
+      await dataSource.updateRouteGeometry(segmentId, geometry);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> setSegmentVisibility(
+    String segmentId,
+    bool isVisible,
+  ) async {
+    try {
+      await dataSource.setVisibility(segmentId, isVisible);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
 }

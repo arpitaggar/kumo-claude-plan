@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kumo_claude/features/itinerary/domain/entities/transport_mode.dart';
+import 'package:kumo_claude/features/itinerary/domain/entities/trip_segment.dart';
+import 'package:kumo_claude/features/itinerary/domain/entities/waypoint.dart';
 import 'package:kumo_claude/features/itinerary/presentation/pages/add_edit_trip_segment_page.dart';
 
 // Only "add" mode (no segmentId) is exercised here — that path never touches
@@ -8,9 +11,12 @@ import 'package:kumo_claude/features/itinerary/presentation/pages/add_edit_trip_
 // a live Supabase instance. "Edit" mode reads that stream to prefill the
 // form and would need a proper harness (see trip_segment_provider usage
 // elsewhere) to test meaningfully.
-Widget buildPage() => const ProviderScope(
+Widget buildPage({TripSegment? continueFromSegment}) => ProviderScope(
       child: MaterialApp(
-        home: AddEditTripSegmentPage(itineraryId: 'it-1'),
+        home: AddEditTripSegmentPage(
+          itineraryId: 'it-1',
+          continueFromSegment: continueFromSegment,
+        ),
       ),
     );
 
@@ -91,6 +97,40 @@ void main() {
         find.text('Please select both an origin and a destination'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('tapping the swap button swaps origin and destination', (
+      tester,
+    ) async {
+      const previousLeg = TripSegment(
+        id: 'seg-1',
+        itineraryId: 'it-1',
+        orderIndex: 0,
+        mode: TransportMode.flight,
+        origin: Waypoint(name: 'Munich', latitude: 48.1351, longitude: 11.5820),
+        destination: Waypoint(
+          name: 'Bangkok',
+          latitude: 13.7563,
+          longitude: 100.5018,
+        ),
+      );
+      await tester.pumpWidget(buildPage(continueFromSegment: previousLeg));
+
+      // "Continue trip from here" prefills origin with the previous leg's
+      // destination, so this is a real swap, not just moving nulls around.
+      expect(find.text('Bangkok'), findsOneWidget);
+      expect(find.text('Select a location'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.swap_vert));
+      await tester.pump();
+
+      final originField = tester.widget<InputDecorator>(
+        find.ancestor(
+          of: find.text('Bangkok'),
+          matching: find.byType(InputDecorator),
+        ),
+      );
+      expect(originField.decoration.labelText, 'Destination');
     });
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -98,6 +100,14 @@ class _AddEditTripSegmentPageState
     });
   }
 
+  void _swapOriginDestination() {
+    setState(() {
+      final origin = _origin;
+      _origin = _destination;
+      _destination = origin;
+    });
+  }
+
   Future<void> _pickDateTime({required bool isDeparture}) async {
     final initial = isDeparture
         ? (_departureTime ?? DateTime.now())
@@ -187,7 +197,16 @@ class _AddEditTripSegmentPageState
       setState(() => _isSubmitting = false);
       result.fold(
         (f) => context.showSnackBar(f.message, isError: true),
-        (_) => context.pop(),
+        (saved) {
+          // Not awaited — routing is an external API call and shouldn't
+          // block save/navigation; the map shows the existing straight/
+          // curved line until this resolves and the realtime stream
+          // picks up the patched row.
+          unawaited(
+            ref.read(fetchTripSegmentRouteGeometryProvider).call(saved),
+          );
+          context.pop();
+        },
       );
       return;
     }
@@ -212,6 +231,9 @@ class _AddEditTripSegmentPageState
         context.showSnackBar(f.message, isError: true);
       },
       (inserted) async {
+        unawaited(
+          ref.read(fetchTripSegmentRouteGeometryProvider).call(inserted),
+        );
         final continueFrom = widget.continueFromSegment;
         if (continueFrom != null) {
           final afterIndex =
@@ -285,16 +307,42 @@ class _AddEditTripSegmentPageState
                   ],
                 ),
                 const SizedBox(height: 24),
-                _LocationField(
-                  label: 'Origin',
-                  waypoint: _origin,
-                  onTap: () => _pickLocation(isOrigin: true),
-                ),
-                const SizedBox(height: 16),
-                _LocationField(
-                  label: 'Destination',
-                  waypoint: _destination,
-                  onTap: () => _pickLocation(isOrigin: false),
+                Stack(
+                  children: [
+                    Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 56),
+                          child: _LocationField(
+                            label: 'Origin',
+                            waypoint: _origin,
+                            onTap: () => _pickLocation(isOrigin: true),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 56),
+                          child: _LocationField(
+                            label: 'Destination',
+                            waypoint: _destination,
+                            onTap: () => _pickLocation(isOrigin: false),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Positioned(
+                      top: 0,
+                      bottom: 16,
+                      right: 4,
+                      child: Center(
+                        child: IconButton.filledTonal(
+                          onPressed: _swapOriginDestination,
+                          tooltip: 'Swap origin and destination',
+                          icon: const Icon(Icons.swap_vert),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 Text('When (optional)', style: context.textTheme.labelLarge),

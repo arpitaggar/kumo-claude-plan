@@ -53,6 +53,7 @@ void main() {
     required VoidCallback onTap,
     TripSegment? segment,
     WeatherService? weatherService,
+    VoidCallback? onToggleVisibility,
   }) => ProviderScope(
     overrides: [
       weatherServiceProvider.overrideWithValue(
@@ -61,7 +62,11 @@ void main() {
     ],
     child: MaterialApp(
       home: Scaffold(
-        body: SegmentCard(segment: segment ?? tSegment, onTap: onTap),
+        body: SegmentCard(
+          segment: segment ?? tSegment,
+          onTap: onTap,
+          onToggleVisibility: onToggleVisibility,
+        ),
       ),
     ),
   );
@@ -180,5 +185,58 @@ void main() {
     await tester.pump();
 
     expect(find.text('Forecast: Open-Meteo'), findsOneWidget);
+  });
+
+  testWidgets('shows no visibility toggle when onToggleVisibility is omitted', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildCard(onTap: () {}));
+    expect(find.byIcon(Icons.visibility_outlined), findsNothing);
+    expect(find.byIcon(Icons.visibility_off), findsNothing);
+  });
+
+  testWidgets('shows a filled eye icon and full opacity for a visible segment', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildCard(onTap: () {}, onToggleVisibility: () {}));
+    expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+
+    final opacity = tester.widget<Opacity>(find.byType(Opacity));
+    expect(opacity.opacity, 1);
+  });
+
+  testWidgets('shows a slashed eye icon and dims the card for a hidden segment', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildCard(
+        onTap: () {},
+        segment: tSegment.copyWith(isVisible: false),
+        onToggleVisibility: () {},
+      ),
+    );
+    expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+
+    final opacity = tester.widget<Opacity>(find.byType(Opacity));
+    expect(opacity.opacity, lessThan(1));
+  });
+
+  testWidgets('calls onToggleVisibility, not onTap, when the eye icon is tapped', (
+    tester,
+  ) async {
+    var tapped = false;
+    var toggled = false;
+    await tester.pumpWidget(
+      buildCard(
+        onTap: () => tapped = true,
+        onToggleVisibility: () => toggled = true,
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.pump();
+
+    expect(toggled, isTrue);
+    expect(tapped, isFalse);
   });
 }

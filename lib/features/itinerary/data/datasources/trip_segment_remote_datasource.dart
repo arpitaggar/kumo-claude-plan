@@ -10,6 +10,19 @@ abstract class TripSegmentRemoteDataSource {
   Future<TripSegmentModel> updateSegment(TripSegmentModel model);
   Future<void> deleteSegment(String segmentId);
   Future<void> reorderSegments(List<TripSegmentModel> reordered);
+
+  /// Patches only `route_geometry`, deliberately not routed through
+  /// [updateSegment]'s full-row write — avoids clobbering a concurrent edit
+  /// to the rest of the segment by another trip member with stale data.
+  Future<void> updateRouteGeometry(
+    String segmentId,
+    List<(double, double)> geometry,
+  );
+
+  /// Patches only `is_visible` — same rationale as [updateRouteGeometry]:
+  /// a plain map-display toggle shouldn't risk clobbering a concurrent edit
+  /// to the rest of the segment.
+  Future<void> setVisibility(String segmentId, bool isVisible);
 }
 
 class TripSegmentRemoteDataSourceImpl implements TripSegmentRemoteDataSource {
@@ -77,6 +90,41 @@ class TripSegmentRemoteDataSourceImpl implements TripSegmentRemoteDataSource {
       await KumoSupabaseClient.client
           .from(_table)
           .upsert(reordered.map((m) => m.toJson()).toList());
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> updateRouteGeometry(
+    String segmentId,
+    List<(double, double)> geometry,
+  ) async {
+    try {
+      await KumoSupabaseClient.client
+          .from(_table)
+          .update({
+            'route_geometry': [
+              for (final (lat, lng) in geometry) [lat, lng],
+            ],
+          })
+          .eq('id', segmentId);
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> setVisibility(String segmentId, bool isVisible) async {
+    try {
+      await KumoSupabaseClient.client
+          .from(_table)
+          .update({'is_visible': isVisible})
+          .eq('id', segmentId);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

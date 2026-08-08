@@ -15,60 +15,82 @@ import '../../domain/entities/trip_segment.dart';
 const _forecastHorizon = Duration(days: 16);
 
 class SegmentCard extends ConsumerWidget {
-  const SegmentCard({required this.segment, required this.onTap, super.key});
+  const SegmentCard({
+    required this.segment,
+    required this.onTap,
+    this.onToggleVisibility,
+    super.key,
+  });
 
   final TripSegment segment;
   final VoidCallback onTap;
+
+  /// Toggles whether this leg is drawn on the Route tab's map — omit to
+  /// hide the toggle control entirely (e.g. in a read-only context).
+  final VoidCallback? onToggleVisibility;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final departure = segment.departureTime;
+    final isVisible = segment.isVisible;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: colorScheme.primaryContainer,
-                foregroundColor: colorScheme.onPrimaryContainer,
-                child: Icon(iconForTransportMode(segment.mode)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${segment.origin.name} → ${segment.destination.name}',
-                      style: textTheme.titleSmall,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        segment.mode.label,
-                        if (departure != null)
-                          DateFormat(
-                            'MMM d, h:mm a',
-                          ).format(departure.toLocal()),
-                      ].join(' · '),
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+    return Opacity(
+      opacity: isVisible ? 1 : 0.55,
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: colorScheme.primaryContainer,
+                  foregroundColor: colorScheme.onPrimaryContainer,
+                  child: Icon(iconForTransportMode(segment.mode)),
                 ),
-              ),
-              _WeatherChip(segment: segment),
-              Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${segment.origin.name} → ${segment.destination.name}',
+                        style: textTheme.titleSmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          segment.mode.label,
+                          if (departure != null)
+                            DateFormat(
+                              'MMM d, h:mm a',
+                            ).format(departure.toLocal()),
+                        ].join(' · '),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _WeatherChip(segment: segment),
+                if (onToggleVisibility != null)
+                  IconButton(
+                    onPressed: onToggleVisibility,
+                    tooltip: isVisible ? 'Hide from map' : 'Show on map',
+                    icon: Icon(
+                      isVisible ? Icons.visibility_outlined : Icons.visibility_off,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+              ],
+            ),
           ),
         ),
       ),

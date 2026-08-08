@@ -73,6 +73,37 @@ void main() {
       expect(model.origin.latitude, 19.0);
       expect(model.origin.longitude, 99.0);
     });
+
+    test('leaves routeGeometry null when absent', () {
+      final model = TripSegmentModel.fromJson(fullJson);
+      expect(model.routeGeometry, isNull);
+    });
+
+    test('parses route_geometry as a list of (lat, lng) points', () {
+      final json = Map<String, dynamic>.from(fullJson)
+        ..['route_geometry'] = [
+          [18.7883, 98.9853],
+          [19.0, 98.7],
+          [19.3583, 98.4400],
+        ];
+      final model = TripSegmentModel.fromJson(json);
+      expect(model.routeGeometry, [
+        (18.7883, 98.9853),
+        (19.0, 98.7),
+        (19.3583, 98.4400),
+      ]);
+    });
+
+    test('defaults isVisible to true when absent', () {
+      final model = TripSegmentModel.fromJson(fullJson);
+      expect(model.isVisible, isTrue);
+    });
+
+    test('parses is_visible when present', () {
+      final json = Map<String, dynamic>.from(fullJson)..['is_visible'] = false;
+      final model = TripSegmentModel.fromJson(json);
+      expect(model.isVisible, isFalse);
+    });
   });
 
   group('TripSegmentModel.toJson', () {
@@ -119,6 +150,38 @@ void main() {
       expect(model2.destination, model.destination);
       expect(model2.departureTime, model.departureTime);
       expect(model2.notes, model.notes);
+    });
+
+    test('omits route_geometry when null', () {
+      expect(model.toJson().containsKey('route_geometry'), isFalse);
+    });
+
+    test('round-trip preserves routeGeometry', () {
+      final withGeometry = TripSegmentModel.fromJson(
+        Map<String, dynamic>.from(fullJson)
+          ..['route_geometry'] = [
+            [18.7883, 98.9853],
+            [19.3583, 98.4400],
+          ],
+      );
+
+      final roundTripped = TripSegmentModel.fromJson(withGeometry.toJson());
+
+      expect(roundTripped.routeGeometry, withGeometry.routeGeometry);
+    });
+
+    test('always includes is_visible', () {
+      expect(model.toJson()['is_visible'], isTrue);
+    });
+
+    test('round-trip preserves isVisible', () {
+      final hidden = TripSegmentModel.fromJson(
+        Map<String, dynamic>.from(fullJson)..['is_visible'] = false,
+      );
+
+      final roundTripped = TripSegmentModel.fromJson(hidden.toJson());
+
+      expect(roundTripped.isVisible, isFalse);
     });
   });
 

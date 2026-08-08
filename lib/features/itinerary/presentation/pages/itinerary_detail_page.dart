@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/maps/route_map_view.dart';
+import '../../../../core/routing/routing_service.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
@@ -21,6 +22,7 @@ import '../../../social/presentation/providers/social_provider.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_segment.dart';
 import '../../domain/entities/trip_theme.dart';
+import '../../domain/trip_segment_order.dart';
 import '../providers/itinerary_provider.dart';
 import '../providers/trip_segment_provider.dart';
 import '../widgets/segment_actions_sheet.dart';
@@ -484,8 +486,21 @@ class _RouteTab extends ConsumerWidget {
         ),
       ),
       data: (segments) {
-        final sorted = [...segments]
-          ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+        final sorted = [...segments]..sort(compareSegmentsChronologically);
+
+        // Backfill routed geometry for segments that predate this feature
+        // (or whose earlier fetch-on-save failed) — fires at most once per
+        // segment id per app session, see routeGeometryBackfillRequestedProvider.
+        final requested = ref.read(routeGeometryBackfillRequestedProvider);
+        for (final segment in sorted) {
+          if (segment.routeGeometry == null &&
+              isRoutableMode(segment.mode) &&
+              requested.add(segment.id)) {
+            unawaited(
+              ref.read(fetchTripSegmentRouteGeometryProvider).call(segment),
+            );
+          }
+        }
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
@@ -520,7 +535,7 @@ class _RouteTab extends ConsumerWidget {
             SizedBox(
               height: 260,
               child: RouteMapView(
-                segments: sorted,
+                segments: sorted.where((s) => s.isVisible).toList(),
                 onSegmentTap: (segment) =>
                     _handleSegmentTap(context, ref, itinerary, segment),
               ),
@@ -557,6 +572,11 @@ class _RouteTab extends ConsumerWidget {
                   segment: segment,
                   onTap: () =>
                       _handleSegmentTap(context, ref, itinerary, segment),
+                  onToggleVisibility: () => _toggleSegmentVisibility(
+                    context,
+                    ref,
+                    segment,
+                  ),
                 ),
               ),
           ],
@@ -618,13 +638,28 @@ Future<void> _handleSegmentTap(
     return;
   }
 
-  final current =
-      ref.read(tripSegmentsStreamProvider(itinerary.id)).value ?? [];
-  await ref.read(deleteTripSegmentUseCaseProvider).call(segment.id);
-  final remaining = current.where((s) => s.id != segment.id).toList();
-  await ref
-      .read(reorderTripSegmentsUseCaseProvider)
-      .call(itinerary.id, remaining);
+  final deleteResult =
+      await ref.read(deleteTripSegmentUseCaseProvider).call(segment.id);
+  if (deleteResult.isLeft() && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Failed to delete segment')),
+    );
+  }
+}
+
+Future<void> _toggleSegmentVisibility(
+  BuildContext context,
+  WidgetRef ref,
+  TripSegment segment,
+) async {
+  final result = await ref
+      .read(setTripSegmentVisibilityUseCaseProvider)
+      .call(segment.id, !segment.isVisible);
+  if (result.isLeft() && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Failed to update segment visibility')),
+    );
+  }
 }
 
 // ── Expenses tab ──────────────────────────────────────────────────────────────
