@@ -201,6 +201,20 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 **Follow-up (same stage):** added unit/widget test coverage for the new usecases, model, and widgets (usecase/model tests + `SegmentCard`/segment-actions-sheet/`RouteMapView`-empty-state/`AddEditTripSegmentPage`-add-mode widget tests), and made Katha AI's (still-dormant, see Stage 3) generation pipeline segment-aware — the `generate-itinerary` Edge Function and Flutter parsing now also produce transport legs for multi-stop destinations, geocoded and inserted via the same Route tab infrastructure. Nothing calls this yet since Katha AI's entry points are still placeholders pending Edge Function deployment.
 
+**Follow-up (Route tab bug fixes + features):** Deleting a segment no longer renumbers/re-upserts the rest of the route (was a self-inflicted "shuffle" bug) — the Route tab now sorts chronologically by departure/arrival time instead of the manual `order_index`, so delete is a single `DELETE` with no side effects on siblings. Added a per-segment visibility toggle (`SegmentCard`, `is_visible` column, `stage25_trip_segment_visibility.sql`) to hide a leg from the map without deleting it, an origin/destination swap button on the add/edit segment page, and `stage26_trip_segments_replica_identity.sql` fixing routed geometry reverting to a straight line after any partial-column update (Postgres drops unchanged TOASTed `jsonb` columns from Realtime's payload under the default `REPLICA IDENTITY`).
+
+---
+
+### Stage 19 — Masked Trip Email (Inbound Forwarding) 🔧
+
+**Shipped:** Every itinerary now gets an auto-generated masked email alias (`trip-xxxxxxxxxx@<domain>`, `trip_email_aliases` table populated by an on-insert trigger) shown on the trip Overview tab with a copy button. The alias is forward-only — no inbox — so it can be handed to airlines, hotels, or event organisers instead of a personal address: a new `inbound-trip-email` Edge Function receives mail sent to it (from whichever inbound-email provider is wired up), looks up the trip, and re-sends the message to every member's real address via Resend, `reply_to` set back to the original sender so replies go to the vendor, not into the void. Rate-limited to 20 forwards/trip/hour; only forward metadata (sender, subject, timestamp) is ever logged (`trip_email_forward_log`) — never the message body.
+
+**vs. v1.0:** Not in the original plan — added based on user request during development.
+
+**SQL migration:** `docs/supabase_migrations/stage27_trip_email_alias.sql` — run in Supabase SQL editor before deploying this build (safe to run before the provider setup below is done; the alias just won't receive real mail yet).
+
+**Known gaps carried into "What Remains" below:** live mail delivery needs a domain you control DNS for, an inbound-email provider (Cloudflare Email Routing, Postmark, or Mailgun — Resend does outbound only, not inbound) pointed at that domain and POSTing to the Edge Function, and the `INBOUND_WEBHOOK_SECRET` secret (plus the existing `RESEND_API_KEY`/`RESEND_FROM` from Stage 11). None of that is code — see `supabase/functions/inbound-trip-email/index.ts`'s header comment for the full checklist.
+
 ---
 
 ## What Remains (Deferred / Not Implemented)
@@ -220,6 +234,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | B2B portal | Requires pilot customer |
 | Google Maps route rendering (live) | Code-complete behind the map-provider abstraction (Stage 18); needs a real Google Cloud Maps API key dropped into the gitignored `google_maps_api.xml` (Android) / `Secrets.xcconfig` (iOS) — currently builds with a placeholder key so tiles won't render |
 | Org/sub-org premium config inheritance | Premium defaults (trial length, feature-flag overrides) are a single global `app_config`/`feature_flags` value today; per-organisation overrides need an organisation entity first (see B2B portal above) — the right shape is a fallback lookup (org row → global row), not class-style inheritance |
+| Masked trip email (live) | Code-complete (Stage 19); needs a domain + inbound-email provider (Cloudflare Email Routing / Postmark / Mailgun) wired to `inbound-trip-email`, plus the `INBOUND_WEBHOOK_SECRET` secret set — see that stage's entry above |
 
 ---
 
@@ -244,7 +259,8 @@ Jun–Jul 2026
 ├── Stage 15: Privacy, GDPR & Legal          ✅ Week 7
 ├── Stage 16: Chat Polish, Animations & A11y ✅ Week 7
 ├── Stage 17: Profile/Expense/Chat/Push      ✅ Android / 🔧 iOS   Jul 2026
-└── Stage 18: Route Segments + Premium Flags ✅                   Aug 2026
+├── Stage 18: Route Segments + Premium Flags ✅                   Aug 2026
+└── Stage 19: Masked Trip Email              🔧                   Aug 2026
 ```
 
 ---
@@ -264,6 +280,8 @@ Outstanding:
 - Run `stage14_delete_user_rpc.sql` migration in Supabase SQL editor
 - Run `stage21_trip_segments.sql` migration in Supabase SQL editor (Stage 18)
 - Drop a real Google Maps API key into the gitignored native config files to make that map provider actually render (Stage 18)
+- Run `stage25_trip_segment_visibility.sql`, `stage26_trip_segments_replica_identity.sql`, and `stage27_trip_email_alias.sql` migrations in Supabase SQL editor
+- Wire up an inbound-email provider + `INBOUND_WEBHOOK_SECRET`, then deploy `inbound-trip-email`, to make masked trip email actually receive mail (Stage 19)
 - Enable GitHub Pages → submit legal URLs to App Store Connect / Google Play Console
 - Widget tests and integration tests not yet written
 - No formal WCAG 2.1 accessibility audit

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
@@ -24,6 +25,7 @@ import '../../domain/entities/trip_segment.dart';
 import '../../domain/entities/trip_theme.dart';
 import '../../domain/trip_segment_order.dart';
 import '../providers/itinerary_provider.dart';
+import '../providers/trip_email_alias_provider.dart';
 import '../providers/trip_segment_provider.dart';
 import '../widgets/segment_actions_sheet.dart';
 import '../widgets/segment_card.dart';
@@ -462,6 +464,8 @@ class _ItineraryTab extends ConsumerWidget {
           itinerary: itinerary,
           currentUserId: currentUserId,
         ),
+        const SizedBox(height: 20),
+        _TripEmailCard(itineraryId: itinerary.id),
       ],
     );
 }
@@ -1428,6 +1432,82 @@ class _EmptyReviews extends StatelessWidget {
 }
 
 // ── Members card ─────────────────────────────────────────────────────────────
+
+/// The trip's masked, forward-only email address (see stage27's migration
+/// and `inbound-trip-email`) — hidden entirely while loading or on error,
+/// since it's a convenience add-on that must never block or clutter the
+/// Overview tab if it can't be fetched.
+class _TripEmailCard extends ConsumerWidget {
+  const _TripEmailCard({required this.itineraryId});
+
+  final String itineraryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final aliasAsync = ref.watch(tripEmailAliasProvider(itineraryId));
+
+    return aliasAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (alias) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.alternate_email, color: context.colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Trip Email',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SelectableText(
+                    alias.address,
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Use it for bookings and event sign-ups — anything sent '
+                    'here is forwarded to everyone on this trip.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Copy',
+              icon: const Icon(Icons.copy_outlined),
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: alias.address));
+                if (context.mounted) {
+                  context.showSnackBar('Copied to clipboard');
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _MembersCard extends ConsumerWidget {
   const _MembersCard({
