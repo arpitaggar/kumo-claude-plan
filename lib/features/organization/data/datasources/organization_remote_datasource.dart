@@ -210,13 +210,20 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
     String orgId,
   ) async {
     try {
-      final rows = await KumoSupabaseClient.client
-          .from(_expensesTable)
-          .select('*, itineraries!inner(title, org_id)')
-          .eq('itineraries.org_id', orgId)
-          .eq('approval_status', 'pending')
-          .order('submitted_at');
-      return rows.map(PendingExpenseApprovalModel.fromJson).toList();
+      // Goes through a SECURITY DEFINER RPC (stage32), not a raw embed of
+      // `itineraries`, deliberately: org admins are never granted direct
+      // table-level SELECT on itineraries (that was a data-exposure
+      // vulnerability — see stage32's migration comment) — this function
+      // does its own authorization check and returns only the columns this
+      // screen needs.
+      final rows = await KumoSupabaseClient.client.rpc(
+        'fetch_org_pending_approvals',
+        params: {'p_org_id': orgId},
+      ) as List<dynamic>;
+      return rows
+          .cast<Map<String, dynamic>>()
+          .map(PendingExpenseApprovalModel.fromJson)
+          .toList();
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

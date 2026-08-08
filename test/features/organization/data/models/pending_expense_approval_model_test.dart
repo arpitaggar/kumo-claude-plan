@@ -5,7 +5,7 @@ void main() {
   final fullRow = <String, dynamic>{
     'id': 'exp-1',
     'itinerary_id': 'it-1',
-    'itineraries': {'title': 'Berlin Offsite', 'org_id': 'org-1'},
+    'trip_title': 'Berlin Offsite',
     'payer_id': 'user-1',
     'payer_name': 'Bob',
     'title': 'Client dinner',
@@ -15,7 +15,7 @@ void main() {
     'submitted_at': '2026-06-02T09:00:00.000Z',
   };
 
-  test('parses the trip title from the embedded itineraries resource', () {
+  test('parses the trip title from the fetch_org_pending_approvals RPC row', () {
     final model = PendingExpenseApprovalModel.fromJson(fullRow);
     expect(model.tripTitle, 'Berlin Offsite');
   });

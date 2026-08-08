@@ -16,14 +16,17 @@ class PendingExpenseApprovalModel extends PendingExpenseApproval {
     super.costCenterCode,
   });
 
-  /// [row] is an `expenses` row with an embedded `itineraries(title)` —
-  /// see `OrganizationRemoteDataSourceImpl.fetchPendingApprovals`'s
-  /// `itineraries!inner(title)` select.
+  /// [row] comes from the `fetch_org_pending_approvals` RPC (stage32) — a
+  /// flat `trip_title` column, not a nested `itineraries` embed. That RPC
+  /// does its own authorization + join server-side specifically so the
+  /// client never needs (and the DB never grants) direct SELECT access to
+  /// `itineraries` for this purpose — see stage32's migration comment for
+  /// why a raw PostgREST embed was a data-exposure vulnerability here.
   factory PendingExpenseApprovalModel.fromJson(Map<String, dynamic> row) =>
       PendingExpenseApprovalModel(
         expenseId: row['id'] as String,
         itineraryId: row['itinerary_id'] as String,
-        tripTitle: (row['itineraries'] as Map<String, dynamic>)['title'] as String,
+        tripTitle: row['trip_title'] as String,
         payerId: row['payer_id'] as String,
         payerName: row['payer_name'] as String,
         title: row['title'] as String,
