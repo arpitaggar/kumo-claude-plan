@@ -18,8 +18,9 @@ void main() {
 
   group('DeleteAccountUseCase', () {
     test('calls repository.deleteAccount exactly once', () async {
-      when(() => mockRepo.deleteAccount())
-          .thenAnswer((_) async => const Right(null));
+      when(
+        () => mockRepo.deleteAccount(),
+      ).thenAnswer((_) async => const Right(null));
 
       await useCase();
 
@@ -27,22 +28,20 @@ void main() {
     });
 
     test('returns Right(null) when repository succeeds', () async {
-      when(() => mockRepo.deleteAccount())
-          .thenAnswer((_) async => const Right(null));
+      when(
+        () => mockRepo.deleteAccount(),
+      ).thenAnswer((_) async => const Right(null));
 
       final result = await useCase();
 
       expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('expected Right'),
-        (_) {},
-      );
+      result.fold((_) => fail('expected Right'), (_) {});
     });
 
     test('propagates AuthFailure from repository', () async {
-      when(() => mockRepo.deleteAccount()).thenAnswer(
-        (_) async => const Left(AuthFailure('session expired')),
-      );
+      when(
+        () => mockRepo.deleteAccount(),
+      ).thenAnswer((_) async => const Left(AuthFailure('session expired')));
 
       final result = await useCase();
 
@@ -54,24 +53,22 @@ void main() {
     });
 
     test('propagates UnexpectedFailure from repository', () async {
-      when(() => mockRepo.deleteAccount()).thenAnswer(
-        (_) async => const Left(UnexpectedFailure('RPC error')),
-      );
+      when(
+        () => mockRepo.deleteAccount(),
+      ).thenAnswer((_) async => const Left(UnexpectedFailure('RPC error')));
 
       final result = await useCase();
 
-      result.fold(
-        (f) {
-          expect(f, isA<UnexpectedFailure>());
-          expect(f.message, 'RPC error');
-        },
-        (_) => fail('expected Left'),
-      );
+      result.fold((f) {
+        expect(f, isA<UnexpectedFailure>());
+        expect(f.message, 'RPC error');
+      }, (_) => fail('expected Left'));
     });
 
     test('does not call any other repository method', () async {
-      when(() => mockRepo.deleteAccount())
-          .thenAnswer((_) async => const Right(null));
+      when(
+        () => mockRepo.deleteAccount(),
+      ).thenAnswer((_) async => const Right(null));
 
       await useCase();
 

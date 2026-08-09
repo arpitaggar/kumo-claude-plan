@@ -43,9 +43,9 @@ void main() {
     useCase = CreateItineraryUseCase(mockRepo);
 
     // Default: repository succeeds — return value validated separately
-    when(
-      () => mockRepo.createItinerary(any()),
-    ).thenAnswer((inv) async => Right(inv.positionalArguments[0] as TravelItinerary));
+    when(() => mockRepo.createItinerary(any())).thenAnswer(
+      (inv) async => Right(inv.positionalArguments[0] as TravelItinerary),
+    );
   });
 
   group('CreateItineraryUseCase — validation', () {
@@ -86,24 +86,27 @@ void main() {
       );
     });
 
-    test('returns ValidationFailure when end date is before start date', () async {
-      final result = await useCase(
-        title: 'Tokyo Trip',
-        ownerId: 'user-1',
-        ownerName: 'Alice',
-        startDate: tEnd,
-        endDate: tStart,
-        totalBudget: 1000,
-        currencyCode: 'USD',
-      );
+    test(
+      'returns ValidationFailure when end date is before start date',
+      () async {
+        final result = await useCase(
+          title: 'Tokyo Trip',
+          ownerId: 'user-1',
+          ownerName: 'Alice',
+          startDate: tEnd,
+          endDate: tStart,
+          totalBudget: 1000,
+          currencyCode: 'USD',
+        );
 
-      expect(result.isLeft(), isTrue);
-      result.fold(
-        (f) => expect(f, isA<ValidationFailure>()),
-        (_) => fail('expected Left'),
-      );
-      verifyNever(() => mockRepo.createItinerary(any()));
-    });
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (f) => expect(f, isA<ValidationFailure>()),
+          (_) => fail('expected Left'),
+        );
+        verifyNever(() => mockRepo.createItinerary(any()));
+      },
+    );
 
     test('returns ValidationFailure for negative budget', () async {
       final result = await useCase(
@@ -239,8 +242,9 @@ void main() {
     });
 
     test('propagates ServerFailure from repository', () async {
-      when(() => mockRepo.createItinerary(any()))
-          .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+      when(
+        () => mockRepo.createItinerary(any()),
+      ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
       final result = await useCase(
         title: 'Tokyo Trip',

@@ -23,13 +23,13 @@ class PackingItem extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        itineraryId,
-        title,
-        isChecked,
-        addedById,
-        addedByName,
-        createdAt,
-        category,
-      ];
+    id,
+    itineraryId,
+    title,
+    isChecked,
+    addedById,
+    addedByName,
+    createdAt,
+    category,
+  ];
 }

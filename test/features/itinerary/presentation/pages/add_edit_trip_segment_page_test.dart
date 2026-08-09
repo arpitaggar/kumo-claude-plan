@@ -12,13 +12,13 @@ import 'package:kumo_claude/features/itinerary/presentation/pages/add_edit_trip_
 // form and would need a proper harness (see trip_segment_provider usage
 // elsewhere) to test meaningfully.
 Widget buildPage({TripSegment? continueFromSegment}) => ProviderScope(
-      child: MaterialApp(
-        home: AddEditTripSegmentPage(
-          itineraryId: 'it-1',
-          continueFromSegment: continueFromSegment,
-        ),
-      ),
-    );
+  child: MaterialApp(
+    home: AddEditTripSegmentPage(
+      itineraryId: 'it-1',
+      continueFromSegment: continueFromSegment,
+    ),
+  ),
+);
 
 void main() {
   group('AddEditTripSegmentPage (add mode)', () {
@@ -53,8 +53,9 @@ void main() {
       expect(chip.selected, isTrue);
     });
 
-    testWidgets('selecting a different mode chip updates the selection',
-        (tester) async {
+    testWidgets('selecting a different mode chip updates the selection', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
 
       await tester.tap(find.widgetWithText(ChoiceChip, 'Motorcycle'));
@@ -70,8 +71,9 @@ void main() {
       expect(flightChip.selected, isFalse);
     });
 
-    testWidgets('shows Origin and Destination fields, both unset',
-        (tester) async {
+    testWidgets('shows Origin and Destination fields, both unset', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       expect(find.text('Origin'), findsOneWidget);
       expect(find.text('Destination'), findsOneWidget);
@@ -79,25 +81,26 @@ void main() {
     });
 
     testWidgets(
-        'submitting without an origin/destination shows a validation snackbar',
-        (tester) async {
-      await tester.pumpWidget(buildPage());
+      'submitting without an origin/destination shows a validation snackbar',
+      (tester) async {
+        await tester.pumpWidget(buildPage());
 
-      // The submit button is below the fold of the scrollable form.
-      final submitButton = find.widgetWithText(ElevatedButton, 'Add Segment');
-      await tester.ensureVisible(submitButton);
-      await tester.pumpAndSettle();
-      await tester.tap(submitButton);
-      // A SnackBar needs its entrance animation to run before its text is
-      // findable — a single pump() isn't enough.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // The submit button is below the fold of the scrollable form.
+        final submitButton = find.widgetWithText(ElevatedButton, 'Add Segment');
+        await tester.ensureVisible(submitButton);
+        await tester.pumpAndSettle();
+        await tester.tap(submitButton);
+        // A SnackBar needs its entrance animation to run before its text is
+        // findable — a single pump() isn't enough.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(
-        find.text('Please select both an origin and a destination'),
-        findsOneWidget,
-      );
-    });
+        expect(
+          find.text('Please select both an origin and a destination'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('tapping the swap button swaps origin and destination', (
       tester,

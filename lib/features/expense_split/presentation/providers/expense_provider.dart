@@ -17,9 +17,8 @@ final expenseDataSourceProvider = Provider<ExpenseRemoteDataSource>(
 );
 
 final expenseRepositoryProvider = Provider<ExpenseRepositoryImpl>(
-  (ref) => ExpenseRepositoryImpl(
-    dataSource: ref.watch(expenseDataSourceProvider),
-  ),
+  (ref) =>
+      ExpenseRepositoryImpl(dataSource: ref.watch(expenseDataSourceProvider)),
 );
 
 // ---------------------------------------------------------------------------
@@ -36,37 +35,43 @@ final deleteExpenseUseCaseProvider = Provider<DeleteExpenseUseCase>(
 
 final calculateSettlementsUseCaseProvider =
     Provider<CalculateSettlementsUseCase>(
-  (_) => const CalculateSettlementsUseCase(),
-);
+      (_) => const CalculateSettlementsUseCase(),
+    );
 
 final submitExpensesForApprovalUseCaseProvider =
     Provider<SubmitExpensesForApprovalUseCase>(
-  (ref) =>
-      SubmitExpensesForApprovalUseCase(ref.watch(expenseRepositoryProvider)),
-);
+      (ref) => SubmitExpensesForApprovalUseCase(
+        ref.watch(expenseRepositoryProvider),
+      ),
+    );
 
 // ---------------------------------------------------------------------------
 // Stream provider — live expense list per itinerary
 // ---------------------------------------------------------------------------
 
-final expenseStreamProvider =
-    StreamProvider.family<List<Expense>, String>((ref, itineraryId) => ref
-        .watch(expenseRepositoryProvider)
-        .watchExpenses(itineraryId)
-        .map((either) => either.fold(
-              (f) => throw Exception(f.message),
-              (list) => list,
-            )));
+final expenseStreamProvider = StreamProvider.family<List<Expense>, String>(
+  (ref, itineraryId) => ref
+      .watch(expenseRepositoryProvider)
+      .watchExpenses(itineraryId)
+      .map(
+        (either) =>
+            either.fold((f) => throw Exception(f.message), (list) => list),
+      ),
+);
 
 // ---------------------------------------------------------------------------
 // Derived: settlements computed from live expenses
 // Family param is (itineraryId, baseCurrencyCode).
 // ---------------------------------------------------------------------------
 
-final settlementsProvider = Provider.family<List<Settlement>,
-    (String itineraryId, String baseCurrency)>((ref, args) {
-  final expenses =
-      ref.watch(expenseStreamProvider(args.$1)).value ?? [];
-  return ref
-      .watch(calculateSettlementsUseCaseProvider)(expenses, baseCurrency: args.$2);
-});
+final settlementsProvider =
+    Provider.family<
+      List<Settlement>,
+      (String itineraryId, String baseCurrency)
+    >((ref, args) {
+      final expenses = ref.watch(expenseStreamProvider(args.$1)).value ?? [];
+      return ref.watch(calculateSettlementsUseCaseProvider)(
+        expenses,
+        baseCurrency: args.$2,
+      );
+    });

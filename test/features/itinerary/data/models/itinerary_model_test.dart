@@ -49,15 +49,18 @@ void main() {
       expect(member.userName, 'Carol');
     });
 
-    test('defaults userName to empty string when both name keys are absent', () {
-      final json = {
-        'user_id': 'uid-3',
-        'role': 'viewer',
-        'joined_at': joinedAt,
-      };
-      final member = GroupMemberModel.fromJson(json);
-      expect(member.userName, '');
-    });
+    test(
+      'defaults userName to empty string when both name keys are absent',
+      () {
+        final json = {
+          'user_id': 'uid-3',
+          'role': 'viewer',
+          'joined_at': joinedAt,
+        };
+        final member = GroupMemberModel.fromJson(json);
+        expect(member.userName, '');
+      },
+    );
 
     test('defaults role to viewer for unrecognised role string', () {
       final json = {
@@ -87,25 +90,25 @@ void main() {
 
   group('ItineraryModel.fromJson — themeKey', () {
     Map<String, dynamic> baseJson() => {
-          'id': 'itin-1',
-          'title': 'Tokyo Trip',
-          'owner_id': 'owner-uid',
-          'start_date': '2026-06-10T00:00:00.000Z',
-          'end_date': '2026-06-15T00:00:00.000Z',
-          'total_budget': 2000.0,
-          'currency_code': 'USD',
-          'members': <dynamic>[],
-          'items': <dynamic>[],
-          'expense_summary': {
-            'total_spent': 0,
-            'spent_by_category': <String, dynamic>{},
-            'member_balances': <String, dynamic>{},
-          },
-          'created_at': '2026-06-01T00:00:00.000Z',
-          'updated_at': '2026-06-01T00:00:00.000Z',
-          'status': 'draft',
-          'is_public': false,
-        };
+      'id': 'itin-1',
+      'title': 'Tokyo Trip',
+      'owner_id': 'owner-uid',
+      'start_date': '2026-06-10T00:00:00.000Z',
+      'end_date': '2026-06-15T00:00:00.000Z',
+      'total_budget': 2000.0,
+      'currency_code': 'USD',
+      'members': <dynamic>[],
+      'items': <dynamic>[],
+      'expense_summary': {
+        'total_spent': 0,
+        'spent_by_category': <String, dynamic>{},
+        'member_balances': <String, dynamic>{},
+      },
+      'created_at': '2026-06-01T00:00:00.000Z',
+      'updated_at': '2026-06-01T00:00:00.000Z',
+      'status': 'draft',
+      'is_public': false,
+    };
 
     test('reads theme_key from JSON', () {
       final json = baseJson()..['theme_key'] = 'sakura';
@@ -140,25 +143,25 @@ void main() {
 
   group('ItineraryModel — originPostId (Stage 22 social feed)', () {
     Map<String, dynamic> baseJson() => {
-          'id': 'itin-1',
-          'title': 'Tokyo Trip',
-          'owner_id': 'owner-uid',
-          'start_date': '2026-06-10T00:00:00.000Z',
-          'end_date': '2026-06-15T00:00:00.000Z',
-          'total_budget': 2000.0,
-          'currency_code': 'USD',
-          'members': <dynamic>[],
-          'items': <dynamic>[],
-          'expense_summary': {
-            'total_spent': 0,
-            'spent_by_category': <String, dynamic>{},
-            'member_balances': <String, dynamic>{},
-          },
-          'created_at': '2026-06-01T00:00:00.000Z',
-          'updated_at': '2026-06-01T00:00:00.000Z',
-          'status': 'draft',
-          'is_public': false,
-        };
+      'id': 'itin-1',
+      'title': 'Tokyo Trip',
+      'owner_id': 'owner-uid',
+      'start_date': '2026-06-10T00:00:00.000Z',
+      'end_date': '2026-06-15T00:00:00.000Z',
+      'total_budget': 2000.0,
+      'currency_code': 'USD',
+      'members': <dynamic>[],
+      'items': <dynamic>[],
+      'expense_summary': {
+        'total_spent': 0,
+        'spent_by_category': <String, dynamic>{},
+        'member_balances': <String, dynamic>{},
+      },
+      'created_at': '2026-06-01T00:00:00.000Z',
+      'updated_at': '2026-06-01T00:00:00.000Z',
+      'status': 'draft',
+      'is_public': false,
+    };
 
     test('reads origin_post_id from JSON when present', () {
       final json = baseJson()..['origin_post_id'] = 'post-1';
@@ -193,7 +196,11 @@ void main() {
       final model = ItineraryModel.fromJson(baseJson());
       final forked = model.copyWith(originPostId: 'post-4');
       expect(forked.originPostId, 'post-4');
-      expect(model.originPostId, isNull, reason: 'copyWith must not mutate the original');
+      expect(
+        model.originPostId,
+        isNull,
+        reason: 'copyWith must not mutate the original',
+      );
     });
   });
 }

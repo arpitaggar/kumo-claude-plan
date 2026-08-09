@@ -30,13 +30,15 @@ void main() {
 
   test('delegates like: false to the repository', () async {
     when(
-      () => mockRepo.toggleLike(postId: 'post-1', userId: 'user-1', like: false),
+      () =>
+          mockRepo.toggleLike(postId: 'post-1', userId: 'user-1', like: false),
     ).thenAnswer((_) async => const Right(null));
 
     await useCase(postId: 'post-1', userId: 'user-1', like: false);
 
     verify(
-      () => mockRepo.toggleLike(postId: 'post-1', userId: 'user-1', like: false),
+      () =>
+          mockRepo.toggleLike(postId: 'post-1', userId: 'user-1', like: false),
     ).called(1);
   });
 
@@ -49,7 +51,11 @@ void main() {
       ),
     ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
-    final result = await useCase(postId: 'post-1', userId: 'user-1', like: true);
+    final result = await useCase(
+      postId: 'post-1',
+      userId: 'user-1',
+      like: true,
+    );
 
     expect(result.isLeft(), isTrue);
   });

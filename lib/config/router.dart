@@ -45,13 +45,13 @@ Page<T> _slidePage<T>(Widget child, GoRouterState state) =>
       reverseTransitionDuration: const Duration(milliseconds: 240),
       transitionsBuilder: (context, animation, secondaryAnimation, child) =>
           SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOutCubic,
-            )),
+            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeInOutCubic,
+                  ),
+                ),
             child: child,
           ),
     );
@@ -85,8 +85,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/signup',
-        pageBuilder: (context, state) =>
-            _slidePage(const SignupPage(), state),
+        pageBuilder: (context, state) => _slidePage(const SignupPage(), state),
       ),
       GoRoute(
         path: '/forgot-password',
@@ -105,8 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/legal/terms',
-        pageBuilder: (context, state) =>
-            _slidePage(const TermsPage(), state),
+        pageBuilder: (context, state) => _slidePage(const TermsPage(), state),
       ),
 
       // ── Onboarding (no shell) ──────────────────────────────────────────────
@@ -275,9 +273,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(child: Text('Page not found: ${state.error}')),
-    ),
+    errorBuilder: (context, state) =>
+        Scaffold(body: Center(child: Text('Page not found: ${state.error}'))),
   );
 });
 
@@ -286,7 +283,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(this._ref) {
     _ref
-      ..listen<AuthState>(authNotifierProvider, (prev, next) => notifyListeners())
+      ..listen<AuthState>(
+        authNotifierProvider,
+        (prev, next) => notifyListeners(),
+      )
       ..listen<bool?>(onboardingProvider, (prev, next) => notifyListeners());
   }
 
@@ -304,7 +304,8 @@ class _RouterNotifier extends ChangeNotifier {
       return null;
     }
 
-    final isOnAuthRoute = loc == '/login' ||
+    final isOnAuthRoute =
+        loc == '/login' ||
         loc == '/signup' ||
         loc == '/forgot-password' ||
         loc == '/reset-password' ||

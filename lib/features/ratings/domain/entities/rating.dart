@@ -25,14 +25,14 @@ class Rating extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        itineraryId,
-        itemId,
-        targetName,
-        stars,
-        comment,
-        userId,
-        userName,
-        createdAt,
-      ];
+    id,
+    itineraryId,
+    itemId,
+    targetName,
+    stars,
+    comment,
+    userId,
+    userName,
+    createdAt,
+  ];
 }

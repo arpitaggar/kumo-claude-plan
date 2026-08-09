@@ -113,7 +113,7 @@ git push origin feature/user-profile
 
 ### CI/CD Pipeline
 
-- Pre-commit hooks: `dart format`, `flutter analyze`
+- Pre-commit hooks: `dart format`, `flutter analyze` — enforced locally via `./scripts/install-git-hooks.sh` (run once per clone; see `scripts/CLAUDE.md`). Not yet wired into a CI service — currently solo development with no PR review process.
 - Pull request: Unit tests, code coverage
 - Merge to main: Deploy to staging
 - Release tag: Deploy to production

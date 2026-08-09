@@ -47,17 +47,14 @@ class TripCostFieldValueRemoteDataSourceImpl
       return;
     }
     try {
-      await KumoSupabaseClient.client.from(_table).upsert(
-        [
-          for (final entry in fieldIdToOptionId.entries)
-            {
-              'itinerary_id': itineraryId,
-              'field_id': entry.key,
-              'option_id': entry.value,
-            },
-        ],
-        onConflict: 'itinerary_id,field_id',
-      );
+      await KumoSupabaseClient.client.from(_table).upsert([
+        for (final entry in fieldIdToOptionId.entries)
+          {
+            'itinerary_id': itineraryId,
+            'field_id': entry.key,
+            'option_id': entry.value,
+          },
+      ], onConflict: 'itinerary_id,field_id');
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

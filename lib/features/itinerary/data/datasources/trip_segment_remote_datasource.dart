@@ -73,10 +73,7 @@ class TripSegmentRemoteDataSourceImpl implements TripSegmentRemoteDataSource {
   @override
   Future<void> deleteSegment(String segmentId) async {
     try {
-      await KumoSupabaseClient.client
-          .from(_table)
-          .delete()
-          .eq('id', segmentId);
+      await KumoSupabaseClient.client.from(_table).delete().eq('id', segmentId);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

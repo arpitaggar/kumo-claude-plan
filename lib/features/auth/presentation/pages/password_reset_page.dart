@@ -96,37 +96,40 @@ class _ResetForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Form(
-        key: formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 16),
-            Text(
-              'Forgot your password?',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: context.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Enter your email and we'll send a reset link.",
-              style: TextStyle(fontSize: 14, color: context.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 32),
-            EmailInputField(
-              controller: emailController,
-              onSubmitted: (_) => onSubmit(),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: onSubmit,
-              child: const Text('Send Reset Link'),
-            ),
-          ],
+    key: formKey,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 16),
+        Text(
+          'Forgot your password?',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: context.colorScheme.onSurface,
+          ),
         ),
-      );
+        const SizedBox(height: 8),
+        Text(
+          "Enter your email and we'll send a reset link.",
+          style: TextStyle(
+            fontSize: 14,
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 32),
+        EmailInputField(
+          controller: emailController,
+          onSubmitted: (_) => onSubmit(),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: onSubmit,
+          child: const Text('Send Reset Link'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _SentConfirmation extends StatelessWidget {
@@ -137,45 +140,42 @@ class _SentConfirmation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: context.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Icon(
-              Icons.mark_email_read_outlined,
-              size: 40,
-              color: context.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Check your inbox',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: context.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'We sent a password reset link to\n$email',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: context.colorScheme.onSurfaceVariant,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-          OutlinedButton(
-            onPressed: onBack,
-            child: const Text('Back to Sign In'),
-          ),
-        ],
-      );
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: context.colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Icon(
+          Icons.mark_email_read_outlined,
+          size: 40,
+          color: context.colorScheme.primary,
+        ),
+      ),
+      const SizedBox(height: 24),
+      Text(
+        'Check your inbox',
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: context.colorScheme.onSurface,
+        ),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        'We sent a password reset link to\n$email',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 14,
+          color: context.colorScheme.onSurfaceVariant,
+          height: 1.5,
+        ),
+      ),
+      const SizedBox(height: 32),
+      OutlinedButton(onPressed: onBack, child: const Text('Back to Sign In')),
+    ],
+  );
 }

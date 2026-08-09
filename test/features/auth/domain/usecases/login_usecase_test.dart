@@ -32,7 +32,12 @@ void main() {
         (f) => expect(f, isA<ValidationFailure>()),
         (_) => fail('expected Left'),
       );
-      verifyNever(() => mockRepo.login(email: any(named: 'email'), password: any(named: 'password')));
+      verifyNever(
+        () => mockRepo.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      );
     });
 
     test('returns ValidationFailure for empty password', () async {
@@ -42,56 +47,69 @@ void main() {
         (f) => expect(f, isA<ValidationFailure>()),
         (_) => fail('expected Left'),
       );
-      verifyNever(() => mockRepo.login(email: any(named: 'email'), password: any(named: 'password')));
-    });
-
-    test('returns ValidationFailure for password shorter than 8 chars', () async {
-      final result =
-          await useCase(email: 'alice@example.com', password: 'short');
-      expect(result.isLeft(), isTrue);
-      result.fold(
-        (f) => expect(f, isA<ValidationFailure>()),
-        (_) => fail('expected Left'),
+      verifyNever(
+        () => mockRepo.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
       );
     });
+
+    test(
+      'returns ValidationFailure for password shorter than 8 chars',
+      () async {
+        final result = await useCase(
+          email: 'alice@example.com',
+          password: 'short',
+        );
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (f) => expect(f, isA<ValidationFailure>()),
+          (_) => fail('expected Left'),
+        );
+      },
+    );
   });
 
   group('LoginUseCase — repository delegation', () {
     test('calls repository.login with valid credentials', () async {
-      when(() => mockRepo.login(
-            email: 'alice@example.com',
-            password: 'password123',
-          )).thenAnswer((_) async => Right(tUser));
+      when(
+        () =>
+            mockRepo.login(email: 'alice@example.com', password: 'password123'),
+      ).thenAnswer((_) async => Right(tUser));
 
       await useCase(email: 'alice@example.com', password: 'password123');
 
-      verify(() => mockRepo.login(
-            email: 'alice@example.com',
-            password: 'password123',
-          )).called(1);
+      verify(
+        () =>
+            mockRepo.login(email: 'alice@example.com', password: 'password123'),
+      ).called(1);
     });
 
     test('returns Right(user) on successful login', () async {
-      when(() => mockRepo.login(
-            email: 'alice@example.com',
-            password: 'password123',
-          )).thenAnswer((_) async => Right(tUser));
+      when(
+        () =>
+            mockRepo.login(email: 'alice@example.com', password: 'password123'),
+      ).thenAnswer((_) async => Right(tUser));
 
-      final result =
-          await useCase(email: 'alice@example.com', password: 'password123');
+      final result = await useCase(
+        email: 'alice@example.com',
+        password: 'password123',
+      );
 
       expect(result, Right<Failure, User>(tUser));
     });
 
     test('propagates AuthFailure from repository', () async {
-      when(() => mockRepo.login(
-            email: 'alice@example.com',
-            password: 'password123',
-          )).thenAnswer(
-              (_) async => Left(AuthFailure.invalidCredentials()));
+      when(
+        () =>
+            mockRepo.login(email: 'alice@example.com', password: 'password123'),
+      ).thenAnswer((_) async => Left(AuthFailure.invalidCredentials()));
 
-      final result =
-          await useCase(email: 'alice@example.com', password: 'password123');
+      final result = await useCase(
+        email: 'alice@example.com',
+        password: 'password123',
+      );
 
       expect(result.isLeft(), isTrue);
       result.fold(
@@ -101,14 +119,15 @@ void main() {
     });
 
     test('propagates NetworkFailure from repository', () async {
-      when(() => mockRepo.login(
-            email: 'alice@example.com',
-            password: 'password123',
-          )).thenAnswer(
-              (_) async => Left(NetworkFailure.noInternet()));
+      when(
+        () =>
+            mockRepo.login(email: 'alice@example.com', password: 'password123'),
+      ).thenAnswer((_) async => Left(NetworkFailure.noInternet()));
 
-      final result =
-          await useCase(email: 'alice@example.com', password: 'password123');
+      final result = await useCase(
+        email: 'alice@example.com',
+        password: 'password123',
+      );
 
       result.fold(
         (f) => expect(f, isA<NetworkFailure>()),

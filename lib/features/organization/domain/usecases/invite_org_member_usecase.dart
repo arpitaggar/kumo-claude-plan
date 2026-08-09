@@ -13,6 +13,5 @@ class InviteOrgMemberUseCase {
     required String orgId,
     required String email,
     required OrgMemberRole role,
-  }) =>
-      _repository.inviteMember(orgId: orgId, email: email, role: role);
+  }) => _repository.inviteMember(orgId: orgId, email: email, role: role);
 }

@@ -47,26 +47,22 @@ class _CreateOrganizationPageState
     setState(() => _isSubmitting = true);
 
     final name = _nameController.text.trim();
-    final result = await ref.read(createOrganizationUseCaseProvider).call(
-          name: name,
-          slug: _slugify(name),
-        );
+    final result = await ref
+        .read(createOrganizationUseCaseProvider)
+        .call(name: name, slug: _slugify(name));
 
     if (!mounted) {
       return;
     }
     setState(() => _isSubmitting = false);
 
-    result.fold(
-      (f) => context.showSnackBar(f.message, isError: true),
-      (org) {
-        ref.invalidate(myOrganizationsProvider);
-        context
-          ..showSnackBar('$name created')
-          ..pop();
-        context.push('/organizations/${org.id}/members');
-      },
-    );
+    result.fold((f) => context.showSnackBar(f.message, isError: true), (org) {
+      ref.invalidate(myOrganizationsProvider);
+      context
+        ..showSnackBar('$name created')
+        ..pop();
+      context.push('/organizations/${org.id}/members');
+    });
   }
 
   @override
@@ -101,15 +97,11 @@ class _CreateOrganizationPageState
                     hintText: 'e.g. Acme Corp',
                     prefixIcon: Icon(Icons.work_outline),
                   ),
-                  validator: (v) => v == null || v.trim().isEmpty
-                      ? 'Name is required'
-                      : null,
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Name is required' : null,
                 ),
                 const SizedBox(height: 32),
-                FilledButton(
-                  onPressed: _submit,
-                  child: const Text('Create'),
-                ),
+                FilledButton(onPressed: _submit, child: const Text('Create')),
               ],
             ),
           ),

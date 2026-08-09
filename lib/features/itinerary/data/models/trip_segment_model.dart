@@ -52,40 +52,40 @@ class TripSegmentModel extends TripSegment {
   }
 
   factory TripSegmentModel.fromEntity(TripSegment segment) => TripSegmentModel(
-        id: segment.id,
-        itineraryId: segment.itineraryId,
-        orderIndex: segment.orderIndex,
-        mode: segment.mode,
-        origin: segment.origin,
-        destination: segment.destination,
-        departureTime: segment.departureTime,
-        arrivalTime: segment.arrivalTime,
-        notes: segment.notes,
-        routeGeometry: segment.routeGeometry,
-        isVisible: segment.isVisible,
-      );
+    id: segment.id,
+    itineraryId: segment.itineraryId,
+    orderIndex: segment.orderIndex,
+    mode: segment.mode,
+    origin: segment.origin,
+    destination: segment.destination,
+    departureTime: segment.departureTime,
+    arrivalTime: segment.arrivalTime,
+    notes: segment.notes,
+    routeGeometry: segment.routeGeometry,
+    isVisible: segment.isVisible,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'itinerary_id': itineraryId,
-        'order_index': orderIndex,
-        'transport_mode': mode.name,
-        'origin_name': origin.name,
-        'origin_lat': origin.latitude,
-        'origin_lng': origin.longitude,
-        'destination_name': destination.name,
-        'destination_lat': destination.latitude,
-        'destination_lng': destination.longitude,
-        if (departureTime != null)
-          'departure_time': departureTime!.toIso8601String(),
-        if (arrivalTime != null) 'arrival_time': arrivalTime!.toIso8601String(),
-        if (notes != null) 'notes': notes,
-        if (routeGeometry != null)
-          'route_geometry': [
-            for (final (lat, lng) in routeGeometry!) [lat, lng],
-          ],
-        'is_visible': isVisible,
-      };
+    'id': id,
+    'itinerary_id': itineraryId,
+    'order_index': orderIndex,
+    'transport_mode': mode.name,
+    'origin_name': origin.name,
+    'origin_lat': origin.latitude,
+    'origin_lng': origin.longitude,
+    'destination_name': destination.name,
+    'destination_lat': destination.latitude,
+    'destination_lng': destination.longitude,
+    if (departureTime != null)
+      'departure_time': departureTime!.toIso8601String(),
+    if (arrivalTime != null) 'arrival_time': arrivalTime!.toIso8601String(),
+    if (notes != null) 'notes': notes,
+    if (routeGeometry != null)
+      'route_geometry': [
+        for (final (lat, lng) in routeGeometry!) [lat, lng],
+      ],
+    'is_visible': isVisible,
+  };
 }
 
 /// `route_geometry` is a `jsonb` array of `[lat, lng]` pairs, or null.

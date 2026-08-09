@@ -25,13 +25,13 @@ class PackingItemModel extends PackingItem {
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'itinerary_id': itineraryId,
-        'title': title,
-        'is_checked': isChecked,
-        'added_by_id': addedById,
-        'added_by_name': addedByName,
-        'created_at': createdAt.toIso8601String(),
-        if (category != null) 'category': category,
-      };
+    'id': id,
+    'itinerary_id': itineraryId,
+    'title': title,
+    'is_checked': isChecked,
+    'added_by_id': addedById,
+    'added_by_name': addedByName,
+    'created_at': createdAt.toIso8601String(),
+    if (category != null) 'category': category,
+  };
 }

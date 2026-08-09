@@ -17,15 +17,15 @@ class AddPackingItemUseCase {
     required String addedByName,
     String? category,
   }) => _repository.addItem(
-        PackingItem(
-          id: const Uuid().v4(),
-          itineraryId: itineraryId,
-          title: title.trim(),
-          isChecked: false,
-          addedById: addedById,
-          addedByName: addedByName,
-          createdAt: DateTime.now().toUtc(),
-          category: category,
-        ),
-      );
+    PackingItem(
+      id: const Uuid().v4(),
+      itineraryId: itineraryId,
+      title: title.trim(),
+      isChecked: false,
+      addedById: addedById,
+      addedByName: addedByName,
+      createdAt: DateTime.now().toUtc(),
+      category: category,
+    ),
+  );
 }

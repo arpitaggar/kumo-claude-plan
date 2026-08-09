@@ -64,18 +64,31 @@ const _modeMarkerIconSize = 34.0;
 // single-chevron rendering did.
 const _doubleTreadHalfGapFraction = 0.0315;
 
-/// The lat/lng path drawn for [segment] — curved if some other segment in
-/// [all] covers the same two waypoints in the opposite direction, otherwise
-/// a straight line. Shared by both map engines and the OSM texture layer so
-/// they all draw the exact same geometry.
-List<(double, double)> _geoPath(TripSegment segment, List<TripSegment> all) =>
-    curvedPath(
-      startLat: segment.origin.latitude,
-      startLng: segment.origin.longitude,
-      endLat: segment.destination.latitude,
-      endLng: segment.destination.longitude,
-      curved: hasReverseLeg(all, segment),
-    );
+/// The lat/lng path drawn for [segment] — the real routed road/footpath if
+/// one has been fetched and cached (`RoutingService`, see
+/// `lib/features/itinerary/presentation/providers/trip_segment_provider.dart`),
+/// otherwise curved if some other segment in [all] covers the same two
+/// waypoints in the opposite direction, otherwise a straight line. Shared by
+/// both map engines and the OSM texture layer so they all draw the exact
+/// same geometry.
+///
+/// A real routed out-and-back pair can still overlap itself on a one-road
+/// round trip — the "bow apart" trick below only applies to the synthetic
+/// fallback line, not real route geometry. Accepted trade-off, not fixed
+/// here.
+List<(double, double)> _geoPath(TripSegment segment, List<TripSegment> all) {
+  final routed = segment.routeGeometry;
+  if (routed != null && routed.length >= 2) {
+    return routed;
+  }
+  return curvedPath(
+    startLat: segment.origin.latitude,
+    startLng: segment.origin.longitude,
+    endLat: segment.destination.latitude,
+    endLng: segment.destination.longitude,
+    curved: hasReverseLeg(all, segment),
+  );
+}
 
 /// Renders the whole trip route (a destination pin + city label per leg, a
 /// mode-texture line, and an upright transport-mode icon with a rotating

@@ -38,45 +38,46 @@ class _TripsPageState extends ConsumerState<TripsPage> {
       ),
       body: switch (state) {
         ItineraryListInitial() || ItineraryListLoading() => Center(
-            child: CircularProgressIndicator(color: context.colorScheme.primary),
-          ),
+          child: CircularProgressIndicator(color: context.colorScheme.primary),
+        ),
         ItineraryListError(:final message) => Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.wifi_off_outlined,
-                    size: 48, color: context.colorScheme.outlineVariant),
-                const SizedBox(height: 12),
-                Text(
-                  message,
-                  style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    if (auth is AuthAuthenticated) {
-                      ref
-                          .read(itineraryListProvider.notifier)
-                          .loadItineraries(auth.user.id);
-                    }
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ItineraryListLoaded(:final itineraries) => Column(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _FilterRow(
-                current: _statusFilter,
-                onSelect: (s) => setState(() => _statusFilter = s),
+              Icon(
+                Icons.wifi_off_outlined,
+                size: 48,
+                color: context.colorScheme.outlineVariant,
               ),
-              Expanded(
-                child: _buildList(context, ref, auth, itineraries),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  if (auth is AuthAuthenticated) {
+                    ref
+                        .read(itineraryListProvider.notifier)
+                        .loadItineraries(auth.user.id);
+                  }
+                },
+                child: const Text('Retry'),
               ),
             ],
           ),
+        ),
+        ItineraryListLoaded(:final itineraries) => Column(
+          children: [
+            _FilterRow(
+              current: _statusFilter,
+              onSelect: (s) => setState(() => _statusFilter = s),
+            ),
+            Expanded(child: _buildList(context, ref, auth, itineraries)),
+          ],
+        ),
       },
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -112,11 +113,15 @@ class _TripsPageState extends ConsumerState<TripsPage> {
             Icon(
               Icons.luggage_outlined,
               size: 64,
-              color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              color: context.colorScheme.onSurfaceVariant.withValues(
+                alpha: 0.4,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
-              _statusFilter == null ? 'No trips yet' : 'No ${_statusFilter!.label} trips',
+              _statusFilter == null
+                  ? 'No trips yet'
+                  : 'No ${_statusFilter!.label} trips',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -127,7 +132,10 @@ class _TripsPageState extends ConsumerState<TripsPage> {
             if (_statusFilter == null)
               Text(
                 'Tap + to plan your first adventure',
-                style: TextStyle(fontSize: 14, color: context.colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
               ),
           ],
         ),
@@ -159,32 +167,32 @@ class _FilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 48,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          children: [
-            _Chip(
-              label: 'All',
-              selected: current == null,
-              onTap: () => onSelect(null),
-            ),
-            const SizedBox(width: 8),
-            for (final status in [
-              ItineraryStatusEnum.active,
-              ItineraryStatusEnum.completed,
-              ItineraryStatusEnum.archived,
-            ]) ...[
-              _Chip(
-                label: status.label,
-                selected: current == status,
-                onTap: () => onSelect(status),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ],
+    height: 48,
+    child: ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      children: [
+        _Chip(
+          label: 'All',
+          selected: current == null,
+          onTap: () => onSelect(null),
         ),
-      );
+        const SizedBox(width: 8),
+        for (final status in [
+          ItineraryStatusEnum.active,
+          ItineraryStatusEnum.completed,
+          ItineraryStatusEnum.archived,
+        ]) ...[
+          _Chip(
+            label: status.label,
+            selected: current == status,
+            onTap: () => onSelect(status),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ],
+    ),
+  );
 }
 
 class _Chip extends StatelessWidget {
@@ -200,31 +208,35 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? context.colorScheme.primary : context.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: selected ? context.colorScheme.surface : context.colorScheme.onSurfaceVariant,
-            ),
-          ),
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: selected
+            ? context.colorScheme.primary
+            : context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: selected
+              ? context.colorScheme.surface
+              : context.colorScheme.onSurfaceVariant,
         ),
-      );
+      ),
+    ),
+  );
 }
 
 extension on ItineraryStatusEnum {
   String get label => switch (this) {
-        ItineraryStatusEnum.draft => 'Draft',
-        ItineraryStatusEnum.active => 'Active',
-        ItineraryStatusEnum.completed => 'Completed',
-        ItineraryStatusEnum.archived => 'Archived',
-      };
+    ItineraryStatusEnum.draft => 'Draft',
+    ItineraryStatusEnum.active => 'Active',
+    ItineraryStatusEnum.completed => 'Completed',
+    ItineraryStatusEnum.archived => 'Archived',
+  };
 }

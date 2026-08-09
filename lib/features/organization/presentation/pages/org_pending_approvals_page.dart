@@ -17,18 +17,16 @@ class OrgPendingApprovalsPage extends ConsumerWidget {
     WidgetRef ref,
     PendingExpenseApproval approval,
   ) async {
-    final result =
-        await ref.read(reviewExpenseUseCaseProvider).approve(approval.expenseId);
+    final result = await ref
+        .read(reviewExpenseUseCaseProvider)
+        .approve(approval.expenseId);
     if (!context.mounted) {
       return;
     }
-    result.fold(
-      (f) => context.showSnackBar(f.message, isError: true),
-      (_) {
-        ref.invalidate(pendingApprovalsProvider(orgId));
-        context.showSnackBar('Approved');
-      },
-    );
+    result.fold((f) => context.showSnackBar(f.message, isError: true), (_) {
+      ref.invalidate(pendingApprovalsProvider(orgId));
+      context.showSnackBar('Approved');
+    });
   }
 
   Future<void> _reject(
@@ -47,9 +45,14 @@ class OrgPendingApprovalsPage extends ConsumerWidget {
           maxLines: 2,
         ),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: context.colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colorScheme.error,
+            ),
             onPressed: () => ctx.pop(true),
             child: const Text('Reject'),
           ),
@@ -60,7 +63,9 @@ class OrgPendingApprovalsPage extends ConsumerWidget {
       return;
     }
 
-    final result = await ref.read(reviewExpenseUseCaseProvider).reject(
+    final result = await ref
+        .read(reviewExpenseUseCaseProvider)
+        .reject(
           approval.expenseId,
           reasonController.text.trim().isEmpty
               ? 'No reason given'
@@ -69,13 +74,10 @@ class OrgPendingApprovalsPage extends ConsumerWidget {
     if (!context.mounted) {
       return;
     }
-    result.fold(
-      (f) => context.showSnackBar(f.message, isError: true),
-      (_) {
-        ref.invalidate(pendingApprovalsProvider(orgId));
-        context.showSnackBar('Rejected');
-      },
-    );
+    result.fold((f) => context.showSnackBar(f.message, isError: true), (_) {
+      ref.invalidate(pendingApprovalsProvider(orgId));
+      context.showSnackBar('Rejected');
+    });
   }
 
   @override
@@ -128,7 +130,8 @@ class OrgPendingApprovalsPage extends ConsumerWidget {
                         color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    if (approval.notes != null && approval.notes!.isNotEmpty) ...[
+                    if (approval.notes != null &&
+                        approval.notes!.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
                         approval.notes!,
@@ -142,9 +145,14 @@ class OrgPendingApprovalsPage extends ConsumerWidget {
                     if (approval.costCenterCode != null) ...[
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
-                          color: context.colorScheme.primary.withValues(alpha: 0.1),
+                          color: context.colorScheme.primary.withValues(
+                            alpha: 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(

@@ -33,11 +33,14 @@ class _PasswordInputFieldState extends State<PasswordInputField> {
       labelText: widget.labelText,
       prefixIcon: const Icon(Icons.lock_outline),
       suffixIcon: IconButton(
-        icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+        icon: Icon(
+          _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+        ),
         onPressed: () => setState(() => _obscure = !_obscure),
       ),
     ),
-    validator: widget.validator ??
+    validator:
+        widget.validator ??
         (value) {
           if (value == null || value.isEmpty) {
             return 'Password is required';

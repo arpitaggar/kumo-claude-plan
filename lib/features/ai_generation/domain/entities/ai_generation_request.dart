@@ -20,8 +20,14 @@ class AiGenerationRequest extends Equatable {
   int get tripDays => endDate.difference(startDate).inDays + 1;
 
   @override
-  List<Object?> get props =>
-      [destination, startDate, endDate, travelStyle, interests, currencyCode];
+  List<Object?> get props => [
+    destination,
+    startDate,
+    endDate,
+    travelStyle,
+    interests,
+    currencyCode,
+  ];
 }
 
 enum TravelStyle {

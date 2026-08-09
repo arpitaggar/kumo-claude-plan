@@ -8,7 +8,10 @@ import '../entities/expense.dart';
 class CalculateSettlementsUseCase {
   const CalculateSettlementsUseCase();
 
-  List<Settlement> call(List<Expense> expenses, {required String baseCurrency}) {
+  List<Settlement> call(
+    List<Expense> expenses, {
+    required String baseCurrency,
+  }) {
     final people = <String, _Person>{};
 
     void ensure(String id, String name) {
@@ -20,8 +23,10 @@ class CalculateSettlementsUseCase {
 
       // Convert split amounts to base currency before accumulating.
       final rate = expense.exchangeRateToBase;
-      final lent = expense.splits
-          .fold<double>(0, (s, e) => s + e.shareAmount * rate);
+      final lent = expense.splits.fold<double>(
+        0,
+        (s, e) => s + e.shareAmount * rate,
+      );
       people[expense.payerId]!.balance += lent;
 
       for (final split in expense.splits) {
@@ -31,17 +36,19 @@ class CalculateSettlementsUseCase {
     }
 
     // Greedy simplification: repeatedly match largest debtor → largest creditor.
-    final debtors = people.values
-        .where((p) => p.balance < -0.005)
-        .map((p) => _Person(p.id, p.name)..balance = p.balance)
-        .toList()
-      ..sort((a, b) => a.balance.compareTo(b.balance));
+    final debtors =
+        people.values
+            .where((p) => p.balance < -0.005)
+            .map((p) => _Person(p.id, p.name)..balance = p.balance)
+            .toList()
+          ..sort((a, b) => a.balance.compareTo(b.balance));
 
-    final creditors = people.values
-        .where((p) => p.balance > 0.005)
-        .map((p) => _Person(p.id, p.name)..balance = p.balance)
-        .toList()
-      ..sort((a, b) => b.balance.compareTo(a.balance));
+    final creditors =
+        people.values
+            .where((p) => p.balance > 0.005)
+            .map((p) => _Person(p.id, p.name)..balance = p.balance)
+            .toList()
+          ..sort((a, b) => b.balance.compareTo(a.balance));
 
     final settlements = <Settlement>[];
 
@@ -55,14 +62,16 @@ class CalculateSettlementsUseCase {
           ? debtor.balance.abs()
           : creditor.balance;
 
-      settlements.add(Settlement(
-        fromUserId: debtor.id,
-        fromUserName: debtor.name,
-        toUserId: creditor.id,
-        toUserName: creditor.name,
-        amount: _round(payment),
-        currencyCode: baseCurrency,
-      ));
+      settlements.add(
+        Settlement(
+          fromUserId: debtor.id,
+          fromUserName: debtor.name,
+          toUserId: creditor.id,
+          toUserName: creditor.name,
+          amount: _round(payment),
+          currencyCode: baseCurrency,
+        ),
+      );
 
       debtor.balance += payment;
       creditor.balance -= payment;

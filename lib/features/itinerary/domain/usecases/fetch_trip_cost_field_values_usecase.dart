@@ -9,8 +9,6 @@ class FetchTripCostFieldValuesUseCase {
 
   final TripCostFieldValueRepository _repository;
 
-  Future<Either<Failure, List<TripCostFieldValue>>> call(
-    String itineraryId,
-  ) =>
+  Future<Either<Failure, List<TripCostFieldValue>>> call(String itineraryId) =>
       _repository.fetchValues(itineraryId);
 }

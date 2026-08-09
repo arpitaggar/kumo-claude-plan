@@ -11,12 +11,12 @@ final premiumFeatureDataSourceProvider = Provider<PremiumFeatureDataSource>(
 
 /// All `feature_flags` rows, keyed by `feature_key`. Small, rarely-changing
 /// table — fetched once per session rather than streamed.
-final featureFlagsProvider = FutureProvider<Map<String, PremiumFeature>>(
-  (ref) async {
-    final flags = await ref.watch(premiumFeatureDataSourceProvider).fetchAll();
-    return {for (final f in flags) f.featureKey: f};
-  },
-);
+final featureFlagsProvider = FutureProvider<Map<String, PremiumFeature>>((
+  ref,
+) async {
+  final flags = await ref.watch(premiumFeatureDataSourceProvider).fetchAll();
+  return {for (final f in flags) f.featureKey: f};
+});
 
 final profileStatusDataSourceProvider = Provider<ProfileStatusDataSource>(
   (_) => const ProfileStatusDataSourceImpl(),

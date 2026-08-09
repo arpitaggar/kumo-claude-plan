@@ -68,8 +68,14 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
           'A copy of "${post.title}" will be added to your trips, ready to customize.',
         ),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => ctx.pop(true), child: const Text('Use it')),
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => ctx.pop(true),
+            child: const Text('Use it'),
+          ),
         ],
       ),
     );
@@ -77,11 +83,13 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
       return;
     }
 
-    final result = await ref.read(forkPostUseCaseProvider).call(
-      postId: post.id,
-      newOwnerId: auth.user.id,
-      newOwnerName: auth.user.displayName ?? auth.user.email,
-    );
+    final result = await ref
+        .read(forkPostUseCaseProvider)
+        .call(
+          postId: post.id,
+          newOwnerId: auth.user.id,
+          newOwnerName: auth.user.displayName ?? auth.user.email,
+        );
 
     if (!context.mounted) {
       return;
@@ -92,9 +100,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
         SnackBar(content: Text(f.message), backgroundColor: Colors.redAccent),
       ),
       (forked) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Added to My Trips!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Added to My Trips!')));
         context.push('/trip/${forked.id}');
       },
     );
@@ -105,11 +113,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
     if (auth is! AuthAuthenticated) {
       return;
     }
-    await ref.read(toggleLikeUseCaseProvider).call(
-      postId: post.id,
-      userId: auth.user.id,
-      like: !post.likedByMe,
-    );
+    await ref
+        .read(toggleLikeUseCaseProvider)
+        .call(postId: post.id, userId: auth.user.id, like: !post.likedByMe);
     ref
       ..invalidate(explorePostsProvider(_query))
       ..invalidate(followingFeedProvider);
@@ -131,7 +137,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
         ),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [Tab(text: 'Explore'), Tab(text: 'For You')],
+          tabs: const [
+            Tab(text: 'Explore'),
+            Tab(text: 'For You'),
+          ],
         ),
       ),
       body: TabBarView(
@@ -175,7 +184,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
                       ),
                       error: (e, _) => _ErrorView(
                         message: e.toString(),
-                        onRetry: () => ref.invalidate(explorePostsProvider(_query)),
+                        onRetry: () =>
+                            ref.invalidate(explorePostsProvider(_query)),
                       ),
                       data: (posts) => posts.isEmpty
                           ? _EmptyState(
@@ -198,7 +208,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
               final postsAsync = ref.watch(followingFeedProvider);
               return postsAsync.when(
                 loading: () => Center(
-                  child: CircularProgressIndicator(color: context.colorScheme.primary),
+                  child: CircularProgressIndicator(
+                    color: context.colorScheme.primary,
+                  ),
                 ),
                 error: (e, _) => _ErrorView(
                   message: e.toString(),
@@ -223,7 +235,11 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
 // ── List ──────────────────────────────────────────────────────────────────────
 
 class _PostList extends StatelessWidget {
-  const _PostList({required this.posts, required this.onLike, required this.onFork});
+  const _PostList({
+    required this.posts,
+    required this.onLike,
+    required this.onFork,
+  });
 
   final List<ItineraryPost> posts;
   final void Function(ItineraryPost post) onLike;
@@ -286,7 +302,10 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: TextStyle(fontSize: 14, color: context.colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 14,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -306,7 +325,11 @@ class _ErrorView extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.wifi_off_outlined, size: 48, color: context.colorScheme.outlineVariant),
+        Icon(
+          Icons.wifi_off_outlined,
+          size: 48,
+          color: context.colorScheme.outlineVariant,
+        ),
         const SizedBox(height: 12),
         Text(
           message,

@@ -10,7 +10,9 @@ import '../models/itinerary_model.dart';
 /// Keychain), not SharedPreferences, which stores plaintext on disk (see
 /// docs/SECURITY_AUDIT.md SEC-016).
 class ItineraryLocalDataSource {
-  const ItineraryLocalDataSource([this._storage = const FlutterSecureStorage()]);
+  const ItineraryLocalDataSource([
+    this._storage = const FlutterSecureStorage(),
+  ]);
 
   final FlutterSecureStorage _storage;
 

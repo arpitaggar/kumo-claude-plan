@@ -6,7 +6,8 @@ import 'package:kumo_claude/features/organization/domain/repositories/organizati
 import 'package:kumo_claude/features/organization/domain/usecases/create_organization_usecase.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockOrganizationRepository extends Mock implements OrganizationRepository {}
+class MockOrganizationRepository extends Mock
+    implements OrganizationRepository {}
 
 void main() {
   late MockOrganizationRepository mockRepo;
@@ -27,34 +28,37 @@ void main() {
   });
 
   test('delegates to repository with name and slug', () async {
-    when(() => mockRepo.createOrganization(name: 'Acme Corp', slug: 'acme-corp'))
-        .thenAnswer((_) async => Right(tOrg));
+    when(
+      () => mockRepo.createOrganization(name: 'Acme Corp', slug: 'acme-corp'),
+    ).thenAnswer((_) async => Right(tOrg));
 
     await useCase(name: 'Acme Corp', slug: 'acme-corp');
 
-    verify(() => mockRepo.createOrganization(name: 'Acme Corp', slug: 'acme-corp'))
-        .called(1);
+    verify(
+      () => mockRepo.createOrganization(name: 'Acme Corp', slug: 'acme-corp'),
+    ).called(1);
   });
 
   test('returns the created organization on success', () async {
-    when(() => mockRepo.createOrganization(
-          name: any(named: 'name'),
-          slug: any(named: 'slug'),
-        )).thenAnswer((_) async => Right(tOrg));
+    when(
+      () => mockRepo.createOrganization(
+        name: any(named: 'name'),
+        slug: any(named: 'slug'),
+      ),
+    ).thenAnswer((_) async => Right(tOrg));
 
     final result = await useCase(name: 'Acme Corp', slug: 'acme-corp');
 
-    result.fold(
-      (_) => fail('expected Right'),
-      (org) => expect(org, tOrg),
-    );
+    result.fold((_) => fail('expected Right'), (org) => expect(org, tOrg));
   });
 
   test('propagates ServerFailure from repository', () async {
-    when(() => mockRepo.createOrganization(
-          name: any(named: 'name'),
-          slug: any(named: 'slug'),
-        )).thenAnswer((_) async => const Left(ServerFailure('DB error')));
+    when(
+      () => mockRepo.createOrganization(
+        name: any(named: 'name'),
+        slug: any(named: 'slug'),
+      ),
+    ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
     final result = await useCase(name: 'Acme Corp', slug: 'acme-corp');
 

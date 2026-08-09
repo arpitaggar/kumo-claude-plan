@@ -49,7 +49,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
   }
 
   @override
-  Widget build(BuildContext context, ) {
+  Widget build(BuildContext context) {
     final listState = ref.watch(itineraryListProvider);
 
     return Scaffold(
@@ -67,21 +67,24 @@ class _InboxPageState extends ConsumerState<InboxPage> {
       ),
       body: switch (listState) {
         ItineraryListInitial() || ItineraryListLoading() => Center(
-            child: CircularProgressIndicator(color: context.colorScheme.primary),
-          ),
+          child: CircularProgressIndicator(color: context.colorScheme.primary),
+        ),
         ItineraryListError(:final message) => Center(
-            child: Text(
-              'Error: $message',
-              style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-            ),
+          child: Text(
+            'Error: $message',
+            style: TextStyle(color: context.colorScheme.onSurfaceVariant),
           ),
+        ),
         ItineraryListLoaded(:final itineraries) when itineraries.isEmpty =>
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.chat_bubble_outline,
-                    size: 56, color: context.colorScheme.outlineVariant),
+                Icon(
+                  Icons.chat_bubble_outline,
+                  size: 56,
+                  color: context.colorScheme.outlineVariant,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'No trip chats yet',
@@ -94,24 +97,26 @@ class _InboxPageState extends ConsumerState<InboxPage> {
                 const SizedBox(height: 6),
                 Text(
                   'Create or join a trip to start chatting',
-                  style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
         ItineraryListLoaded(:final itineraries) => ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            itemCount: itineraries.length,
-            separatorBuilder: (_, _) => Divider(
-              height: 1,
-              indent: 80,
-              color: context.colorScheme.outlineVariant,
-            ),
-            itemBuilder: (context, i) => _ChatPreviewTile(
-              itinerary: itineraries[i],
-            ),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          itemCount: itineraries.length,
+          separatorBuilder: (_, _) => Divider(
+            height: 1,
+            indent: 80,
+            color: context.colorScheme.outlineVariant,
           ),
+          itemBuilder: (context, i) =>
+              _ChatPreviewTile(itinerary: itineraries[i]),
+        ),
       },
     );
   }
@@ -126,8 +131,9 @@ class _ChatPreviewTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final messagesAsync = ref.watch(chatStreamProvider(itinerary.id));
     final authState = ref.watch(authNotifierProvider);
-    final currentUserId =
-        authState is AuthAuthenticated ? authState.user.id : '';
+    final currentUserId = authState is AuthAuthenticated
+        ? authState.user.id
+        : '';
 
     final latestMessage = messagesAsync.value?.isNotEmpty == true
         ? messagesAsync.value!.last
@@ -242,7 +248,10 @@ class _PreviewText extends StatelessWidget {
     if (isLoading) {
       return Text(
         '…',
-        style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
+        style: TextStyle(
+          fontSize: 13,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
       );
     }
     if (message == null) {
@@ -255,11 +264,15 @@ class _PreviewText extends StatelessWidget {
         ),
       );
     }
-    final prefix =
-        message!.senderId == currentUserId ? 'You' : message!.senderName;
+    final prefix = message!.senderId == currentUserId
+        ? 'You'
+        : message!.senderName;
     return Text(
       '$prefix: ${message!.content}',
-      style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
+      style: TextStyle(
+        fontSize: 13,
+        color: context.colorScheme.onSurfaceVariant,
+      ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );

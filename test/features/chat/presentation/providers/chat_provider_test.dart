@@ -61,52 +61,51 @@ const _me = 'user-me';
 const _other = 'user-other';
 
 TravelItinerary _trip() => TravelItinerary(
-      id: _tripId,
-      title: _tripTitle,
-      ownerId: _me,
-      startDate: DateTime(2026, 10),
-      endDate: DateTime(2026, 10, 7),
-      totalBudget: 1000,
-      currencyCode: 'EUR',
-      members: const [],
-      items: const [],
-      expenseSummary: const ExpenseSummary(
-        totalSpent: 0,
-        spentByCategory: {},
-        memberBalances: {},
-      ),
-      createdAt: DateTime(2026, 6),
-      updatedAt: DateTime(2026, 6),
-    );
+  id: _tripId,
+  title: _tripTitle,
+  ownerId: _me,
+  startDate: DateTime(2026, 10),
+  endDate: DateTime(2026, 10, 7),
+  totalBudget: 1000,
+  currencyCode: 'EUR',
+  members: const [],
+  items: const [],
+  expenseSummary: const ExpenseSummary(
+    totalSpent: 0,
+    spentByCategory: {},
+    memberBalances: {},
+  ),
+  createdAt: DateTime(2026, 6),
+  updatedAt: DateTime(2026, 6),
+);
 
 Message _msg({
   required String id,
   required String senderId,
   String content = 'hello',
   List<MessageAttachment> attachments = const [],
-}) =>
-    Message(
-      id: id,
-      itineraryId: _tripId,
-      senderId: senderId,
-      senderName: 'Someone',
-      content: content,
-      createdAt: DateTime.now(),
-      attachments: attachments,
-    );
+}) => Message(
+  id: id,
+  itineraryId: _tripId,
+  senderId: senderId,
+  senderName: 'Someone',
+  content: content,
+  createdAt: DateTime.now(),
+  attachments: attachments,
+);
 
 UserProfile _profile({required bool previewEnabled}) => UserProfile(
-      id: _me,
-      email: 'me@example.com',
-      displayName: 'Me',
-      isSearchable: true,
-      profileVisibility: 'public',
-      contactVisibility: 'collaborators_only',
-      unitsPreference: 'metric',
-      travelPreferenceTags: const [],
-      updatedAt: DateTime(2026, 6),
-      pushMessagePreviewEnabled: previewEnabled,
-    );
+  id: _me,
+  email: 'me@example.com',
+  displayName: 'Me',
+  isSearchable: true,
+  profileVisibility: 'public',
+  contactVisibility: 'collaborators_only',
+  unitsPreference: 'metric',
+  travelPreferenceTags: const [],
+  updatedAt: DateTime(2026, 6),
+  pushMessagePreviewEnabled: previewEnabled,
+);
 
 /// Builds a [ProviderContainer] wired so that:
 ///  - the authenticated user is [_me]
@@ -114,24 +113,25 @@ UserProfile _profile({required bool previewEnabled}) => UserProfile(
 ///  - `chatStreamProvider(_tripId)` is driven by the returned [StreamController]
 ///  - `showChatMessageNotification` calls land on the returned mock
 Future<
-    ({
-      ProviderContainer container,
-      StreamController<List<Message>> controller,
-      MockNotificationService notificationService,
-    })> _buildHarness({
+  ({
+    ProviderContainer container,
+    StreamController<List<Message>> controller,
+    MockNotificationService notificationService,
+  })
+>
+_buildHarness({
   List<NotificationPreference> prefs = const [],
   UserProfile? profile,
 }) async {
   final authRepo = MockAuthRepository();
-  when(authRepo.getCurrentUser).thenAnswer((_) async => Right(User(
-        id: _me,
-        email: 'me@example.com',
-        createdAt: DateTime(2026),
-      )));
+  when(authRepo.getCurrentUser).thenAnswer(
+    (_) async => Right(
+      User(id: _me, email: 'me@example.com', createdAt: DateTime(2026)),
+    ),
+  );
 
   final fetchUseCase = MockFetchItinerariesUseCase();
-  when(() => fetchUseCase(any()))
-      .thenAnswer((_) async => Right([_trip()]));
+  when(() => fetchUseCase(any())).thenAnswer((_) async => Right([_trip()]));
   final itineraryNotifier = ItineraryListNotifier(
     fetchUseCase: fetchUseCase,
     createUseCase: MockCreateItineraryUseCase(),
@@ -140,13 +140,19 @@ Future<
   );
 
   final notificationService = MockNotificationService();
-  when(() => notificationService.showChatMessageNotification(
-        tripId: any(named: 'tripId'),
-        tripTitle: any(named: 'tripTitle'),
-        senderName: any(named: 'senderName'),
-        body: any(named: 'body'),
-      )).thenAnswer((_) async {});
+  when(
+    () => notificationService.showChatMessageNotification(
+      tripId: any(named: 'tripId'),
+      tripTitle: any(named: 'tripTitle'),
+      senderName: any(named: 'senderName'),
+      body: any(named: 'body'),
+    ),
+  ).thenAnswer((_) async {});
 
+  // Ownership is handed to the caller, which closes it via
+  // `h.controller.close()` at the end of every test using this harness; the
+  // lint can't see across that function boundary.
+  // ignore: close_sinks
   final controller = StreamController<List<Message>>();
 
   // userProfileProvider/notificationPreferencesProvider are `.autoDispose` —
@@ -157,24 +163,32 @@ Future<
   // Settle every async provider this scenario depends on before the test
   // starts pushing stream events, so `_maybeNotify`'s synchronous `ref.read`
   // calls see their final values rather than initial loading states.
-  final container = ProviderContainer(overrides: [
-    authNotifierProvider.overrideWith((ref) => AuthNotifier(
-          loginUseCase: MockLoginUseCase(),
-          signupUseCase: MockSignupUseCase(),
-          logoutUseCase: MockLogoutUseCase(),
-          deleteAccountUseCase: MockDeleteAccountUseCase(),
-          repository: authRepo,
-        )),
-    itineraryListProvider.overrideWith((ref) => itineraryNotifier),
-    chatStreamProvider(_tripId).overrideWith((ref) => controller.stream),
-    notificationPreferencesProvider.overrideWith((ref) async => prefs),
-    userProfileProvider.overrideWith((ref) async => profile),
-    notificationServiceProvider
-        .overrideWith((ref) async => notificationService),
-  ])
-    ..listen(userProfileProvider, (_, _) {})
-    ..listen(notificationPreferencesProvider, (_, _) {})
-    ..read(authNotifierProvider);
+  final container =
+      ProviderContainer(
+          overrides: [
+            authNotifierProvider.overrideWith(
+              (ref) => AuthNotifier(
+                loginUseCase: MockLoginUseCase(),
+                signupUseCase: MockSignupUseCase(),
+                logoutUseCase: MockLogoutUseCase(),
+                deleteAccountUseCase: MockDeleteAccountUseCase(),
+                repository: authRepo,
+              ),
+            ),
+            itineraryListProvider.overrideWith((ref) => itineraryNotifier),
+            chatStreamProvider(
+              _tripId,
+            ).overrideWith((ref) => controller.stream),
+            notificationPreferencesProvider.overrideWith((ref) async => prefs),
+            userProfileProvider.overrideWith((ref) async => profile),
+            notificationServiceProvider.overrideWith(
+              (ref) async => notificationService,
+            ),
+          ],
+        )
+        ..listen(userProfileProvider, (_, _) {})
+        ..listen(notificationPreferencesProvider, (_, _) {})
+        ..read(authNotifierProvider);
   await itineraryNotifier.loadItineraries(_me);
   await container.read(notificationServiceProvider.future);
   await container.read(notificationPreferencesProvider.future);
@@ -229,12 +243,14 @@ void main() {
         _msg(id: 'm2', senderId: _other, content: 'second message'),
       ]);
 
-      verify(() => h.notificationService.showChatMessageNotification(
-            tripId: _tripId,
-            tripTitle: _tripTitle,
-            senderName: any(named: 'senderName'),
-            body: 'second message',
-          )).called(1);
+      verify(
+        () => h.notificationService.showChatMessageNotification(
+          tripId: _tripId,
+          tripTitle: _tripTitle,
+          senderName: any(named: 'senderName'),
+          body: 'second message',
+        ),
+      ).called(1);
 
       await h.controller.close();
       h.container.dispose();
@@ -254,12 +270,14 @@ void main() {
         _msg(id: 'm2', senderId: _me, content: 'my own message'),
       ]);
 
-      verifyNever(() => h.notificationService.showChatMessageNotification(
-            tripId: any(named: 'tripId'),
-            tripTitle: any(named: 'tripTitle'),
-            senderName: any(named: 'senderName'),
-            body: any(named: 'body'),
-          ));
+      verifyNever(
+        () => h.notificationService.showChatMessageNotification(
+          tripId: any(named: 'tripId'),
+          tripTitle: any(named: 'tripTitle'),
+          senderName: any(named: 'senderName'),
+          body: any(named: 'body'),
+        ),
+      );
 
       await h.controller.close();
       h.container.dispose();
@@ -280,68 +298,78 @@ void main() {
         _msg(id: 'm2', senderId: _other),
       ]);
 
-      verifyNever(() => h.notificationService.showChatMessageNotification(
-            tripId: any(named: 'tripId'),
-            tripTitle: any(named: 'tripTitle'),
-            senderName: any(named: 'senderName'),
-            body: any(named: 'body'),
-          ));
+      verifyNever(
+        () => h.notificationService.showChatMessageNotification(
+          tripId: any(named: 'tripId'),
+          tripTitle: any(named: 'tripTitle'),
+          senderName: any(named: 'senderName'),
+          body: any(named: 'body'),
+        ),
+      );
 
       await h.controller.close();
       h.container.dispose();
     });
 
-    test('does not notify when the chat_messages push preference is disabled',
-        () async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-      final h = await _buildHarness(
-        prefs: [chatPushDisabled],
-        profile: _profile(previewEnabled: true),
-      );
-      h.container.read(chatMessageWatcherProvider);
+    test(
+      'does not notify when the chat_messages push preference is disabled',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        final h = await _buildHarness(
+          prefs: [chatPushDisabled],
+          profile: _profile(previewEnabled: true),
+        );
+        h.container.read(chatMessageWatcherProvider);
 
-      await _emit(h.controller, [_msg(id: 'm1', senderId: _other)]);
-      await _emit(h.controller, [
-        _msg(id: 'm1', senderId: _other),
-        _msg(id: 'm2', senderId: _other),
-      ]);
+        await _emit(h.controller, [_msg(id: 'm1', senderId: _other)]);
+        await _emit(h.controller, [
+          _msg(id: 'm1', senderId: _other),
+          _msg(id: 'm2', senderId: _other),
+        ]);
 
-      verifyNever(() => h.notificationService.showChatMessageNotification(
+        verifyNever(
+          () => h.notificationService.showChatMessageNotification(
             tripId: any(named: 'tripId'),
             tripTitle: any(named: 'tripTitle'),
             senderName: any(named: 'senderName'),
             body: any(named: 'body'),
-          ));
+          ),
+        );
 
-      await h.controller.close();
-      h.container.dispose();
-    });
+        await h.controller.close();
+        h.container.dispose();
+      },
+    );
 
-    test('defaults to enabled when no chat_messages preference row exists',
-        () async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-      final h = await _buildHarness(
-        // prefs omitted — defaults to `const []`, i.e. no row loaded yet
-        profile: _profile(previewEnabled: true),
-      );
-      h.container.read(chatMessageWatcherProvider);
+    test(
+      'defaults to enabled when no chat_messages preference row exists',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        final h = await _buildHarness(
+          // prefs omitted — defaults to `const []`, i.e. no row loaded yet
+          profile: _profile(previewEnabled: true),
+        );
+        h.container.read(chatMessageWatcherProvider);
 
-      await _emit(h.controller, [_msg(id: 'm1', senderId: _other)]);
-      await _emit(h.controller, [
-        _msg(id: 'm1', senderId: _other),
-        _msg(id: 'm2', senderId: _other, content: 'default enabled'),
-      ]);
+        await _emit(h.controller, [_msg(id: 'm1', senderId: _other)]);
+        await _emit(h.controller, [
+          _msg(id: 'm1', senderId: _other),
+          _msg(id: 'm2', senderId: _other, content: 'default enabled'),
+        ]);
 
-      verify(() => h.notificationService.showChatMessageNotification(
+        verify(
+          () => h.notificationService.showChatMessageNotification(
             tripId: _tripId,
             tripTitle: _tripTitle,
             senderName: any(named: 'senderName'),
             body: 'default enabled',
-          )).called(1);
+          ),
+        ).called(1);
 
-      await h.controller.close();
-      h.container.dispose();
-    });
+        await h.controller.close();
+        h.container.dispose();
+      },
+    );
 
     test('hides the message body when preview is disabled', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
@@ -357,12 +385,14 @@ void main() {
         _msg(id: 'm2', senderId: _other, content: 'super secret content'),
       ]);
 
-      verify(() => h.notificationService.showChatMessageNotification(
-            tripId: _tripId,
-            tripTitle: _tripTitle,
-            senderName: any(named: 'senderName'),
-            body: 'New message',
-          )).called(1);
+      verify(
+        () => h.notificationService.showChatMessageNotification(
+          tripId: _tripId,
+          tripTitle: _tripTitle,
+          senderName: any(named: 'senderName'),
+          body: 'New message',
+        ),
+      ).called(1);
 
       await h.controller.close();
       h.container.dispose();
@@ -396,99 +426,113 @@ void main() {
         ),
       ]);
 
-      verify(() => h.notificationService.showChatMessageNotification(
-            tripId: _tripId,
-            tripTitle: _tripTitle,
-            senderName: any(named: 'senderName'),
-            body: '📷 Photo',
-          )).called(1);
+      verify(
+        () => h.notificationService.showChatMessageNotification(
+          tripId: _tripId,
+          tripTitle: _tripTitle,
+          senderName: any(named: 'senderName'),
+          body: '📷 Photo',
+        ),
+      ).called(1);
 
       await h.controller.close();
       h.container.dispose();
     });
 
-    test('shows a file placeholder for a non-image attachment-only message',
-        () async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-      final h = await _buildHarness(
-        prefs: [chatPushEnabled],
-        profile: _profile(previewEnabled: true),
-      );
-      h.container.read(chatMessageWatcherProvider);
+    test(
+      'shows a file placeholder for a non-image attachment-only message',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        final h = await _buildHarness(
+          prefs: [chatPushEnabled],
+          profile: _profile(previewEnabled: true),
+        );
+        h.container.read(chatMessageWatcherProvider);
 
-      await _emit(h.controller, [_msg(id: 'm1', senderId: _other)]);
-      await _emit(h.controller, [
-        _msg(id: 'm1', senderId: _other),
-        _msg(
-          id: 'm2',
-          senderId: _other,
-          content: '',
-          attachments: const [
-            MessageAttachment(
-              id: 'a1',
-              kind: AttachmentKind.file,
-              url: 'https://example.com/a.pdf',
-              fileName: 'a.pdf',
-              mimeType: 'application/pdf',
-              sizeBytes: 100,
-            ),
-          ],
-        ),
-      ]);
+        await _emit(h.controller, [_msg(id: 'm1', senderId: _other)]);
+        await _emit(h.controller, [
+          _msg(id: 'm1', senderId: _other),
+          _msg(
+            id: 'm2',
+            senderId: _other,
+            content: '',
+            attachments: const [
+              MessageAttachment(
+                id: 'a1',
+                kind: AttachmentKind.file,
+                url: 'https://example.com/a.pdf',
+                fileName: 'a.pdf',
+                mimeType: 'application/pdf',
+                sizeBytes: 100,
+              ),
+            ],
+          ),
+        ]);
 
-      verify(() => h.notificationService.showChatMessageNotification(
+        verify(
+          () => h.notificationService.showChatMessageNotification(
             tripId: _tripId,
             tripTitle: _tripTitle,
             senderName: any(named: 'senderName'),
             body: '📎 Attachment',
-          )).called(1);
+          ),
+        ).called(1);
 
-      await h.controller.close();
-      h.container.dispose();
-    });
+        await h.controller.close();
+        h.container.dispose();
+      },
+    );
 
-    test('on Android, suppresses the notification unless the app is resumed',
-        () async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.android;
-      WidgetsBinding.instance
-          .handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    test(
+      'on Android, suppresses the notification unless the app is resumed',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        WidgetsBinding.instance.handleAppLifecycleStateChanged(
+          AppLifecycleState.paused,
+        );
 
-      final h = await _buildHarness(
-        prefs: [chatPushEnabled],
-        profile: _profile(previewEnabled: true),
-      );
-      h.container.read(chatMessageWatcherProvider);
+        final h = await _buildHarness(
+          prefs: [chatPushEnabled],
+          profile: _profile(previewEnabled: true),
+        );
+        h.container.read(chatMessageWatcherProvider);
 
-      await _emit(h.controller, [_msg(id: 'm1', senderId: _other)]);
-      await _emit(h.controller, [
-        _msg(id: 'm1', senderId: _other),
-        _msg(id: 'm2', senderId: _other),
-      ]);
+        await _emit(h.controller, [_msg(id: 'm1', senderId: _other)]);
+        await _emit(h.controller, [
+          _msg(id: 'm1', senderId: _other),
+          _msg(id: 'm2', senderId: _other),
+        ]);
 
-      verifyNever(() => h.notificationService.showChatMessageNotification(
+        verifyNever(
+          () => h.notificationService.showChatMessageNotification(
             tripId: any(named: 'tripId'),
             tripTitle: any(named: 'tripTitle'),
             senderName: any(named: 'senderName'),
             body: any(named: 'body'),
-          ));
+          ),
+        );
 
-      WidgetsBinding.instance
-          .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await _emit(h.controller, [
-        _msg(id: 'm1', senderId: _other),
-        _msg(id: 'm2', senderId: _other),
-        _msg(id: 'm3', senderId: _other, content: 'now resumed'),
-      ]);
+        WidgetsBinding.instance.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await _emit(h.controller, [
+          _msg(id: 'm1', senderId: _other),
+          _msg(id: 'm2', senderId: _other),
+          _msg(id: 'm3', senderId: _other, content: 'now resumed'),
+        ]);
 
-      verify(() => h.notificationService.showChatMessageNotification(
+        verify(
+          () => h.notificationService.showChatMessageNotification(
             tripId: _tripId,
             tripTitle: _tripTitle,
             senderName: any(named: 'senderName'),
             body: 'now resumed',
-          )).called(1);
+          ),
+        ).called(1);
 
-      await h.controller.close();
-      h.container.dispose();
-    });
+        await h.controller.close();
+        h.container.dispose();
+      },
+    );
   });
 }

@@ -26,11 +26,13 @@ class PublicProfilePage extends ConsumerWidget {
       return;
     }
 
-    final result = await ref.read(forkPostUseCaseProvider).call(
-      postId: post.id,
-      newOwnerId: auth.user.id,
-      newOwnerName: auth.user.displayName ?? auth.user.email,
-    );
+    final result = await ref
+        .read(forkPostUseCaseProvider)
+        .call(
+          postId: post.id,
+          newOwnerId: auth.user.id,
+          newOwnerName: auth.user.displayName ?? auth.user.email,
+        );
 
     if (!context.mounted) {
       return;
@@ -41,9 +43,9 @@ class PublicProfilePage extends ConsumerWidget {
         SnackBar(content: Text(f.message), backgroundColor: Colors.redAccent),
       ),
       (forked) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Added to My Trips!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Added to My Trips!')));
         context.push('/trip/${forked.id}');
       },
     );
@@ -54,11 +56,9 @@ class PublicProfilePage extends ConsumerWidget {
     if (auth is! AuthAuthenticated) {
       return;
     }
-    await ref.read(toggleLikeUseCaseProvider).call(
-      postId: post.id,
-      userId: auth.user.id,
-      like: !post.likedByMe,
-    );
+    await ref
+        .read(toggleLikeUseCaseProvider)
+        .call(postId: post.id, userId: auth.user.id, like: !post.likedByMe);
     ref.invalidate(authorPostsProvider(userId));
   }
 
@@ -67,27 +67,29 @@ class PublicProfilePage extends ConsumerWidget {
     if (auth is! AuthAuthenticated) {
       return;
     }
-    await ref.read(toggleFollowUseCaseProvider).call(
-      followerId: auth.user.id,
-      followeeId: userId,
-      follow: !stats.isFollowedByMe,
-    );
+    await ref
+        .read(toggleFollowUseCaseProvider)
+        .call(
+          followerId: auth.user.id,
+          followeeId: userId,
+          follow: !stats.isFollowedByMe,
+        );
     ref.invalidate(followStatsProvider(userId));
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authNotifierProvider);
-    final isOwnProfile =
-        auth is AuthAuthenticated && auth.user.id == userId;
+    final isOwnProfile = auth is AuthAuthenticated && auth.user.id == userId;
     final profileAsync = ref.watch(profileByIdProvider(userId));
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: const Text('Profile')),
       body: profileAsync.when(
-        loading: () =>
-            Center(child: CircularProgressIndicator(color: context.colorScheme.primary)),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: context.colorScheme.primary),
+        ),
         error: (_, _) => const Center(child: Text('Could not load profile')),
         data: (profile) {
           if (profile == null) {
@@ -250,7 +252,9 @@ class _ProfileBody extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Text(
                     'This profile is private',
-                    style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+                    style: TextStyle(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),

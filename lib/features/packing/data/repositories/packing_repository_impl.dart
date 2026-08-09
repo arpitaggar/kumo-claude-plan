@@ -13,15 +13,13 @@ class PackingRepositoryImpl implements PackingRepository {
   final PackingRemoteDataSource dataSource;
 
   @override
-  Stream<Either<Failure, List<PackingItem>>> watchItems(
-          String itineraryId) =>
+  Stream<Either<Failure, List<PackingItem>>> watchItems(String itineraryId) =>
       dataSource
           .watchItems(itineraryId)
           .map<Either<Failure, List<PackingItem>>>(Right.new)
           .handleError(
-            (Object e) => Left<Failure, List<PackingItem>>(
-              ServerFailure(e.toString()),
-            ),
+            (Object e) =>
+                Left<Failure, List<PackingItem>>(ServerFailure(e.toString())),
           );
 
   @override
@@ -47,8 +45,10 @@ class PackingRepositoryImpl implements PackingRepository {
   }
 
   @override
-  Future<Either<Failure, void>> toggleItem(String id,
-      {required bool isChecked}) async {
+  Future<Either<Failure, void>> toggleItem(
+    String id, {
+    required bool isChecked,
+  }) async {
     try {
       await dataSource.toggleItem(id, isChecked: isChecked);
       return const Right(null);

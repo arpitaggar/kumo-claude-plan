@@ -18,11 +18,11 @@ class _SplashPageState extends ConsumerState<SplashPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _titleOpacity;
-  late final Animation<Offset>  _titleSlide;
+  late final Animation<Offset> _titleSlide;
   late final Animation<double> _logoOpacity;
   late final Animation<double> _logoScale;
   late final Animation<double> _taglineOpacity;
-  late final Animation<Offset>  _taglineSlide;
+  late final Animation<Offset> _taglineSlide;
 
   @override
   void initState() {
@@ -37,13 +37,13 @@ class _SplashPageState extends ConsumerState<SplashPage>
       parent: _ctrl,
       curve: const Interval(0, 0.45, curve: Curves.easeOut),
     );
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, -0.35),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0, 0.45, curve: Curves.easeOutCubic),
-    ));
+    _titleSlide = Tween<Offset>(begin: const Offset(0, -0.35), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _ctrl,
+            curve: const Interval(0, 0.45, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _logoOpacity = CurvedAnimation(
       parent: _ctrl,
@@ -60,13 +60,13 @@ class _SplashPageState extends ConsumerState<SplashPage>
       parent: _ctrl,
       curve: const Interval(0.45, 0.85, curve: Curves.easeOut),
     );
-    _taglineSlide = Tween<Offset>(
-      begin: const Offset(0, 0.4),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.45, 0.85, curve: Curves.easeOutCubic),
-    ));
+    _taglineSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _ctrl,
+            curve: const Interval(0.45, 0.85, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _ctrl.forward().then((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 350));

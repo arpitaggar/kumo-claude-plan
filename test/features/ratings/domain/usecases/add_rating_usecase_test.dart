@@ -21,9 +21,9 @@ void main() {
   setUp(() {
     mockRepo = MockRatingRepository();
     useCase = AddRatingUseCase(mockRepo);
-    when(() => mockRepo.addRating(any())).thenAnswer(
-      (inv) async => Right(inv.positionalArguments[0] as Rating),
-    );
+    when(
+      () => mockRepo.addRating(any()),
+    ).thenAnswer((inv) async => Right(inv.positionalArguments[0] as Rating));
   });
 
   group('AddRatingUseCase', () {
@@ -48,8 +48,7 @@ void main() {
         userName: 'Alice',
       );
 
-      final captured =
-          verify(() => mockRepo.addRating(captureAny())).captured;
+      final captured = verify(() => mockRepo.addRating(captureAny())).captured;
       final rating = captured.first as Rating;
       expect(rating.stars, 5);
     });
@@ -63,8 +62,7 @@ void main() {
         userName: 'Alice',
       );
 
-      final captured =
-          verify(() => mockRepo.addRating(captureAny())).captured;
+      final captured = verify(() => mockRepo.addRating(captureAny())).captured;
       final rating = captured.first as Rating;
       expect(rating.stars, 1);
     });
@@ -79,8 +77,7 @@ void main() {
         comment: '   ',
       );
 
-      final captured =
-          verify(() => mockRepo.addRating(captureAny())).captured;
+      final captured = verify(() => mockRepo.addRating(captureAny())).captured;
       final rating = captured.first as Rating;
       expect(rating.comment, isNull);
     });
@@ -95,8 +92,7 @@ void main() {
         comment: '  Great food!  ',
       );
 
-      final captured =
-          verify(() => mockRepo.addRating(captureAny())).captured;
+      final captured = verify(() => mockRepo.addRating(captureAny())).captured;
       final rating = captured.first as Rating;
       expect(rating.comment, 'Great food!');
     });
@@ -111,8 +107,7 @@ void main() {
         itemId: 'item-42',
       );
 
-      final captured =
-          verify(() => mockRepo.addRating(captureAny())).captured;
+      final captured = verify(() => mockRepo.addRating(captureAny())).captured;
       final rating = captured.first as Rating;
       expect(rating.itemId, 'item-42');
     });
@@ -130,8 +125,9 @@ void main() {
     });
 
     test('propagates ServerFailure from repository', () async {
-      when(() => mockRepo.addRating(any())).thenAnswer(
-          (_) async => const Left(ServerFailure('Write failed')));
+      when(
+        () => mockRepo.addRating(any()),
+      ).thenAnswer((_) async => const Left(ServerFailure('Write failed')));
 
       final result = await useCase(
         itineraryId: 'it-1',

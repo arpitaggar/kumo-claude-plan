@@ -44,12 +44,16 @@ class ItineraryDetailPage extends ConsumerWidget {
     return itineraryAsync.when(
       loading: () => Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(backgroundColor: Theme.of(context).scaffoldBackgroundColor),
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        ),
         body: const LoadingWidget(message: 'Loading trip…'),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(backgroundColor: Theme.of(context).scaffoldBackgroundColor),
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -143,28 +147,25 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
       items: it.items.where((i) => i.id != itemId).toList(),
     );
     final result = await ref.read(updateItineraryUseCaseProvider).call(updated);
-    result.fold(
-      (f) {
-        if (mounted) {
-          context.showSnackBar(f.message, isError: true);
-        }
-      },
-      (_) {},
-    );
+    result.fold((f) {
+      if (mounted) {
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) {});
   }
 
   @override
   Widget build(BuildContext context) {
     final duration = it.endDate.difference(it.startDate).inDays + 1;
     final authState = ref.watch(authNotifierProvider);
-    final currentUserId =
-        authState is AuthAuthenticated ? authState.user.id : '';
+    final currentUserId = authState is AuthAuthenticated
+        ? authState.user.id
+        : '';
 
     final member = it.members
         .where((m) => m.userId == currentUserId)
         .firstOrNull;
-    final canEdit =
-        member != null && member.role != GroupMemberRole.viewer;
+    final canEdit = member != null && member.role != GroupMemberRole.viewer;
 
     final tripTheme = TripTheme.forKey(it.themeKey).withContext(context);
 
@@ -197,8 +198,7 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding:
-                  const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 56),
+              titlePadding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 56),
               title: Text(
                 it.title,
                 style: TextStyle(
@@ -212,9 +212,7 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
               background: Hero(
                 tag: 'trip-header-${it.id}',
                 child: Container(
-                  decoration: BoxDecoration(
-                    gradient: tripTheme.headerGradient,
-                  ),
+                  decoration: BoxDecoration(gradient: tripTheme.headerGradient),
                 ),
               ),
             ),
@@ -303,173 +301,166 @@ class _ItineraryTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      children: [
-        // Overview pill row
+    padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+    children: [
+      // Overview pill row
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: context.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _InfoPill(
+              icon: Icons.calendar_today_outlined,
+              label: 'Start',
+              value: Formatters.formatDate(itinerary.startDate),
+            ),
+            _Divider(),
+            _InfoPill(
+              icon: Icons.event_outlined,
+              label: 'End',
+              value: Formatters.formatDate(itinerary.endDate),
+            ),
+            _Divider(),
+            _InfoPill(
+              icon: Icons.schedule_outlined,
+              label: 'Duration',
+              value: '$duration ${duration == 1 ? 'day' : 'days'}',
+            ),
+          ],
+        ),
+      ),
+
+      const SizedBox(height: 12),
+      _StatusRow(itinerary: itinerary, currentUserId: currentUserId),
+
+      if (itinerary.description != null &&
+          itinerary.description!.isNotEmpty) ...[
+        const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: context.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _InfoPill(
-                icon: Icons.calendar_today_outlined,
-                label: 'Start',
-                value: Formatters.formatDate(itinerary.startDate),
-              ),
-              _Divider(),
-              _InfoPill(
-                icon: Icons.event_outlined,
-                label: 'End',
-                value: Formatters.formatDate(itinerary.endDate),
-              ),
-              _Divider(),
-              _InfoPill(
-                icon: Icons.schedule_outlined,
-                label: 'Duration',
-                value: '$duration ${duration == 1 ? 'day' : 'days'}',
-              ),
-            ],
+          child: Text(
+            itinerary.description!,
+            style: TextStyle(
+              fontSize: 14,
+              color: context.colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
           ),
         ),
+      ],
 
-        const SizedBox(height: 12),
-        _StatusRow(
-          itinerary: itinerary,
-          currentUserId: currentUserId,
-        ),
+      const SizedBox(height: 20),
 
-        if (itinerary.description != null &&
-            itinerary.description!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: context.colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
+      // Schedule header
+      Row(
+        children: [
+          Text(
+            'Schedule',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: context.colorScheme.onSurface,
             ),
-            child: Text(
-              itinerary.description!,
-              style: TextStyle(
-                fontSize: 14,
-                color: context.colorScheme.onSurfaceVariant,
-                height: 1.5,
+          ),
+          const Spacer(),
+          if (onAddAiItems != null) ...[
+            TextButton.icon(
+              onPressed: onAddAiItems,
+              icon: const Icon(Icons.auto_awesome, size: 15),
+              label: const Text('Katha'),
+              style: TextButton.styleFrom(
+                foregroundColor: context.colorScheme.primary,
+                visualDensity: VisualDensity.compact,
               ),
+            ),
+            const SizedBox(width: 2),
+          ],
+          TextButton.icon(
+            onPressed: () => context.push('/trip/${itinerary.id}/item'),
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text('Add'),
+            style: TextButton.styleFrom(
+              foregroundColor: context.colorScheme.primary,
+              visualDensity: VisualDensity.compact,
             ),
           ),
         ],
+      ),
+      const SizedBox(height: 8),
 
-        const SizedBox(height: 20),
-
-        // Schedule header
-        Row(
-          children: [
-            Text(
-              'Schedule',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: context.colorScheme.onSurface,
-              ),
-            ),
-            const Spacer(),
-            if (onAddAiItems != null) ...[
-              TextButton.icon(
-                onPressed: onAddAiItems,
-                icon: const Icon(Icons.auto_awesome, size: 15),
-                label: const Text('Katha'),
-                style: TextButton.styleFrom(
-                  foregroundColor: context.colorScheme.primary,
-                  visualDensity: VisualDensity.compact,
+      if (itinerary.items.isEmpty)
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: context.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.map_outlined,
+                  size: 36,
+                  color: context.colorScheme.outlineVariant,
                 ),
-              ),
-              const SizedBox(width: 2),
-            ],
-            TextButton.icon(
-              onPressed: () =>
-                  context.push('/trip/${itinerary.id}/item'),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Add'),
-              style: TextButton.styleFrom(
-                foregroundColor: context.colorScheme.primary,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-
-        if (itinerary.items.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: context.colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.map_outlined,
-                      size: 36,
-                      color: context.colorScheme.outlineVariant),
-                  const SizedBox(height: 8),
-                  Text(
-                    'No activities yet',
-                    style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          ...itinerary.items.map(
-            (item) => _ScheduleItem(
-              item: item,
-              isLast: item == itinerary.items.last,
-              onEdit: () =>
-                  context.push('/trip/${itinerary.id}/item/${item.id}'),
-              onDelete: () => onDeleteItem(item.id),
+                const SizedBox(height: 8),
+                Text(
+                  'No activities yet',
+                  style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+                ),
+              ],
             ),
           ),
-
-        const SizedBox(height: 20),
-
-        // Members
-        Row(
-          children: [
-            Text(
-              'Travellers',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: context.colorScheme.onSurface,
-              ),
-            ),
-            const Spacer(),
-            TextButton.icon(
-              onPressed: () =>
-                  context.push('/trip/${itinerary.id}/invite'),
-              icon: const Icon(Icons.person_add_outlined, size: 16),
-              label: const Text('Invite'),
-              style: TextButton.styleFrom(
-                foregroundColor: context.colorScheme.primary,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ],
+        )
+      else
+        ...itinerary.items.map(
+          (item) => _ScheduleItem(
+            item: item,
+            isLast: item == itinerary.items.last,
+            onEdit: () => context.push('/trip/${itinerary.id}/item/${item.id}'),
+            onDelete: () => onDeleteItem(item.id),
+          ),
         ),
-        const SizedBox(height: 8),
-        _MembersCard(
-          itinerary: itinerary,
-          currentUserId: currentUserId,
-        ),
-        const SizedBox(height: 20),
-        _TripEmailCard(itineraryId: itinerary.id),
-      ],
-    );
+
+      const SizedBox(height: 20),
+
+      // Members
+      Row(
+        children: [
+          Text(
+            'Travellers',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: context.colorScheme.onSurface,
+            ),
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () => context.push('/trip/${itinerary.id}/invite'),
+            icon: const Icon(Icons.person_add_outlined, size: 16),
+            label: const Text('Invite'),
+            style: TextButton.styleFrom(
+              foregroundColor: context.colorScheme.primary,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      _MembersCard(itinerary: itinerary, currentUserId: currentUserId),
+      const SizedBox(height: 20),
+      _TripEmailCard(itineraryId: itinerary.id),
+    ],
+  );
 }
 
 // ── Route tab ──────────────────────────────────────────────────────────────────
@@ -559,13 +550,17 @@ class _RouteTab extends ConsumerWidget {
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(Icons.route_outlined,
-                            size: 36, color: context.colorScheme.outlineVariant),
+                        Icon(
+                          Icons.route_outlined,
+                          size: 36,
+                          color: context.colorScheme.outlineVariant,
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           'Add your first segment to build the route',
-                          style:
-                              TextStyle(color: context.colorScheme.onSurfaceVariant),
+                          style: TextStyle(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -578,11 +573,8 @@ class _RouteTab extends ConsumerWidget {
                   segment: segment,
                   onTap: () =>
                       _handleSegmentTap(context, ref, itinerary, segment),
-                  onToggleVisibility: () => _toggleSegmentVisibility(
-                    context,
-                    ref,
-                    segment,
-                  ),
+                  onToggleVisibility: () =>
+                      _toggleSegmentVisibility(context, ref, segment),
                 ),
               ),
           ],
@@ -644,12 +636,13 @@ Future<void> _handleSegmentTap(
     return;
   }
 
-  final deleteResult =
-      await ref.read(deleteTripSegmentUseCaseProvider).call(segment.id);
+  final deleteResult = await ref
+      .read(deleteTripSegmentUseCaseProvider)
+      .call(segment.id);
   if (deleteResult.isLeft() && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Failed to delete segment')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Failed to delete segment')));
   }
 }
 
@@ -699,14 +692,11 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
     if (!mounted) {
       return;
     }
-    result.fold(
-      (f) => context.showSnackBar(f.message, isError: true),
-      (_) {
-        ref.invalidate(tripCostFieldValuesProvider(itinerary.id));
-        setState(_costFieldEdits.clear);
-        context.showSnackBar('Cost tracking saved');
-      },
-    );
+    result.fold((f) => context.showSnackBar(f.message, isError: true), (_) {
+      ref.invalidate(tripCostFieldValuesProvider(itinerary.id));
+      setState(_costFieldEdits.clear);
+      context.showSnackBar('Cost tracking saved');
+    });
   }
 
   Future<void> _submitSelected() async {
@@ -720,30 +710,26 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
     if (!mounted) {
       return;
     }
-    result.fold(
-      (f) => context.showSnackBar(f.message, isError: true),
-      (_) {
-        setState(_selectedForSubmission.clear);
-        context.showSnackBar(
-          '${ids.length} expense${ids.length == 1 ? '' : 's'} submitted for approval',
-        );
-      },
-    );
+    result.fold((f) => context.showSnackBar(f.message, isError: true), (_) {
+      setState(_selectedForSubmission.clear);
+      context.showSnackBar(
+        '${ids.length} expense${ids.length == 1 ? '' : 's'} submitted for approval',
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final expensesAsync =
-        ref.watch(expenseStreamProvider(itinerary.id));
+    final expensesAsync = ref.watch(expenseStreamProvider(itinerary.id));
     final settlements = ref.watch(
-        settlementsProvider((itinerary.id, itinerary.currencyCode)));
+      settlementsProvider((itinerary.id, itinerary.currencyCode)),
+    );
     final isWorkTrip = itinerary.orgId != null;
 
     final budget = itinerary.totalBudget;
     final spent = itinerary.expenseSummary.totalSpent;
     final remaining = budget - spent;
-    final progress =
-        budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
+    final progress = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
 
     return Stack(
       children: [
@@ -775,19 +761,25 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                       _BudgetCol(
                         label: 'Budget',
                         value: Formatters.formatCurrency(
-                            budget, itinerary.currencyCode),
+                          budget,
+                          itinerary.currencyCode,
+                        ),
                         color: context.colorScheme.onSurface,
                       ),
                       _BudgetCol(
                         label: 'Spent',
                         value: Formatters.formatCurrency(
-                            spent, itinerary.currencyCode),
+                          spent,
+                          itinerary.currencyCode,
+                        ),
                         color: context.colorScheme.primary,
                       ),
                       _BudgetCol(
                         label: 'Left',
                         value: Formatters.formatCurrency(
-                            remaining, itinerary.currencyCode),
+                          remaining,
+                          itinerary.currencyCode,
+                        ),
                         color: const Color(0xFF2E7D52),
                       ),
                     ],
@@ -810,7 +802,9 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                   Text(
                     '${(progress * 100).toStringAsFixed(0)}% of budget used',
                     style: TextStyle(
-                        fontSize: 12, color: context.colorScheme.onSurfaceVariant),
+                      fontSize: 12,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -820,11 +814,14 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
               const SizedBox(height: 20),
               Builder(
                 builder: (context) {
-                  final saved = ref
+                  final saved =
+                      ref
                           .watch(tripCostFieldValuesProvider(itinerary.id))
                           .value ??
                       const [];
-                  final savedMap = {for (final v in saved) v.fieldId: v.optionId};
+                  final savedMap = {
+                    for (final v in saved) v.fieldId: v.optionId,
+                  };
                   final effective = {...savedMap, ..._costFieldEdits};
 
                   return Container(
@@ -870,12 +867,15 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                 child: Padding(
                   padding: const EdgeInsets.all(32),
                   child: CircularProgressIndicator(
-                      color: context.colorScheme.primary),
+                    color: context.colorScheme.primary,
+                  ),
                 ),
               ),
               error: (e, _) => Center(
-                child: Text(e.toString(),
-                    style: TextStyle(color: context.colorScheme.primary)),
+                child: Text(
+                  e.toString(),
+                  style: TextStyle(color: context.colorScheme.primary),
+                ),
               ),
               data: (allExpenses) {
                 // Settlement payments are excluded from the visible list
@@ -906,12 +906,14 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                                   onSelected: (officialOnly) => _exportCsv(
                                     officialOnly
                                         ? expenses
-                                            .where((e) =>
-                                                e.isOfficial &&
-                                                e.approvalStatus ==
-                                                    ExpenseApprovalStatus
-                                                        .approved)
-                                            .toList()
+                                              .where(
+                                                (e) =>
+                                                    e.isOfficial &&
+                                                    e.approvalStatus ==
+                                                        ExpenseApprovalStatus
+                                                            .approved,
+                                              )
+                                              .toList()
                                         : expenses,
                                   ),
                                   itemBuilder: (_) => const [
@@ -921,19 +923,23 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                                     ),
                                     PopupMenuItem(
                                       value: true,
-                                      child: Text('Export approved official only'),
+                                      child: Text(
+                                        'Export approved official only',
+                                      ),
                                     ),
                                   ],
                                   child: IgnorePointer(
                                     child: TextButton.icon(
                                       onPressed: () {},
                                       icon: const Icon(
-                                          Icons.download_outlined,
-                                          size: 15),
+                                        Icons.download_outlined,
+                                        size: 15,
+                                      ),
                                       label: const Text('CSV'),
                                       style: TextButton.styleFrom(
                                         foregroundColor: context
-                                            .colorScheme.onSurfaceVariant,
+                                            .colorScheme
+                                            .onSurfaceVariant,
                                         visualDensity: VisualDensity.compact,
                                       ),
                                     ),
@@ -956,27 +962,26 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          ...expenses.map((e) => _ExpenseTile(
-                                expense: e,
-                                onDelete: () =>
-                                    _deleteExpense(context, ref, e),
-                                showOfficialControls: isWorkTrip,
-                                isSelected:
-                                    _selectedForSubmission.contains(e.id),
-                                onToggleSelected: (selected) => setState(() {
-                                  if (selected) {
-                                    _selectedForSubmission.add(e.id);
-                                  } else {
-                                    _selectedForSubmission.remove(e.id);
-                                  }
-                                }),
-                              )),
+                          ...expenses.map(
+                            (e) => _ExpenseTile(
+                              expense: e,
+                              onDelete: () => _deleteExpense(context, ref, e),
+                              showOfficialControls: isWorkTrip,
+                              isSelected: _selectedForSubmission.contains(e.id),
+                              onToggleSelected: (selected) => setState(() {
+                                if (selected) {
+                                  _selectedForSubmission.add(e.id);
+                                } else {
+                                  _selectedForSubmission.remove(e.id);
+                                }
+                              }),
+                            ),
+                          ),
                           if (settlements.isNotEmpty) ...[
                             const SizedBox(height: 24),
                             _SettlementsCard(
                               settlements: settlements,
-                              onSettle: (s) =>
-                                  _settleUp(context, ref, s),
+                              onSettle: (s) => _settleUp(context, ref, s),
                             ),
                           ],
                         ],
@@ -1000,12 +1005,17 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                 onTap: _submitSelected,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 14),
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.send_outlined,
-                          size: 18, color: context.colorScheme.surface),
+                      Icon(
+                        Icons.send_outlined,
+                        size: 18,
+                        color: context.colorScheme.surface,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Submit ${_selectedForSubmission.length} for approval',
@@ -1068,7 +1078,9 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
       return;
     }
 
-    final result = await ref.read(addExpenseUseCaseProvider).call(
+    final result = await ref
+        .read(addExpenseUseCaseProvider)
+        .call(
           itineraryId: itinerary.id,
           title:
               'Settlement: ${settlement.fromUserName} → ${settlement.toUserName}',
@@ -1108,11 +1120,13 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
         content: Text('Remove "${expense.title}"?'),
         actions: [
           TextButton(
-              onPressed: () => ctx.pop(false),
-              child: const Text('Cancel')),
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: context.colorScheme.error),
+              backgroundColor: context.colorScheme.error,
+            ),
             onPressed: () => ctx.pop(true),
             child: const Text('Delete'),
           ),
@@ -1142,16 +1156,21 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
           return;
         }
         final current = itinerary.expenseSummary;
-        final byCategory =
-            Map<String, double>.from(current.spentByCategory);
+        final byCategory = Map<String, double>.from(current.spentByCategory);
         byCategory[expense.category.name] =
-            ((byCategory[expense.category.name] ?? 0) - expense.amount)
-                .clamp(0.0, double.infinity);
-        await ref.read(updateItineraryUseCaseProvider).call(
+            ((byCategory[expense.category.name] ?? 0) - expense.amount).clamp(
+              0.0,
+              double.infinity,
+            );
+        await ref
+            .read(updateItineraryUseCaseProvider)
+            .call(
               itinerary.copyWith(
                 expenseSummary: ExpenseSummary(
-                  totalSpent:
-                      (current.totalSpent - expense.amount).clamp(0.0, double.infinity),
+                  totalSpent: (current.totalSpent - expense.amount).clamp(
+                    0.0,
+                    double.infinity,
+                  ),
                   spentByCategory: byCategory,
                   memberBalances: current.memberBalances,
                 ),
@@ -1205,105 +1224,111 @@ class _ExpenseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: context.colorScheme.surface,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
+              if (showOfficialControls && _isSelectable)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Checkbox(
+                    value: isSelected,
+                    onChanged: (v) => onToggleSelected?.call(v ?? false),
+                  ),
+                ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Color(
+                    expense.category.colorValue,
+                  ).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _iconFor(expense.category),
+                  size: 20,
+                  color: Color(expense.category.colorValue),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      expense.title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: context.colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      'Paid by ${expense.payerName} · ${expense.category.label}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (showOfficialControls && _isSelectable)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: Checkbox(
-                        value: isSelected,
-                        onChanged: (v) => onToggleSelected?.call(v ?? false),
-                      ),
+                  Text(
+                    Formatters.formatCurrency(
+                      expense.amount,
+                      expense.currencyCode,
                     ),
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Color(expense.category.colorValue)
-                          .withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      _iconFor(expense.category),
-                      size: 20,
-                      color: Color(expense.category.colorValue),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          expense.title,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: context.colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          'Paid by ${expense.payerName} · ${expense.category.label}',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: context.colorScheme.onSurfaceVariant),
-                        ),
-                      ],
+                  GestureDetector(
+                    onTap: onDelete,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(
+                        Icons.delete_outline,
+                        size: 16,
+                        color: context.colorScheme.outlineVariant,
+                      ),
                     ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        Formatters.formatCurrency(
-                            expense.amount, expense.currencyCode),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: context.colorScheme.onSurface,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: onDelete,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Icon(Icons.delete_outline,
-                              size: 16,
-                              color: context.colorScheme.outlineVariant),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
-              if (showOfficialControls && expense.isOfficial)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: _ApprovalStatusChip(expense: expense),
-                ),
             ],
           ),
-        ),
-      );
+          if (showOfficialControls && expense.isOfficial)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _ApprovalStatusChip(expense: expense),
+            ),
+        ],
+      ),
+    ),
+  );
 
   IconData _iconFor(ExpenseCategory cat) => switch (cat) {
-        ExpenseCategory.food => Icons.restaurant_outlined,
-        ExpenseCategory.transport => Icons.directions_car_outlined,
-        ExpenseCategory.accommodation => Icons.hotel_outlined,
-        ExpenseCategory.activities => Icons.local_activity_outlined,
-        ExpenseCategory.shopping => Icons.shopping_bag_outlined,
-        ExpenseCategory.other => Icons.receipt_long_outlined,
-      };
+    ExpenseCategory.food => Icons.restaurant_outlined,
+    ExpenseCategory.transport => Icons.directions_car_outlined,
+    ExpenseCategory.accommodation => Icons.hotel_outlined,
+    ExpenseCategory.activities => Icons.local_activity_outlined,
+    ExpenseCategory.shopping => Icons.shopping_bag_outlined,
+    ExpenseCategory.other => Icons.receipt_long_outlined,
+  };
 }
 
 class _ApprovalStatusChip extends StatelessWidget {
@@ -1314,28 +1339,38 @@ class _ApprovalStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (expense.approvalStatus) {
-      ExpenseApprovalStatus.pending => ('Pending review', const Color(0xFFB8860B)),
+      ExpenseApprovalStatus.pending => (
+        'Pending review',
+        const Color(0xFFB8860B),
+      ),
       ExpenseApprovalStatus.approved => ('Approved', const Color(0xFF2E7D52)),
-      ExpenseApprovalStatus.rejected => ('Rejected — tap for reason', context.colorScheme.error),
-      ExpenseApprovalStatus.notSubmitted => ('Official', context.colorScheme.onSurfaceVariant),
+      ExpenseApprovalStatus.rejected => (
+        'Rejected — tap for reason',
+        context.colorScheme.error,
+      ),
+      ExpenseApprovalStatus.notSubmitted => (
+        'Official',
+        context.colorScheme.onSurfaceVariant,
+      ),
     };
 
     return GestureDetector(
-      onTap: expense.approvalStatus == ExpenseApprovalStatus.rejected &&
+      onTap:
+          expense.approvalStatus == ExpenseApprovalStatus.rejected &&
               expense.rejectionReason != null
           ? () => showDialog<void>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Rejected'),
-                  content: Text(expense.rejectionReason!),
-                  actions: [
-                    TextButton(
-                      onPressed: () => ctx.pop(),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              )
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Rejected'),
+                content: Text(expense.rejectionReason!),
+                actions: [
+                  TextButton(
+                    onPressed: () => ctx.pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            )
           : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1359,116 +1394,108 @@ class _ApprovalStatusChip extends StatelessWidget {
 // ── Settlements card ──────────────────────────────────────────────────────────
 
 class _SettlementsCard extends StatelessWidget {
-  const _SettlementsCard({
-    required this.settlements,
-    required this.onSettle,
-  });
+  const _SettlementsCard({required this.settlements, required this.onSettle});
 
   final List<Settlement> settlements;
   final void Function(Settlement) onSettle;
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Settle up',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: context.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.colorScheme.surface,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              children: [
-                for (int i = 0; i < settlements.length; i++) ...[
-                  if (i > 0) const Divider(height: 16),
-                  _SettlementRow(
-                    settlement: settlements[i],
-                    onSettle: () => onSettle(settlements[i]),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Settle up',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: context.colorScheme.onSurface,
+        ),
+      ),
+      const SizedBox(height: 10),
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            for (int i = 0; i < settlements.length; i++) ...[
+              if (i > 0) const Divider(height: 16),
+              _SettlementRow(
+                settlement: settlements[i],
+                onSettle: () => onSettle(settlements[i]),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ],
+  );
 }
 
 class _SettlementRow extends StatelessWidget {
-  const _SettlementRow({
-    required this.settlement,
-    required this.onSettle,
-  });
+  const _SettlementRow({required this.settlement, required this.onSettle});
 
   final Settlement settlement;
   final VoidCallback onSettle;
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          Expanded(
-            child: Text.rich(
+    children: [
+      Expanded(
+        child: Text.rich(
+          TextSpan(
+            children: [
               TextSpan(
-                children: [
-                  TextSpan(
-                    text: settlement.fromUserName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: context.colorScheme.onSurface,
-                      fontSize: 13,
-                    ),
-                  ),
-                  TextSpan(
-                    text: ' owes ',
-                    style: TextStyle(
-                        color: context.colorScheme.onSurfaceVariant,
-                        fontSize: 13),
-                  ),
-                  TextSpan(
-                    text: settlement.toUserName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: context.colorScheme.onSurface,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+                text: settlement.fromUserName,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: context.colorScheme.onSurface,
+                  fontSize: 13,
+                ),
               ),
-            ),
+              TextSpan(
+                text: ' owes ',
+                style: TextStyle(
+                  color: context.colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
+              ),
+              TextSpan(
+                text: settlement.toUserName,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: context.colorScheme.onSurface,
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(
-            Formatters.formatCurrency(
-                settlement.amount, settlement.currencyCode),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2E7D52),
-            ),
-          ),
-          const SizedBox(width: 12),
-          TextButton(
-            onPressed: onSettle,
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF2E7D52),
-              visualDensity: VisualDensity.compact,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              textStyle: const TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-            child: const Text('Mark paid'),
-          ),
-        ],
-      );
+        ),
+      ),
+      const SizedBox(width: 8),
+      Text(
+        Formatters.formatCurrency(settlement.amount, settlement.currencyCode),
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF2E7D52),
+        ),
+      ),
+      const SizedBox(width: 12),
+      TextButton(
+        onPressed: onSettle,
+        style: TextButton.styleFrom(
+          foregroundColor: const Color(0xFF2E7D52),
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        child: const Text('Mark paid'),
+      ),
+    ],
+  );
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
@@ -1478,30 +1505,36 @@ class _EmptyExpenses extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 32),
-        child: Center(
-          child: Column(
-            children: [
-              Icon(Icons.receipt_long_outlined,
-                  size: 48, color: context.colorScheme.outlineVariant),
-              const SizedBox(height: 12),
-              Text(
-                'No expenses yet',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Tap + to log the first one',
-                style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
-              ),
-            ],
+    padding: const EdgeInsets.only(top: 32),
+    child: Center(
+      child: Column(
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 48,
+            color: context.colorScheme.outlineVariant,
           ),
-        ),
-      );
+          const SizedBox(height: 12),
+          Text(
+            'No expenses yet',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tap + to log the first one',
+            style: TextStyle(
+              fontSize: 13,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 // ── Reviews tab ───────────────────────────────────────────────────────────────
@@ -1519,11 +1552,15 @@ class _ReviewsTab extends ConsumerWidget {
       children: [
         ratingsAsync.when(
           loading: () => Center(
-            child: CircularProgressIndicator(color: context.colorScheme.primary),
+            child: CircularProgressIndicator(
+              color: context.colorScheme.primary,
+            ),
           ),
           error: (e, _) => Center(
-            child: Text(e.toString(),
-                style: TextStyle(color: context.colorScheme.primary)),
+            child: Text(
+              e.toString(),
+              style: TextStyle(color: context.colorScheme.primary),
+            ),
           ),
           data: (ratings) => ratings.isEmpty
               ? const _EmptyReviews()
@@ -1568,58 +1605,63 @@ class _RatingTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      rating.targetName,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: context.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  _StarDisplay(stars: rating.stars),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => _confirmDelete(context, ref),
-                    child: Icon(Icons.delete_outline,
-                        size: 18, color: context.colorScheme.outlineVariant),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'by ${rating.userName}',
-                style: TextStyle(
-                    fontSize: 12, color: context.colorScheme.onSurfaceVariant),
-              ),
-              if (rating.comment != null && rating.comment!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  rating.comment!,
+              Expanded(
+                child: Text(
+                  rating.targetName,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                     color: context.colorScheme.onSurface,
-                    height: 1.4,
                   ),
                 ),
-              ],
+              ),
+              _StarDisplay(stars: rating.stars),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _confirmDelete(context, ref),
+                child: Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: context.colorScheme.outlineVariant,
+                ),
+              ),
             ],
           ),
-        ),
-      );
+          const SizedBox(height: 4),
+          Text(
+            'by ${rating.userName}',
+            style: TextStyle(
+              fontSize: 12,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (rating.comment != null && rating.comment!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              rating.comment!,
+              style: TextStyle(
+                fontSize: 13,
+                color: context.colorScheme.onSurface,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
@@ -1629,11 +1671,13 @@ class _RatingTile extends ConsumerWidget {
         content: Text('Remove review for "${rating.targetName}"?'),
         actions: [
           TextButton(
-              onPressed: () => ctx.pop(false),
-              child: const Text('Cancel')),
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: context.colorScheme.error),
+              backgroundColor: context.colorScheme.error,
+            ),
             onPressed: () => ctx.pop(true),
             child: const Text('Delete'),
           ),
@@ -1643,16 +1687,12 @@ class _RatingTile extends ConsumerWidget {
     if (confirmed != true || !context.mounted) {
       return;
     }
-    final result =
-        await ref.read(deleteRatingUseCaseProvider).call(rating.id);
-    result.fold(
-      (f) {
-        if (context.mounted) {
-          context.showSnackBar(f.message, isError: true);
-        }
-      },
-      (_) {},
-    );
+    final result = await ref.read(deleteRatingUseCaseProvider).call(rating.id);
+    result.fold((f) {
+      if (context.mounted) {
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) {});
   }
 }
 
@@ -1665,18 +1705,18 @@ class _StarDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(
-          5,
-          (i) => Icon(
-            i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
-            size: 16,
-            color: i < stars
-                ? const Color(0xFFFFC107)
-                : context.colorScheme.outlineVariant,
-          ),
-        ),
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: List.generate(
+      5,
+      (i) => Icon(
+        i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
+        size: 16,
+        color: i < stars
+            ? const Color(0xFFFFC107)
+            : context.colorScheme.outlineVariant,
+      ),
+    ),
+  );
 }
 
 // ── Empty reviews state ───────────────────────────────────────────────────────
@@ -1686,29 +1726,34 @@ class _EmptyReviews extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.rate_review_outlined,
-                size: 48, color: context.colorScheme.outlineVariant),
-            const SizedBox(height: 12),
-            Text(
-              'No reviews yet',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Tap + to rate places from this trip',
-              style:
-                  TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
-            ),
-          ],
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.rate_review_outlined,
+          size: 48,
+          color: context.colorScheme.outlineVariant,
         ),
-      );
+        const SizedBox(height: 12),
+        Text(
+          'No reviews yet',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Tap + to rate places from this trip',
+          style: TextStyle(
+            fontSize: 13,
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Members card ─────────────────────────────────────────────────────────────
@@ -1790,10 +1835,7 @@ class _TripEmailCard extends ConsumerWidget {
 }
 
 class _MembersCard extends ConsumerWidget {
-  const _MembersCard({
-    required this.itinerary,
-    required this.currentUserId,
-  });
+  const _MembersCard({required this.itinerary, required this.currentUserId});
 
   final TravelItinerary itinerary;
   final String currentUserId;
@@ -1808,26 +1850,24 @@ class _MembersCard extends ConsumerWidget {
   ) async {
     final updated = itinerary.copyWith(
       members: itinerary.members
-          .map((m) => m.userId == member.userId
-              ? GroupMember(
-                  userId: m.userId,
-                  userName: m.userName,
-                  role: newRole,
-                  joinedAt: m.joinedAt,
-                )
-              : m)
+          .map(
+            (m) => m.userId == member.userId
+                ? GroupMember(
+                    userId: m.userId,
+                    userName: m.userName,
+                    role: newRole,
+                    joinedAt: m.joinedAt,
+                  )
+                : m,
+          )
           .toList(),
     );
-    final result =
-        await ref.read(updateItineraryUseCaseProvider).call(updated);
-    result.fold(
-      (f) {
-        if (context.mounted) {
-          context.showSnackBar(f.message, isError: true);
-        }
-      },
-      (_) {},
-    );
+    final result = await ref.read(updateItineraryUseCaseProvider).call(updated);
+    result.fold((f) {
+      if (context.mounted) {
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) {});
   }
 
   Future<void> _removeMember(
@@ -1847,7 +1887,8 @@ class _MembersCard extends ConsumerWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: context.colorScheme.error),
+              backgroundColor: context.colorScheme.error,
+            ),
             onPressed: () => ctx.pop(true),
             child: const Text('Remove'),
           ),
@@ -1858,43 +1899,40 @@ class _MembersCard extends ConsumerWidget {
       return;
     }
     final updated = itinerary.copyWith(
-      members:
-          itinerary.members.where((m) => m.userId != member.userId).toList(),
+      members: itinerary.members
+          .where((m) => m.userId != member.userId)
+          .toList(),
     );
-    final result =
-        await ref.read(updateItineraryUseCaseProvider).call(updated);
-    result.fold(
-      (f) {
-        if (context.mounted) {
-          context.showSnackBar(f.message, isError: true);
-        }
-      },
-      (_) {},
-    );
+    final result = await ref.read(updateItineraryUseCaseProvider).call(updated);
+    result.fold((f) {
+      if (context.mounted) {
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) {});
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            for (int i = 0; i < itinerary.members.length; i++)
-              _MemberRow(
-                member: itinerary.members[i],
-                isLast: i == itinerary.members.length - 1,
-                canManage: _isOwner &&
-                    itinerary.members[i].role != GroupMemberRole.owner,
-                onChangeRole: (role) =>
-                    _changeRole(context, ref, itinerary.members[i], role),
-                onRemove: () => _removeMember(context, ref, itinerary.members[i]),
-              ),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: context.colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Column(
+      children: [
+        for (int i = 0; i < itinerary.members.length; i++)
+          _MemberRow(
+            member: itinerary.members[i],
+            isLast: i == itinerary.members.length - 1,
+            canManage:
+                _isOwner && itinerary.members[i].role != GroupMemberRole.owner,
+            onChangeRole: (role) =>
+                _changeRole(context, ref, itinerary.members[i], role),
+            onRemove: () => _removeMember(context, ref, itinerary.members[i]),
+          ),
+      ],
+    ),
+  );
 }
 
 enum _MemberAction { makeEditor, makeViewer, remove }
@@ -1916,91 +1954,105 @@ class _MemberRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
+    children: [
+      Row(
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: context.colorScheme.primaryContainer,
-                child: Text(
-                  member.userName.isNotEmpty
-                      ? member.userName[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: context.colorScheme.primary,
-                  ),
-                ),
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: context.colorScheme.primaryContainer,
+            child: Text(
+              member.userName.isNotEmpty
+                  ? member.userName[0].toUpperCase()
+                  : '?',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.primary,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  member.userName,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: context.colorScheme.onSurface,
-                  ),
-                ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              member.userName,
+              style: TextStyle(
+                fontSize: 14,
+                color: context.colorScheme.onSurface,
               ),
-              _RoleChip(role: member.role),
-              if (canManage) ...[
-                const SizedBox(width: 4),
-                PopupMenuButton<_MemberAction>(
-                  icon: Icon(Icons.more_vert,
-                      size: 18, color: context.colorScheme.onSurfaceVariant),
-                  tooltip: 'Manage member',
-                  onSelected: (action) {
-                    switch (action) {
-                      case _MemberAction.makeEditor:
-                        onChangeRole(GroupMemberRole.editor);
-                      case _MemberAction.makeViewer:
-                        onChangeRole(GroupMemberRole.viewer);
-                      case _MemberAction.remove:
-                        onRemove();
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    if (member.role != GroupMemberRole.editor)
-                      const PopupMenuItem(
-                        value: _MemberAction.makeEditor,
-                        child: Row(children: [
-                          Icon(Icons.edit_outlined, size: 18),
-                          SizedBox(width: 8),
-                          Text('Make Editor'),
-                        ]),
-                      ),
-                    if (member.role != GroupMemberRole.viewer)
-                      const PopupMenuItem(
-                        value: _MemberAction.makeViewer,
-                        child: Row(children: [
-                          Icon(Icons.visibility_outlined, size: 18),
-                          SizedBox(width: 8),
-                          Text('Make Viewer'),
-                        ]),
-                      ),
-                    PopupMenuItem(
-                      value: _MemberAction.remove,
-                      child: Row(children: [
-                        Icon(Icons.person_remove_outlined,
-                            size: 18, color: context.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text('Remove',
-                            style: TextStyle(color: context.colorScheme.primary)),
-                      ]),
+            ),
+          ),
+          _RoleChip(role: member.role),
+          if (canManage) ...[
+            const SizedBox(width: 4),
+            PopupMenuButton<_MemberAction>(
+              icon: Icon(
+                Icons.more_vert,
+                size: 18,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+              tooltip: 'Manage member',
+              onSelected: (action) {
+                switch (action) {
+                  case _MemberAction.makeEditor:
+                    onChangeRole(GroupMemberRole.editor);
+                  case _MemberAction.makeViewer:
+                    onChangeRole(GroupMemberRole.viewer);
+                  case _MemberAction.remove:
+                    onRemove();
+                }
+              },
+              itemBuilder: (_) => [
+                if (member.role != GroupMemberRole.editor)
+                  const PopupMenuItem(
+                    value: _MemberAction.makeEditor,
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 18),
+                        SizedBox(width: 8),
+                        Text('Make Editor'),
+                      ],
                     ),
-                  ],
+                  ),
+                if (member.role != GroupMemberRole.viewer)
+                  const PopupMenuItem(
+                    value: _MemberAction.makeViewer,
+                    child: Row(
+                      children: [
+                        Icon(Icons.visibility_outlined, size: 18),
+                        SizedBox(width: 8),
+                        Text('Make Viewer'),
+                      ],
+                    ),
+                  ),
+                PopupMenuItem(
+                  value: _MemberAction.remove,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person_remove_outlined,
+                        size: 18,
+                        color: context.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Remove',
+                        style: TextStyle(color: context.colorScheme.primary),
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            ],
-          ),
-          if (!isLast) ...[
-            const SizedBox(height: 10),
-            const Divider(height: 1),
-            const SizedBox(height: 10),
+            ),
           ],
         ],
-      );
+      ),
+      if (!isLast) ...[
+        const SizedBox(height: 10),
+        const Divider(height: 1),
+        const SizedBox(height: 10),
+      ],
+    ],
+  );
 }
 
 // ── Helper widgets ────────────────────────────────────────────────────────────
@@ -2018,33 +2070,36 @@ class _InfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          Icon(icon, size: 16, color: context.colorScheme.onSurfaceVariant),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 10, color: context.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: context.colorScheme.onSurface,
-            ),
-          ),
-        ],
-      );
+    children: [
+      Icon(icon, size: 16, color: context.colorScheme.onSurfaceVariant),
+      const SizedBox(height: 4),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.colorScheme.onSurface,
+        ),
+      ),
+    ],
+  );
 }
 
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-        width: 1,
-        height: 36,
-        color: context.colorScheme.outlineVariant,
-      );
+    width: 1,
+    height: 36,
+    color: context.colorScheme.outlineVariant,
+  );
 }
 
 class _BudgetCol extends StatelessWidget {
@@ -2060,23 +2115,26 @@ class _BudgetCol extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: context.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    ],
+  );
 }
 
 class _RoleChip extends StatelessWidget {
@@ -2088,20 +2146,20 @@ class _RoleChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, bg, fg) = switch (role) {
       GroupMemberRole.owner => (
-          'Owner',
-          context.colorScheme.primaryContainer,
-          context.colorScheme.primary,
-        ),
+        'Owner',
+        context.colorScheme.primaryContainer,
+        context.colorScheme.primary,
+      ),
       GroupMemberRole.editor => (
-          'Editor',
-          context.colorScheme.outlineVariant,
-          context.colorScheme.onSurfaceVariant,
-        ),
+        'Editor',
+        context.colorScheme.outlineVariant,
+        context.colorScheme.onSurfaceVariant,
+      ),
       GroupMemberRole.viewer => (
-          'Viewer',
-          context.colorScheme.outlineVariant,
-          context.colorScheme.onSurfaceVariant,
-        ),
+        'Viewer',
+        context.colorScheme.outlineVariant,
+        context.colorScheme.onSurfaceVariant,
+      ),
     };
 
     return Container(
@@ -2112,11 +2170,7 @@ class _RoleChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: fg,
-        ),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
       ),
     );
   }
@@ -2137,129 +2191,136 @@ class _ScheduleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.zero,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Timeline line + dot
-            SizedBox(
-              width: 24,
-              child: Column(
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    margin: const EdgeInsets.only(top: 4),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  if (!isLast)
-                    Container(
-                      width: 2,
-                      height: 48,
-                      color: context.colorScheme.outlineVariant,
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(14),
+    padding: EdgeInsets.zero,
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Timeline line + dot
+        SizedBox(
+          width: 24,
+          child: Column(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                margin: const EdgeInsets.only(top: 4),
                 decoration: BoxDecoration(
-                  color: context.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(14),
+                  color: context.colorScheme.primary,
+                  shape: BoxShape.circle,
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: context.colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            Formatters.formatDateTime(item.startTime),
-                            style: TextStyle(
-                              fontSize: 12,
+              ),
+              if (!isLast)
+                Container(
+                  width: 2,
+                  height: 48,
+                  color: context.colorScheme.outlineVariant,
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: context.colorScheme.surface,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: context.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        Formatters.formatDateTime(item.startTime),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (item.location != null) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 12,
                               color: context.colorScheme.onSurfaceVariant,
                             ),
-                          ),
-                          if (item.location != null) ...[
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on_outlined,
-                                  size: 12,
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                item.location!,
+                                style: TextStyle(
+                                  fontSize: 12,
                                   color: context.colorScheme.onSurfaceVariant,
                                 ),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                  child: Text(
-                                    item.location!,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: context.colorScheme.onSurfaceVariant,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuButton<_Action>(
+                  icon: Icon(
+                    Icons.more_vert,
+                    size: 18,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  onSelected: (a) {
+                    switch (a) {
+                      case _Action.edit:
+                        onEdit();
+                      case _Action.delete:
+                        onDelete();
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: _Action.edit,
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Edit'),
                         ],
                       ),
                     ),
-                    PopupMenuButton<_Action>(
-                      icon: Icon(Icons.more_vert,
-                          size: 18, color: context.colorScheme.onSurfaceVariant),
-                      onSelected: (a) {
-                        switch (a) {
-                          case _Action.edit:
-                            onEdit();
-                          case _Action.delete:
-                            onDelete();
-                        }
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(
-                          value: _Action.edit,
-                          child: Row(children: [
-                            Icon(Icons.edit_outlined, size: 18),
-                            SizedBox(width: 8),
-                            Text('Edit'),
-                          ]),
-                        ),
-                        PopupMenuItem(
-                          value: _Action.delete,
-                          child: Row(children: [
-                            Icon(Icons.delete_outline, size: 18),
-                            SizedBox(width: 8),
-                            Text('Delete'),
-                          ]),
-                        ),
-                      ],
+                    PopupMenuItem(
+                      value: _Action.delete,
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 18),
+                          SizedBox(width: 8),
+                          Text('Delete'),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 enum _Action { edit, delete }
@@ -2282,14 +2343,11 @@ class _StatusRow extends ConsumerWidget {
     final result = await ref
         .read(updateItineraryUseCaseProvider)
         .call(itinerary.copyWith(status: status));
-    result.fold(
-      (f) {
-        if (context.mounted) {
-          context.showSnackBar(f.message, isError: true);
-        }
-      },
-      (_) {},
-    );
+    result.fold((f) {
+      if (context.mounted) {
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) {});
   }
 
   Future<void> _publish(BuildContext context, WidgetRef ref) async {
@@ -2341,7 +2399,9 @@ class _StatusRow extends ConsumerWidget {
       (list) => list,
     );
 
-    final result = await ref.read(publishItineraryUseCaseProvider).call(
+    final result = await ref
+        .read(publishItineraryUseCaseProvider)
+        .call(
           itinerary: itinerary,
           segments: segments,
           authorName: auth.user.displayName ?? auth.user.email,
@@ -2374,22 +2434,26 @@ class _StatusRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final (label, bg, fg) = switch (itinerary.status) {
-      ItineraryStatusEnum.draft => ('Draft', context.colorScheme.outlineVariant, context.colorScheme.onSurfaceVariant),
+      ItineraryStatusEnum.draft => (
+        'Draft',
+        context.colorScheme.outlineVariant,
+        context.colorScheme.onSurfaceVariant,
+      ),
       ItineraryStatusEnum.active => (
-          'Active',
-          const Color(0xFFD1E2D3),
-          const Color(0xFF2E7D52),
-        ),
+        'Active',
+        const Color(0xFFD1E2D3),
+        const Color(0xFF2E7D52),
+      ),
       ItineraryStatusEnum.completed => (
-          'Completed',
-          const Color(0xFFD0E4F5),
-          const Color(0xFF1565C0),
-        ),
+        'Completed',
+        const Color(0xFFD0E4F5),
+        const Color(0xFF1565C0),
+      ),
       ItineraryStatusEnum.archived => (
-          'Archived',
-          const Color(0xFFFFF3CD),
-          const Color(0xFF8A6914),
-        ),
+        'Archived',
+        const Color(0xFFFFF3CD),
+        const Color(0xFF8A6914),
+      ),
     };
 
     return Container(
@@ -2402,12 +2466,18 @@ class _StatusRow extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.flag_outlined,
-                  size: 16, color: context.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.flag_outlined,
+                size: 16,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Status',
-                style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
               ),
               const Spacer(),
               if (_isOwner)
@@ -2416,7 +2486,9 @@ class _StatusRow extends ConsumerWidget {
                   tooltip: 'Change status',
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 5),
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: bg,
                       borderRadius: BorderRadius.circular(20),
@@ -2439,16 +2511,15 @@ class _StatusRow extends ConsumerWidget {
                   ),
                   itemBuilder: (_) => [
                     for (final s in ItineraryStatusEnum.values)
-                      PopupMenuItem(
-                        value: s,
-                        child: Text(s.label),
-                      ),
+                      PopupMenuItem(value: s, child: Text(s.label)),
                   ],
                 )
               else
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 5),
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: bg,
                     borderRadius: BorderRadius.circular(20),
@@ -2468,8 +2539,11 @@ class _StatusRow extends ConsumerWidget {
             const Divider(height: 20),
             Row(
               children: [
-                Icon(Icons.public_outlined,
-                    size: 16, color: context.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.public_outlined,
+                  size: 16,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2477,7 +2551,9 @@ class _StatusRow extends ConsumerWidget {
                         ? 'Published to Discover'
                         : 'Not published',
                     style: TextStyle(
-                        fontSize: 13, color: context.colorScheme.onSurfaceVariant),
+                      fontSize: 13,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 if (itinerary.isPublic)
@@ -2501,11 +2577,11 @@ class _StatusRow extends ConsumerWidget {
 
 extension on ItineraryStatusEnum {
   String get label => switch (this) {
-        ItineraryStatusEnum.draft => 'Draft',
-        ItineraryStatusEnum.active => 'Active',
-        ItineraryStatusEnum.completed => 'Completed',
-        ItineraryStatusEnum.archived => 'Archived',
-      };
+    ItineraryStatusEnum.draft => 'Draft',
+    ItineraryStatusEnum.active => 'Active',
+    ItineraryStatusEnum.completed => 'Completed',
+    ItineraryStatusEnum.archived => 'Archived',
+  };
 }
 
 // ── Packing tab ───────────────────────────────────────────────────────────────
@@ -2550,7 +2626,9 @@ class _PackingTabState extends ConsumerState<_PackingTab> {
       return;
     }
 
-    final result = await ref.read(addPackingItemUseCaseProvider).call(
+    final result = await ref
+        .read(addPackingItemUseCaseProvider)
+        .call(
           itineraryId: widget.itinerary.id,
           title: title,
           addedById: auth.user.id,
@@ -2564,13 +2642,10 @@ class _PackingTabState extends ConsumerState<_PackingTab> {
       _adding = false;
     });
 
-    result.fold(
-      (f) => context.showSnackBar(f.message, isError: true),
-      (_) {
-        _addCtrl.clear();
-        _addFocus.requestFocus();
-      },
-    );
+    result.fold((f) => context.showSnackBar(f.message, isError: true), (_) {
+      _addCtrl.clear();
+      _addFocus.requestFocus();
+    });
   }
 
   Future<void> _toggle(PackingItem item) async {
@@ -2592,8 +2667,10 @@ class _PackingTabState extends ConsumerState<_PackingTab> {
         child: CircularProgressIndicator(color: context.colorScheme.primary),
       ),
       error: (e, _) => Center(
-        child: Text(e.toString(),
-            style: TextStyle(color: context.colorScheme.primary)),
+        child: Text(
+          e.toString(),
+          style: TextStyle(color: context.colorScheme.primary),
+        ),
       ),
       data: (items) {
         final checked = items.where((i) => i.isChecked).length;
@@ -2636,54 +2713,55 @@ class _PackingProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$checked of $total packed',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                if (checked == total)
-                  const Row(
-                    children: [
-                      Icon(Icons.check_circle_outline,
-                          size: 14, color: Color(0xFF2E7D52)),
-                      SizedBox(width: 4),
-                      Text(
-                        'All packed!',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF2E7D52),
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: total > 0 ? checked / total : 0,
-                minHeight: 6,
-                backgroundColor: context.colorScheme.outlineVariant,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  Color(0xFF2E7D52),
-                ),
+            Text(
+              '$checked of $total packed',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.onSurfaceVariant,
               ),
             ),
+            if (checked == total)
+              const Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 14,
+                    color: Color(0xFF2E7D52),
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    'All packed!',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2E7D52),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
-      );
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: total > 0 ? checked / total : 0,
+            minHeight: 6,
+            backgroundColor: context.colorScheme.outlineVariant,
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2E7D52)),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _PackingItemTile extends StatelessWidget {
@@ -2699,52 +2777,56 @@ class _PackingItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: InkWell(
-          onTap: onToggle,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            child: Row(
-              children: [
-                Checkbox(
-                  value: item.isChecked,
-                  onChanged: (_) => onToggle(),
-                  activeColor: context.colorScheme.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    item.title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: item.isChecked
-                          ? context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
-                          : context.colorScheme.onSurface,
-                      decoration: item.isChecked
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: onDelete,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      Icons.close,
-                      size: 16,
-                      color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ),
-              ],
+    padding: const EdgeInsets.only(bottom: 4),
+    child: InkWell(
+      onTap: onToggle,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Row(
+          children: [
+            Checkbox(
+              value: item.isChecked,
+              onChanged: (_) => onToggle(),
+              activeColor: context.colorScheme.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-          ),
+            Expanded(
+              child: Text(
+                item.title,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: item.isChecked
+                      ? context.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.5,
+                        )
+                      : context.colorScheme.onSurface,
+                  decoration: item.isChecked
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: onDelete,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _AddItemRow extends StatelessWidget {
@@ -2762,69 +2844,78 @@ class _AddItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 8, 12, 24),
-        decoration: BoxDecoration(
-          color: context.colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: context.colorScheme.onSurface.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
-          ],
+    padding: const EdgeInsets.fromLTRB(20, 8, 12, 24),
+    decoration: BoxDecoration(
+      color: context.colorScheme.surface,
+      boxShadow: [
+        BoxShadow(
+          color: context.colorScheme.onSurface.withValues(alpha: 0.06),
+          blurRadius: 12,
+          offset: const Offset(0, -4),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                focusNode: focusNode,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => onAdd(),
-                decoration: InputDecoration(
-                  hintText: 'Add an item…',
-                  border: OutlineInputBorder(
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    borderSide: BorderSide(color: context.colorScheme.outlineVariant),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    borderSide: BorderSide(color: context.colorScheme.outlineVariant),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    borderSide:
-                        BorderSide(color: context.colorScheme.primary, width: 1.5),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  isDense: true,
+      ],
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => onAdd(),
+            decoration: InputDecoration(
+              hintText: 'Add an item…',
+              border: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+                borderSide: BorderSide(
+                  color: context.colorScheme.outlineVariant,
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: adding ? null : onAdd,
-              style: IconButton.styleFrom(
-                backgroundColor: context.colorScheme.primary,
-                foregroundColor: context.colorScheme.surface,
-                disabledBackgroundColor:
-                    context.colorScheme.primary.withValues(alpha: 0.4),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+                borderSide: BorderSide(
+                  color: context.colorScheme.outlineVariant,
+                ),
               ),
-              icon: adding
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: context.colorScheme.surface,
-                      ),
-                    )
-                  : const Icon(Icons.add),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+                borderSide: BorderSide(
+                  color: context.colorScheme.primary,
+                  width: 1.5,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
+              isDense: true,
             ),
-          ],
+          ),
         ),
-      );
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: adding ? null : onAdd,
+          style: IconButton.styleFrom(
+            backgroundColor: context.colorScheme.primary,
+            foregroundColor: context.colorScheme.surface,
+            disabledBackgroundColor: context.colorScheme.primary.withValues(
+              alpha: 0.4,
+            ),
+          ),
+          icon: adding
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: context.colorScheme.surface,
+                  ),
+                )
+              : const Icon(Icons.add),
+        ),
+      ],
+    ),
+  );
 }
 
 class _EmptyPacking extends StatelessWidget {
@@ -2832,28 +2923,34 @@ class _EmptyPacking extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.checklist_outlined,
-                size: 48, color: context.colorScheme.outlineVariant),
-            const SizedBox(height: 12),
-            Text(
-              'Nothing packed yet',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Add items below to build your packing list',
-              style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
-            ),
-          ],
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.checklist_outlined,
+          size: 48,
+          color: context.colorScheme.outlineVariant,
         ),
-      );
+        const SizedBox(height: 12),
+        Text(
+          'Nothing packed yet',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Add items below to build your packing list',
+          style: TextStyle(
+            fontSize: 13,
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Notes tab ─────────────────────────────────────────────────────────────────
@@ -2923,78 +3020,82 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
 
   @override
   Widget build(BuildContext context) => Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'Trip Notes',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: context.colorScheme.onSurface,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (_saving)
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 1.5,
-                              color: context.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Saving…',
-                            style: TextStyle(
-                                fontSize: 12, color: context.colorScheme.onSurfaceVariant),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: TextField(
-                      controller: _ctrl,
-                      onChanged: _canEdit ? _onChanged : null,
-                      readOnly: !_canEdit,
-                      maxLines: null,
-                      expands: true,
-                      textAlignVertical: TextAlignVertical.top,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: context.colorScheme.onSurface,
-                        height: 1.6,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: _canEdit
-                            ? 'Add shared notes, links, ideas…'
-                            : 'No notes yet',
-                        hintStyle: TextStyle(
-                            fontSize: 14, color: context.colorScheme.outlineVariant),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.all(16),
-                      ),
-                    ),
+                Text(
+                  'Trip Notes',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: context.colorScheme.onSurface,
                   ),
                 ),
+                const Spacer(),
+                if (_saving)
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Saving…',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
-          ),
-        ],
-      );
+            const SizedBox(height: 12),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: TextField(
+                  controller: _ctrl,
+                  onChanged: _canEdit ? _onChanged : null,
+                  readOnly: !_canEdit,
+                  maxLines: null,
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.colorScheme.onSurface,
+                    height: 1.6,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: _canEdit
+                        ? 'Add shared notes, links, ideas…'
+                        : 'No notes yet',
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      color: context.colorScheme.outlineVariant,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
 }

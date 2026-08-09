@@ -13,12 +13,12 @@ class ProfileResult {
   });
 
   factory ProfileResult.fromRow(Map<String, dynamic> row) => ProfileResult(
-        id: row['id'] as String,
-        displayName: (row['display_name'] as String?) ?? '',
-        email: row['email'] as String,
-        isSearchable: (row['is_searchable'] as bool?) ?? true,
-        avatarUrl: row['avatar_url'] as String?,
-      );
+    id: row['id'] as String,
+    displayName: (row['display_name'] as String?) ?? '',
+    email: row['email'] as String,
+    isSearchable: (row['is_searchable'] as bool?) ?? true,
+    avatarUrl: row['avatar_url'] as String?,
+  );
 
   final String id;
   final String displayName;
@@ -157,15 +157,12 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       throw AuthException(message: 'Not authenticated');
     }
     try {
-      await KumoSupabaseClient.client.from('pending_invitations').upsert(
-        {
-          'itinerary_id': itineraryId,
-          'invited_email': invitedEmail.trim().toLowerCase(),
-          'invited_by': uid,
-          'role': role,
-        },
-        onConflict: 'itinerary_id,invited_email',
-      );
+      await KumoSupabaseClient.client.from('pending_invitations').upsert({
+        'itinerary_id': itineraryId,
+        'invited_email': invitedEmail.trim().toLowerCase(),
+        'invited_by': uid,
+        'role': role,
+      }, onConflict: 'itinerary_id,invited_email');
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

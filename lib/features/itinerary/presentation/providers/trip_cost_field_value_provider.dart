@@ -8,37 +8,40 @@ import '../../domain/usecases/set_trip_cost_field_values_usecase.dart';
 
 final tripCostFieldValueDataSourceProvider =
     Provider<TripCostFieldValueRemoteDataSource>(
-  (_) => const TripCostFieldValueRemoteDataSourceImpl(),
-);
+      (_) => const TripCostFieldValueRemoteDataSourceImpl(),
+    );
 
 final tripCostFieldValueRepositoryProvider =
     Provider<TripCostFieldValueRepositoryImpl>(
-  (ref) => TripCostFieldValueRepositoryImpl(
-    dataSource: ref.watch(tripCostFieldValueDataSourceProvider),
-  ),
-);
+      (ref) => TripCostFieldValueRepositoryImpl(
+        dataSource: ref.watch(tripCostFieldValueDataSourceProvider),
+      ),
+    );
 
 final fetchTripCostFieldValuesUseCaseProvider =
     Provider<FetchTripCostFieldValuesUseCase>(
-  (ref) => FetchTripCostFieldValuesUseCase(
-    ref.watch(tripCostFieldValueRepositoryProvider),
-  ),
-);
+      (ref) => FetchTripCostFieldValuesUseCase(
+        ref.watch(tripCostFieldValueRepositoryProvider),
+      ),
+    );
 
 final setTripCostFieldValuesUseCaseProvider =
     Provider<SetTripCostFieldValuesUseCase>(
-  (ref) => SetTripCostFieldValuesUseCase(
-    ref.watch(tripCostFieldValueRepositoryProvider),
-  ),
-);
+      (ref) => SetTripCostFieldValuesUseCase(
+        ref.watch(tripCostFieldValueRepositoryProvider),
+      ),
+    );
 
 /// A trip's assigned cost-field values. No realtime — set once (or edited
 /// rarely) per trip, refreshed via `ref.invalidate` after a save, same
 /// reasoning as `tripEmailAliasProvider`.
 final tripCostFieldValuesProvider =
-    FutureProvider.family<List<TripCostFieldValue>, String>(
-        (ref, itineraryId) async {
-  final result =
-      await ref.watch(fetchTripCostFieldValuesUseCaseProvider).call(itineraryId);
-  return result.fold((f) => throw Exception(f.message), (values) => values);
-});
+    FutureProvider.family<List<TripCostFieldValue>, String>((
+      ref,
+      itineraryId,
+    ) async {
+      final result = await ref
+          .watch(fetchTripCostFieldValuesUseCaseProvider)
+          .call(itineraryId);
+      return result.fold((f) => throw Exception(f.message), (values) => values);
+    });

@@ -19,8 +19,11 @@ void main() {
     orderIndex: 0,
     mode: TransportMode.flight,
     origin: Waypoint(name: 'Munich', latitude: 48.1351, longitude: 11.5820),
-    destination:
-        Waypoint(name: 'Bangkok', latitude: 13.7563, longitude: 100.5018),
+    destination: Waypoint(
+      name: 'Bangkok',
+      latitude: 13.7563,
+      longitude: 100.5018,
+    ),
   );
 
   final fullJson = <String, dynamic>{
@@ -165,19 +168,21 @@ void main() {
       expect(json.containsKey('forked_from_post_id'), isFalse);
     });
 
-    test('sets forked_from_post_id from itinerary.originPostId when present',
-        () {
-      final forkedItinerary = tItinerary.copyWith(originPostId: 'post-0');
+    test(
+      'sets forked_from_post_id from itinerary.originPostId when present',
+      () {
+        final forkedItinerary = tItinerary.copyWith(originPostId: 'post-0');
 
-      final json = ItineraryPostModel.buildInsertJson(
-        itinerary: forkedItinerary,
-        segments: const [tSegment],
-        authorId: 'user-1',
-        authorName: 'Alice',
-      );
+        final json = ItineraryPostModel.buildInsertJson(
+          itinerary: forkedItinerary,
+          segments: const [tSegment],
+          authorId: 'user-1',
+          authorName: 'Alice',
+        );
 
-      expect(json['forked_from_post_id'], 'post-0');
-    });
+        expect(json['forked_from_post_id'], 'post-0');
+      },
+    );
 
     test('embeds items and segments in the snapshot', () {
       final json = ItineraryPostModel.buildInsertJson(

@@ -8,6 +8,5 @@ class DeletePackingItemUseCase {
 
   final PackingRepository _repository;
 
-  Future<Either<Failure, void>> call(String id) =>
-      _repository.deleteItem(id);
+  Future<Either<Failure, void>> call(String id) => _repository.deleteItem(id);
 }

@@ -16,23 +16,27 @@ void main() {
 
   const wA = Waypoint(name: 'Munich', latitude: 48.1351, longitude: 11.5820);
   const wB = Waypoint(name: 'Bangkok', latitude: 13.7563, longitude: 100.5018);
-  const wC =
-      Waypoint(name: 'Chiang Mai', latitude: 18.7883, longitude: 98.9853);
+  const wC = Waypoint(
+    name: 'Chiang Mai',
+    latitude: 18.7883,
+    longitude: 98.9853,
+  );
 
   TripSegment segment(String id, int orderIndex) => TripSegment(
-        id: id,
-        itineraryId: 'it-1',
-        orderIndex: orderIndex,
-        mode: TransportMode.flight,
-        origin: wA,
-        destination: wB,
-      );
+    id: id,
+    itineraryId: 'it-1',
+    orderIndex: orderIndex,
+    mode: TransportMode.flight,
+    origin: wA,
+    destination: wB,
+  );
 
   setUp(() {
     mockRepo = MockTripSegmentRepository();
     useCase = ReorderTripSegmentsUseCase(mockRepo);
-    when(() => mockRepo.reorderSegments(any(), any()))
-        .thenAnswer((_) async => const Right(null));
+    when(
+      () => mockRepo.reorderSegments(any(), any()),
+    ).thenAnswer((_) async => const Right(null));
   });
 
   test('renumbers a list with gaps to a dense 0..n-1 sequence', () async {
@@ -48,22 +52,24 @@ void main() {
     expect(reordered.map((s) => s.orderIndex), [0, 1, 2]);
   });
 
-  test('preserves the given order, not the original orderIndex order',
-      () async {
-    // Deliberately out of numeric order — the input order is what matters,
-    // not each segment's stale orderIndex.
-    final segments = [segment('a', 40), segment('b', 5), segment('c', 12)];
+  test(
+    'preserves the given order, not the original orderIndex order',
+    () async {
+      // Deliberately out of numeric order — the input order is what matters,
+      // not each segment's stale orderIndex.
+      final segments = [segment('a', 40), segment('b', 5), segment('c', 12)];
 
-    await useCase('it-1', segments);
+      await useCase('it-1', segments);
 
-    final captured = verify(
-      () => mockRepo.reorderSegments('it-1', captureAny()),
-    ).captured;
-    final reordered = captured.first as List<TripSegment>;
+      final captured = verify(
+        () => mockRepo.reorderSegments('it-1', captureAny()),
+      ).captured;
+      final reordered = captured.first as List<TripSegment>;
 
-    expect(reordered.map((s) => s.id), ['a', 'b', 'c']);
-    expect(reordered.map((s) => s.orderIndex), [0, 1, 2]);
-  });
+      expect(reordered.map((s) => s.id), ['a', 'b', 'c']);
+      expect(reordered.map((s) => s.orderIndex), [0, 1, 2]);
+    },
+  );
 
   test('does not mutate any other field on the segments', () async {
     final segments = [
@@ -98,21 +104,23 @@ void main() {
     verify(() => mockRepo.reorderSegments('it-1', [])).called(1);
   });
 
-  test('handles deletion (a shorter list than before) with no gaps left',
-      () async {
-    // Simulates deleting the middle segment of a 3-segment trip: the
-    // remaining two are renumbered 0, 1 with no gap at the old index 1.
-    final remaining = [segment('a', 0), segment('c', 2)];
+  test(
+    'handles deletion (a shorter list than before) with no gaps left',
+    () async {
+      // Simulates deleting the middle segment of a 3-segment trip: the
+      // remaining two are renumbered 0, 1 with no gap at the old index 1.
+      final remaining = [segment('a', 0), segment('c', 2)];
 
-    await useCase('it-1', remaining);
+      await useCase('it-1', remaining);
 
-    final captured = verify(
-      () => mockRepo.reorderSegments('it-1', captureAny()),
-    ).captured;
-    final reordered = captured.first as List<TripSegment>;
+      final captured = verify(
+        () => mockRepo.reorderSegments('it-1', captureAny()),
+      ).captured;
+      final reordered = captured.first as List<TripSegment>;
 
-    expect(reordered.map((s) => s.orderIndex), [0, 1]);
-  });
+      expect(reordered.map((s) => s.orderIndex), [0, 1]);
+    },
+  );
 
   test('returns Right(null) on success', () async {
     final result = await useCase('it-1', [segment('a', 0)]);
@@ -121,8 +129,9 @@ void main() {
   });
 
   test('propagates ServerFailure from repository', () async {
-    when(() => mockRepo.reorderSegments(any(), any()))
-        .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+    when(
+      () => mockRepo.reorderSegments(any(), any()),
+    ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
     final result = await useCase('it-1', [segment('a', 0)]);
 

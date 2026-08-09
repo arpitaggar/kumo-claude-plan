@@ -15,23 +15,23 @@ class TripSegmentRepositoryImpl implements TripSegmentRepository {
   @override
   Stream<Either<Failure, List<TripSegment>>> watchSegments(
     String itineraryId,
-  ) =>
-      dataSource
-          .watchSegments(itineraryId)
-          .map<Either<Failure, List<TripSegment>>>(Right.new)
-          .handleError(
-            (Object e) => Left(
-              e is ServerException
-                  ? ServerFailure(e.message)
-                  : UnexpectedFailure(e.toString()),
-            ),
-          );
+  ) => dataSource
+      .watchSegments(itineraryId)
+      .map<Either<Failure, List<TripSegment>>>(Right.new)
+      .handleError(
+        (Object e) => Left(
+          e is ServerException
+              ? ServerFailure(e.message)
+              : UnexpectedFailure(e.toString()),
+        ),
+      );
 
   @override
   Future<Either<Failure, TripSegment>> addSegment(TripSegment segment) async {
     try {
-      final saved =
-          await dataSource.addSegment(TripSegmentModel.fromEntity(segment));
+      final saved = await dataSource.addSegment(
+        TripSegmentModel.fromEntity(segment),
+      );
       return Right(saved);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -45,8 +45,9 @@ class TripSegmentRepositoryImpl implements TripSegmentRepository {
     TripSegment segment,
   ) async {
     try {
-      final saved = await dataSource
-          .updateSegment(TripSegmentModel.fromEntity(segment));
+      final saved = await dataSource.updateSegment(
+        TripSegmentModel.fromEntity(segment),
+      );
       return Right(saved);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

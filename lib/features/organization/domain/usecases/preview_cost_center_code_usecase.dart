@@ -11,6 +11,5 @@ class PreviewCostCenterCodeUseCase {
   Future<Either<Failure, String?>> call({
     required String orgId,
     required Map<String, String> selections,
-  }) =>
-      _repository.previewCostCenterCode(orgId: orgId, selections: selections);
+  }) => _repository.previewCostCenterCode(orgId: orgId, selections: selections);
 }

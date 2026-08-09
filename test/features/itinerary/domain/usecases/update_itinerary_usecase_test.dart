@@ -36,8 +36,9 @@ void main() {
     useCase = UpdateItineraryUseCase(mockRepo);
 
     registerFallbackValue(tItinerary);
-    when(() => mockRepo.updateItinerary(any()))
-        .thenAnswer((_) async => Right(tItinerary));
+    when(
+      () => mockRepo.updateItinerary(any()),
+    ).thenAnswer((_) async => Right(tItinerary));
   });
 
   group('UpdateItineraryUseCase — validation', () {
@@ -52,21 +53,23 @@ void main() {
       verifyNever(() => mockRepo.updateItinerary(any()));
     });
 
-    test('returns ValidationFailure when end date is before start date',
-        () async {
-      final bad = tItinerary.copyWith(
-        startDate: DateTime(2026, 10, 7),
-        endDate: DateTime(2026, 10),
-      );
+    test(
+      'returns ValidationFailure when end date is before start date',
+      () async {
+        final bad = tItinerary.copyWith(
+          startDate: DateTime(2026, 10, 7),
+          endDate: DateTime(2026, 10),
+        );
 
-      final result = await useCase(bad);
+        final result = await useCase(bad);
 
-      expect(result.isLeft(), isTrue);
-      result.fold(
-        (f) => expect(f, isA<ValidationFailure>()),
-        (_) => fail('expected Left'),
-      );
-    });
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (f) => expect(f, isA<ValidationFailure>()),
+          (_) => fail('expected Left'),
+        );
+      },
+    );
 
     test('returns ValidationFailure for negative budget', () async {
       final result = await useCase(tItinerary.copyWith(totalBudget: -100));
@@ -107,8 +110,9 @@ void main() {
     });
 
     test('propagates ServerFailure from repository', () async {
-      when(() => mockRepo.updateItinerary(any()))
-          .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+      when(
+        () => mockRepo.updateItinerary(any()),
+      ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
       final result = await useCase(tItinerary);
 

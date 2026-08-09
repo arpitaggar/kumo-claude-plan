@@ -14,19 +14,18 @@ void main() {
     required String payerName,
     required double amount,
     required List<ExpenseSplit> splits,
-  }) =>
-      Expense(
-        id: 'e-$payerId',
-        itineraryId: 'itinerary-1',
-        title: 'Test expense',
-        amount: amount,
-        currencyCode: 'USD',
-        category: ExpenseCategory.other,
-        payerId: payerId,
-        payerName: payerName,
-        splits: splits,
-        createdAt: DateTime(2026),
-      );
+  }) => Expense(
+    id: 'e-$payerId',
+    itineraryId: 'itinerary-1',
+    title: 'Test expense',
+    amount: amount,
+    currencyCode: 'USD',
+    category: ExpenseCategory.other,
+    payerId: payerId,
+    payerName: payerName,
+    splits: splits,
+    createdAt: DateTime(2026),
+  );
 
   group('empty / trivial cases', () {
     test('returns empty list for no expenses', () {
@@ -51,8 +50,7 @@ void main() {
         payerName: 'Alice',
         amount: 100,
         splits: [
-          const ExpenseSplit(
-              userId: 'bob', userName: 'Bob', shareAmount: 50),
+          const ExpenseSplit(userId: 'bob', userName: 'Bob', shareAmount: 50),
         ],
       );
 
@@ -73,8 +71,7 @@ void main() {
           payerName: 'Alice',
           amount: 60,
           splits: [
-            const ExpenseSplit(
-                userId: 'bob', userName: 'Bob', shareAmount: 60),
+            const ExpenseSplit(userId: 'bob', userName: 'Bob', shareAmount: 60),
           ],
         ),
         makeExpense(
@@ -83,7 +80,10 @@ void main() {
           amount: 20,
           splits: [
             const ExpenseSplit(
-                userId: 'alice', userName: 'Alice', shareAmount: 20),
+              userId: 'alice',
+              userName: 'Alice',
+              shareAmount: 20,
+            ),
           ],
         ),
       ];
@@ -104,7 +104,10 @@ void main() {
         amount: 100,
         splits: [
           const ExpenseSplit(
-              userId: 'bob', userName: 'Bob', shareAmount: 33.33),
+            userId: 'bob',
+            userName: 'Bob',
+            shareAmount: 33.33,
+          ),
         ],
       );
 
@@ -122,10 +125,12 @@ void main() {
         payerName: 'Alice',
         amount: 90,
         splits: [
+          const ExpenseSplit(userId: 'bob', userName: 'Bob', shareAmount: 30),
           const ExpenseSplit(
-              userId: 'bob', userName: 'Bob', shareAmount: 30),
-          const ExpenseSplit(
-              userId: 'carol', userName: 'Carol', shareAmount: 30),
+            userId: 'carol',
+            userName: 'Carol',
+            shareAmount: 30,
+          ),
         ],
       );
 
@@ -149,10 +154,12 @@ void main() {
           payerName: 'Alice',
           amount: 90,
           splits: [
+            const ExpenseSplit(userId: 'bob', userName: 'Bob', shareAmount: 30),
             const ExpenseSplit(
-                userId: 'bob', userName: 'Bob', shareAmount: 30),
-            const ExpenseSplit(
-                userId: 'carol', userName: 'Carol', shareAmount: 30),
+              userId: 'carol',
+              userName: 'Carol',
+              shareAmount: 30,
+            ),
           ],
         ),
         makeExpense(
@@ -161,7 +168,10 @@ void main() {
           amount: 10,
           splits: [
             const ExpenseSplit(
-                userId: 'alice', userName: 'Alice', shareAmount: 10),
+              userId: 'alice',
+              userName: 'Alice',
+              shareAmount: 10,
+            ),
           ],
         ),
         makeExpense(
@@ -170,7 +180,10 @@ void main() {
           amount: 5,
           splits: [
             const ExpenseSplit(
-                userId: 'alice', userName: 'Alice', shareAmount: 5),
+              userId: 'alice',
+              userName: 'Alice',
+              shareAmount: 5,
+            ),
           ],
         ),
       ];
@@ -179,8 +192,7 @@ void main() {
 
       // Total owed to Alice = 45.  Bob net owes 20; Carol net owes 25.
       expect(settlements, hasLength(2));
-      final totalPaid =
-          settlements.fold<double>(0, (sum, s) => sum + s.amount);
+      final totalPaid = settlements.fold<double>(0, (sum, s) => sum + s.amount);
       expect(totalPaid, closeTo(45.0, 0.01));
     });
 
@@ -192,8 +204,7 @@ void main() {
           payerName: 'Alice',
           amount: 50,
           splits: [
-            const ExpenseSplit(
-                userId: 'bob', userName: 'Bob', shareAmount: 50),
+            const ExpenseSplit(userId: 'bob', userName: 'Bob', shareAmount: 50),
           ],
         ),
         makeExpense(
@@ -202,7 +213,10 @@ void main() {
           amount: 50,
           splits: [
             const ExpenseSplit(
-                userId: 'carol', userName: 'Carol', shareAmount: 50),
+              userId: 'carol',
+              userName: 'Carol',
+              shareAmount: 50,
+            ),
           ],
         ),
         makeExpense(
@@ -211,7 +225,10 @@ void main() {
           amount: 50,
           splits: [
             const ExpenseSplit(
-                userId: 'alice', userName: 'Alice', shareAmount: 50),
+              userId: 'alice',
+              userName: 'Alice',
+              shareAmount: 50,
+            ),
           ],
         ),
       ];
@@ -227,8 +244,7 @@ void main() {
         payerName: 'Alice',
         amount: 60,
         splits: [
-          const ExpenseSplit(
-              userId: 'bob', userName: 'Bob', shareAmount: 60),
+          const ExpenseSplit(userId: 'bob', userName: 'Bob', shareAmount: 60),
         ],
       );
 
@@ -247,10 +263,12 @@ void main() {
           payerName: 'Alice',
           amount: 90,
           splits: [
+            const ExpenseSplit(userId: 'bob', userName: 'Bob', shareAmount: 45),
             const ExpenseSplit(
-                userId: 'bob', userName: 'Bob', shareAmount: 45),
-            const ExpenseSplit(
-                userId: 'carol', userName: 'Carol', shareAmount: 45),
+              userId: 'carol',
+              userName: 'Carol',
+              shareAmount: 45,
+            ),
           ],
         ),
       ];

@@ -31,7 +31,10 @@ abstract class ChatRemoteDataSource {
   });
   Future<void> markMessagesRead(String itineraryId);
   Future<List<MessageReadReceiptModel>> getReadReceipts(String messageId);
-  Future<void> upsertPushToken({required String token, required String platform});
+  Future<void> upsertPushToken({
+    required String token,
+    required String platform,
+  });
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -171,7 +174,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           body: {'message_id': messageId},
         );
         AppLogger.info(
-            'send-message-push: status=${res.status} data=${res.data}');
+          'send-message-push: status=${res.status} data=${res.data}',
+        );
       } catch (e, st) {
         // Edge function not deployed, or the caller is offline — the
         // message itself already landed via the insert above.
@@ -208,8 +212,9 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         params: {'p_message_id': messageId},
       );
       return (rows as List)
-          .map((r) =>
-              MessageReadReceiptModel.fromJson(r as Map<String, dynamic>))
+          .map(
+            (r) => MessageReadReceiptModel.fromJson(r as Map<String, dynamic>),
+          )
           .toList();
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);

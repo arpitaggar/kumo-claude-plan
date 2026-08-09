@@ -57,33 +57,32 @@ class TripSegment extends Equatable {
     String? notes,
     List<(double, double)>? routeGeometry,
     bool? isVisible,
-  }) =>
-      TripSegment(
-        id: id,
-        itineraryId: itineraryId,
-        orderIndex: orderIndex ?? this.orderIndex,
-        mode: mode ?? this.mode,
-        origin: origin ?? this.origin,
-        destination: destination ?? this.destination,
-        departureTime: departureTime ?? this.departureTime,
-        arrivalTime: arrivalTime ?? this.arrivalTime,
-        notes: notes ?? this.notes,
-        routeGeometry: routeGeometry ?? this.routeGeometry,
-        isVisible: isVisible ?? this.isVisible,
-      );
+  }) => TripSegment(
+    id: id,
+    itineraryId: itineraryId,
+    orderIndex: orderIndex ?? this.orderIndex,
+    mode: mode ?? this.mode,
+    origin: origin ?? this.origin,
+    destination: destination ?? this.destination,
+    departureTime: departureTime ?? this.departureTime,
+    arrivalTime: arrivalTime ?? this.arrivalTime,
+    notes: notes ?? this.notes,
+    routeGeometry: routeGeometry ?? this.routeGeometry,
+    isVisible: isVisible ?? this.isVisible,
+  );
 
   @override
   List<Object?> get props => [
-        id,
-        itineraryId,
-        orderIndex,
-        mode,
-        origin,
-        destination,
-        departureTime,
-        arrivalTime,
-        notes,
-        routeGeometry,
-        isVisible,
-      ];
+    id,
+    itineraryId,
+    orderIndex,
+    mode,
+    origin,
+    destination,
+    departureTime,
+    arrivalTime,
+    notes,
+    routeGeometry,
+    isVisible,
+  ];
 }

@@ -17,15 +17,15 @@ class ProfileStatus extends Equatable {
   });
 
   factory ProfileStatus.fromJson(Map<String, dynamic> json) => ProfileStatus(
-        id: json['id'] as String,
-        userId: json['user_id'] as String,
-        status: json['status'] as String,
-        reason: json['reason'] as String,
-        expiresAt: json['expires_at'] != null
-            ? DateTime.parse(json['expires_at'] as String).toUtc()
-            : null,
-        createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
-      );
+    id: json['id'] as String,
+    userId: json['user_id'] as String,
+    status: json['status'] as String,
+    reason: json['reason'] as String,
+    expiresAt: json['expires_at'] != null
+        ? DateTime.parse(json['expires_at'] as String).toUtc()
+        : null,
+    createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
+  );
 
   final String id;
   final String userId;

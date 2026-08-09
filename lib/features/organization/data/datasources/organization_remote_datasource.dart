@@ -36,9 +36,7 @@ abstract class OrganizationRemoteDataSource {
 
   Future<void> removeMember(String orgMemberId);
 
-  Future<List<PendingExpenseApprovalModel>> fetchPendingApprovals(
-    String orgId,
-  );
+  Future<List<PendingExpenseApprovalModel>> fetchPendingApprovals(String orgId);
 
   Future<void> approveExpense(String expenseId);
 
@@ -151,9 +149,7 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
           .limit(1);
 
       if (profileRows.isEmpty) {
-        throw NotFoundException(
-          message: 'No Kumo account found for $email',
-        );
+        throw NotFoundException(message: 'No Kumo account found for $email');
       }
       final profile = profileRows.first;
 
@@ -216,10 +212,12 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
       // vulnerability — see stage32's migration comment) — this function
       // does its own authorization check and returns only the columns this
       // screen needs.
-      final rows = await KumoSupabaseClient.client.rpc(
-        'fetch_org_pending_approvals',
-        params: {'p_org_id': orgId},
-      ) as List<dynamic>;
+      final rows =
+          await KumoSupabaseClient.client.rpc(
+                'fetch_org_pending_approvals',
+                params: {'p_org_id': orgId},
+              )
+              as List<dynamic>;
       return rows
           .cast<Map<String, dynamic>>()
           .map(PendingExpenseApprovalModel.fromJson)
@@ -235,12 +233,15 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
   Future<void> approveExpense(String expenseId) async {
     try {
       final uid = KumoSupabaseClient.auth.currentUser!.id;
-      await KumoSupabaseClient.client.from(_expensesTable).update({
-        'approval_status': 'approved',
-        'reviewed_by': uid,
-        'reviewed_at': DateTime.now().toUtc().toIso8601String(),
-        'rejection_reason': null,
-      }).eq('id', expenseId);
+      await KumoSupabaseClient.client
+          .from(_expensesTable)
+          .update({
+            'approval_status': 'approved',
+            'reviewed_by': uid,
+            'reviewed_at': DateTime.now().toUtc().toIso8601String(),
+            'rejection_reason': null,
+          })
+          .eq('id', expenseId);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {
@@ -252,12 +253,15 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
   Future<void> rejectExpense(String expenseId, String reason) async {
     try {
       final uid = KumoSupabaseClient.auth.currentUser!.id;
-      await KumoSupabaseClient.client.from(_expensesTable).update({
-        'approval_status': 'rejected',
-        'reviewed_by': uid,
-        'reviewed_at': DateTime.now().toUtc().toIso8601String(),
-        'rejection_reason': reason,
-      }).eq('id', expenseId);
+      await KumoSupabaseClient.client
+          .from(_expensesTable)
+          .update({
+            'approval_status': 'rejected',
+            'reviewed_by': uid,
+            'reviewed_at': DateTime.now().toUtc().toIso8601String(),
+            'rejection_reason': reason,
+          })
+          .eq('id', expenseId);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {
@@ -290,12 +294,13 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
     required List<String> sourceFieldIds,
   }) async {
     try {
-      final fieldRows = await KumoSupabaseClient.client.from(_costFieldsTable).insert({
-        'org_id': orgId,
-        'label': label,
-        'field_type': fieldType.name,
-        'separator': separator,
-      }).select();
+      final fieldRows =
+          await KumoSupabaseClient.client.from(_costFieldsTable).insert({
+            'org_id': orgId,
+            'label': label,
+            'field_type': fieldType.name,
+            'separator': separator,
+          }).select();
       final fieldId = fieldRows.first['id'] as String;
 
       if (sourceFieldIds.isNotEmpty) {
@@ -335,7 +340,8 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
     } on sb.PostgrestException catch (e) {
       if (e.code == '23503') {
         throw ServerException(
-          message: "This field is used by an existing trip and can't be deleted",
+          message:
+              "This field is used by an existing trip and can't be deleted",
         );
       }
       throw ServerException(message: e.message);
@@ -351,11 +357,10 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
     required String code,
   }) async {
     try {
-      final rows = await KumoSupabaseClient.client.from(_costFieldOptionsTable).insert({
-        'field_id': fieldId,
-        'value': value,
-        'code': code,
-      }).select();
+      final rows = await KumoSupabaseClient.client
+          .from(_costFieldOptionsTable)
+          .insert({'field_id': fieldId, 'value': value, 'code': code})
+          .select();
       return OrgCostFieldOptionModel.fromJson(rows.first);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
@@ -374,7 +379,8 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
     } on sb.PostgrestException catch (e) {
       if (e.code == '23503') {
         throw ServerException(
-          message: "This value is used by an existing trip and can't be deleted",
+          message:
+              "This value is used by an existing trip and can't be deleted",
         );
       }
       throw ServerException(message: e.message);

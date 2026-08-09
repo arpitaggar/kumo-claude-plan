@@ -18,48 +18,43 @@ class TripThemePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 56,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: TripTheme.all.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 10),
-          itemBuilder: (_, i) {
-            final theme = TripTheme.all[i];
-            final selected = theme.key == selectedKey;
-            return GestureDetector(
-              onTap: () => onSelected(theme.key),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: theme.cardBarGradient,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: selected
-                        ? theme.primary
-                        : Colors.transparent,
-                    width: 2.5,
-                  ),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: theme.primary.withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    theme.emoji,
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                ),
+    height: 56,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: TripTheme.all.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 10),
+      itemBuilder: (_, i) {
+        final theme = TripTheme.all[i];
+        final selected = theme.key == selectedKey;
+        return GestureDetector(
+          onTap: () => onSelected(theme.key),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: theme.cardBarGradient,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected ? theme.primary : Colors.transparent,
+                width: 2.5,
               ),
-            );
-          },
-        ),
-      );
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: theme.primary.withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Center(
+              child: Text(theme.emoji, style: const TextStyle(fontSize: 20)),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }

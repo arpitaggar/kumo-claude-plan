@@ -57,30 +57,32 @@ void main() {
     useCase = PublishItineraryUseCase(mockRepo);
   });
 
-  test('delegates to repository with the given itinerary/segments/author',
-      () async {
-    when(
-      () => mockRepo.publishItinerary(
+  test(
+    'delegates to repository with the given itinerary/segments/author',
+    () async {
+      when(
+        () => mockRepo.publishItinerary(
+          itinerary: tItinerary,
+          segments: const [],
+          authorName: 'Alice',
+        ),
+      ).thenAnswer((_) async => Right(tPost));
+
+      await useCase(
         itinerary: tItinerary,
         segments: const [],
         authorName: 'Alice',
-      ),
-    ).thenAnswer((_) async => Right(tPost));
+      );
 
-    await useCase(
-      itinerary: tItinerary,
-      segments: const [],
-      authorName: 'Alice',
-    );
-
-    verify(
-      () => mockRepo.publishItinerary(
-        itinerary: tItinerary,
-        segments: const [],
-        authorName: 'Alice',
-      ),
-    ).called(1);
-  });
+      verify(
+        () => mockRepo.publishItinerary(
+          itinerary: tItinerary,
+          segments: const [],
+          authorName: 'Alice',
+        ),
+      ).called(1);
+    },
+  );
 
   test('returns Right(post) on success', () async {
     when(
@@ -99,7 +101,10 @@ void main() {
     );
 
     expect(result.isRight(), isTrue);
-    result.fold((_) => fail('expected Right'), (post) => expect(post.id, 'post-1'));
+    result.fold(
+      (_) => fail('expected Right'),
+      (post) => expect(post.id, 'post-1'),
+    );
   });
 
   test('propagates ServerFailure from repository', () async {
@@ -119,6 +124,9 @@ void main() {
     );
 
     expect(result.isLeft(), isTrue);
-    result.fold((f) => expect(f, isA<ServerFailure>()), (_) => fail('expected Left'));
+    result.fold(
+      (f) => expect(f, isA<ServerFailure>()),
+      (_) => fail('expected Left'),
+    );
   });
 }

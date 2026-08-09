@@ -9,8 +9,8 @@ class NotificationPreferenceModel extends NotificationPreference {
 
   factory NotificationPreferenceModel.fromJson(Map<String, dynamic> json) =>
       NotificationPreferenceModel(
-        channel:  json['channel']  as String,
+        channel: json['channel'] as String,
         category: json['category'] as String,
-        enabled:  json['enabled']  as bool,
+        enabled: json['enabled'] as bool,
       );
 }

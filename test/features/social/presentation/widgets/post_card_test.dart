@@ -50,14 +50,16 @@ void main() {
     expect(find.text('A week exploring Tokyo'), findsOneWidget);
   });
 
-  testWidgets('does not show a "Remixed" chip when forkedFromPostId is null',
-      (tester) async {
+  testWidgets('does not show a "Remixed" chip when forkedFromPostId is null', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildCard());
     expect(find.text('Remixed'), findsNothing);
   });
 
-  testWidgets('shows a "Remixed" chip when forkedFromPostId is set',
-      (tester) async {
+  testWidgets('shows a "Remixed" chip when forkedFromPostId is set', (
+    tester,
+  ) async {
     final forked = ItineraryPost(
       id: tPost.id,
       authorId: tPost.authorId,
@@ -79,8 +81,9 @@ void main() {
     expect(find.text('Remixed'), findsOneWidget);
   });
 
-  testWidgets('fires onAuthorTap when the author row is tapped',
-      (tester) async {
+  testWidgets('fires onAuthorTap when the author row is tapped', (
+    tester,
+  ) async {
     var tapped = false;
     await tester.pumpWidget(buildCard(onAuthorTap: () => tapped = true));
 
@@ -122,8 +125,9 @@ void main() {
     expect(find.byIcon(Icons.favorite_border), findsNothing);
   });
 
-  testWidgets('fires onFork when "Use this itinerary" is tapped',
-      (tester) async {
+  testWidgets('fires onFork when "Use this itinerary" is tapped', (
+    tester,
+  ) async {
     var tapped = false;
     await tester.pumpWidget(buildCard(onFork: () => tapped = true));
 

@@ -23,8 +23,7 @@ final connectivityStreamProvider = StreamProvider<bool>(
 /// Synchronous bool derived from [connectivityStreamProvider].
 /// Defaults to `true` while the stream initialises (optimistic).
 final isOnlineProvider = Provider<bool>(
-  (ref) => ref.watch(connectivityStreamProvider).maybeWhen(
-        data: (online) => online,
-        orElse: () => true,
-      ),
+  (ref) => ref
+      .watch(connectivityStreamProvider)
+      .maybeWhen(data: (online) => online, orElse: () => true),
 );

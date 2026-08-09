@@ -17,8 +17,9 @@ void main() {
   });
 
   test('delegates to repository with the provided id', () async {
-    when(() => mockRepo.deleteItinerary('it-1'))
-        .thenAnswer((_) async => const Right(null));
+    when(
+      () => mockRepo.deleteItinerary('it-1'),
+    ).thenAnswer((_) async => const Right(null));
 
     await useCase('it-1');
 
@@ -26,8 +27,9 @@ void main() {
   });
 
   test('returns Right(null) on success', () async {
-    when(() => mockRepo.deleteItinerary(any()))
-        .thenAnswer((_) async => const Right(null));
+    when(
+      () => mockRepo.deleteItinerary(any()),
+    ).thenAnswer((_) async => const Right(null));
 
     final result = await useCase('it-1');
 
@@ -35,8 +37,9 @@ void main() {
   });
 
   test('propagates ServerFailure from repository', () async {
-    when(() => mockRepo.deleteItinerary(any()))
-        .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+    when(
+      () => mockRepo.deleteItinerary(any()),
+    ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
     final result = await useCase('it-1');
 
@@ -47,8 +50,9 @@ void main() {
   });
 
   test('propagates NetworkFailure from repository', () async {
-    when(() => mockRepo.deleteItinerary(any()))
-        .thenAnswer((_) async => const Left(NetworkFailure('No internet')));
+    when(
+      () => mockRepo.deleteItinerary(any()),
+    ).thenAnswer((_) async => const Left(NetworkFailure('No internet')));
 
     final result = await useCase('it-1');
 

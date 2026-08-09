@@ -44,7 +44,7 @@ class UserProfile extends Equatable {
 
   // Localisation
   final String? city;
-  final String? country;           // ISO 3166-1 alpha-2
+  final String? country; // ISO 3166-1 alpha-2
   final String? timezone;
   final String? preferredCurrency; // ISO 4217
   final String? preferredLanguage; // ISO 639-1
@@ -102,51 +102,49 @@ class UserProfile extends Equatable {
     DateTime? usernameLastChangedAt,
     DateTime? updatedAt,
     bool? pushMessagePreviewEnabled,
-  }) =>
-      UserProfile(
-        id: id ?? this.id,
-        email: email ?? this.email,
-        displayName: displayName ?? this.displayName,
-        username: username ?? this.username,
-        avatarUrl: avatarUrl ?? this.avatarUrl,
-        bio: bio ?? this.bio,
-        city: city ?? this.city,
-        country: country ?? this.country,
-        timezone: timezone ?? this.timezone,
-        preferredCurrency: preferredCurrency ?? this.preferredCurrency,
-        preferredLanguage: preferredLanguage ?? this.preferredLanguage,
-        unitsPreference: unitsPreference ?? this.unitsPreference,
-        travelPreferenceTags: travelPreferenceTags ?? this.travelPreferenceTags,
-        isSearchable: isSearchable ?? this.isSearchable,
-        profileVisibility: profileVisibility ?? this.profileVisibility,
-        contactVisibility: contactVisibility ?? this.contactVisibility,
-        usernameLastChangedAt:
-            usernameLastChangedAt ?? this.usernameLastChangedAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        pushMessagePreviewEnabled:
-            pushMessagePreviewEnabled ?? this.pushMessagePreviewEnabled,
-      );
+  }) => UserProfile(
+    id: id ?? this.id,
+    email: email ?? this.email,
+    displayName: displayName ?? this.displayName,
+    username: username ?? this.username,
+    avatarUrl: avatarUrl ?? this.avatarUrl,
+    bio: bio ?? this.bio,
+    city: city ?? this.city,
+    country: country ?? this.country,
+    timezone: timezone ?? this.timezone,
+    preferredCurrency: preferredCurrency ?? this.preferredCurrency,
+    preferredLanguage: preferredLanguage ?? this.preferredLanguage,
+    unitsPreference: unitsPreference ?? this.unitsPreference,
+    travelPreferenceTags: travelPreferenceTags ?? this.travelPreferenceTags,
+    isSearchable: isSearchable ?? this.isSearchable,
+    profileVisibility: profileVisibility ?? this.profileVisibility,
+    contactVisibility: contactVisibility ?? this.contactVisibility,
+    usernameLastChangedAt: usernameLastChangedAt ?? this.usernameLastChangedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    pushMessagePreviewEnabled:
+        pushMessagePreviewEnabled ?? this.pushMessagePreviewEnabled,
+  );
 
   @override
   List<Object?> get props => [
-        id,
-        email,
-        displayName,
-        username,
-        avatarUrl,
-        bio,
-        city,
-        country,
-        timezone,
-        preferredCurrency,
-        preferredLanguage,
-        unitsPreference,
-        travelPreferenceTags,
-        isSearchable,
-        profileVisibility,
-        contactVisibility,
-        usernameLastChangedAt,
-        updatedAt,
-        pushMessagePreviewEnabled,
-      ];
+    id,
+    email,
+    displayName,
+    username,
+    avatarUrl,
+    bio,
+    city,
+    country,
+    timezone,
+    preferredCurrency,
+    preferredLanguage,
+    unitsPreference,
+    travelPreferenceTags,
+    isSearchable,
+    profileVisibility,
+    contactVisibility,
+    usernameLastChangedAt,
+    updatedAt,
+    pushMessagePreviewEnabled,
+  ];
 }

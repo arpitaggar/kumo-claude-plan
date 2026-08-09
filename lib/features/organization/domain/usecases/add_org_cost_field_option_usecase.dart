@@ -13,6 +13,9 @@ class AddOrgCostFieldOptionUseCase {
     required String fieldId,
     required String value,
     required String code,
-  }) =>
-      _repository.addCostFieldOption(fieldId: fieldId, value: value, code: code);
+  }) => _repository.addCostFieldOption(
+    fieldId: fieldId,
+    value: value,
+    code: code,
+  );
 }

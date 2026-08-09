@@ -49,10 +49,7 @@ class ExpenseRemoteDataSourceImpl implements ExpenseRemoteDataSource {
   @override
   Future<void> deleteExpense(String expenseId) async {
     try {
-      await KumoSupabaseClient.client
-          .from(_table)
-          .delete()
-          .eq('id', expenseId);
+      await KumoSupabaseClient.client.from(_table).delete().eq('id', expenseId);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {
@@ -63,12 +60,15 @@ class ExpenseRemoteDataSourceImpl implements ExpenseRemoteDataSource {
   @override
   Future<void> submitForApproval(List<String> expenseIds) async {
     try {
-      await KumoSupabaseClient.client.from(_table).update({
-        'is_official': true,
-        'approval_status': 'pending',
-        'submitted_at': DateTime.now().toUtc().toIso8601String(),
-        'rejection_reason': null,
-      }).inFilter('id', expenseIds);
+      await KumoSupabaseClient.client
+          .from(_table)
+          .update({
+            'is_official': true,
+            'approval_status': 'pending',
+            'submitted_at': DateTime.now().toUtc().toIso8601String(),
+            'rejection_reason': null,
+          })
+          .inFilter('id', expenseIds);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

@@ -37,7 +37,8 @@ abstract class UserProfileRepository {
   });
 
   /// Returns all notification preference rows for the authenticated user.
-  Future<Either<Failure, List<NotificationPreference>>> getNotificationPreferences();
+  Future<Either<Failure, List<NotificationPreference>>>
+  getNotificationPreferences();
 
   /// Upserts a single (channel, category) preference row.
   Future<Either<Failure, void>> upsertNotificationPreference({

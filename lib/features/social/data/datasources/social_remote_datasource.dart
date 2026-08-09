@@ -128,8 +128,8 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
         rows = rows.where((r) {
           final row = r as Map<String, dynamic>;
           final title = (row['title'] as String? ?? '').toLowerCase();
-          final description =
-              (row['description'] as String? ?? '').toLowerCase();
+          final description = (row['description'] as String? ?? '')
+              .toLowerCase();
           return title.contains(q) || description.contains(q);
         }).toList();
       }
@@ -266,9 +266,7 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
       if (post.segments.isNotEmpty) {
         final segmentRows = post.segments
             .map(
-              (s) => TripSegmentModel.fromEntity(
-                s.copyWith(),
-              ).toJson()
+              (s) => TripSegmentModel.fromEntity(s.copyWith()).toJson()
                 ..['id'] = const Uuid().v4()
                 ..['itinerary_id'] = newItineraryId,
             )

@@ -56,9 +56,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     if (authState is AuthLoading) {
-      return const Scaffold(
-        body: LoadingWidget(message: 'Signing in…'),
-      );
+      return const Scaffold(body: LoadingWidget(message: 'Signing in…'));
     }
 
     return Scaffold(
@@ -110,7 +108,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Text(
                   'Sign in to continue your journey',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: context.colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 48),
 

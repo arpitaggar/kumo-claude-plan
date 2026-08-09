@@ -17,8 +17,9 @@ void main() {
   });
 
   test('delegates to repository with the provided id', () async {
-    when(() => mockRepo.deleteSegment('seg-1'))
-        .thenAnswer((_) async => const Right(null));
+    when(
+      () => mockRepo.deleteSegment('seg-1'),
+    ).thenAnswer((_) async => const Right(null));
 
     await useCase('seg-1');
 
@@ -26,8 +27,9 @@ void main() {
   });
 
   test('returns Right(null) on success', () async {
-    when(() => mockRepo.deleteSegment(any()))
-        .thenAnswer((_) async => const Right(null));
+    when(
+      () => mockRepo.deleteSegment(any()),
+    ).thenAnswer((_) async => const Right(null));
 
     final result = await useCase('seg-1');
 
@@ -35,8 +37,9 @@ void main() {
   });
 
   test('propagates ServerFailure from repository', () async {
-    when(() => mockRepo.deleteSegment(any()))
-        .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+    when(
+      () => mockRepo.deleteSegment(any()),
+    ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
     final result = await useCase('seg-1');
 

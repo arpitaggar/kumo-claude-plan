@@ -56,9 +56,7 @@ class _PrefsBodyState extends ConsumerState<_PrefsBody> {
   @override
   void initState() {
     super.initState();
-    _state = {
-      for (final p in widget.prefs) (p.channel, p.category): p.enabled,
-    };
+    _state = {for (final p in widget.prefs) (p.channel, p.category): p.enabled};
   }
 
   bool _get(String channel, String category) =>
@@ -75,66 +73,63 @@ class _PrefsBodyState extends ConsumerState<_PrefsBody> {
     final result = await ref
         .read(userProfileRepositoryProvider)
         .upsertNotificationPreference(
-          channel:  channel,
+          channel: channel,
           category: category,
-          enabled:  enabled,
+          enabled: enabled,
         );
 
-    result.fold(
-      (f) {
-        // Revert on failure
-        if (mounted) {
-          setState(() => _state[(channel, category)] = !enabled);
-          context.showSnackBar(f.message, isError: true);
-        }
-      },
-      (_) {},
-    );
+    result.fold((f) {
+      // Revert on failure
+      if (mounted) {
+        setState(() => _state[(channel, category)] = !enabled);
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) {});
   }
 
   @override
   Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-            child: Text(
-              'Choose which events notify you and how.',
-              style: TextStyle(
-                fontSize: 13,
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+        child: Text(
+          'Choose which events notify you and how.',
+          style: TextStyle(
+            fontSize: 13,
+            color: context.colorScheme.onSurfaceVariant,
           ),
-          _ChannelHeader(),
-          const Divider(height: 1),
-          ...NotifCategory.all.map(
-            (category) => _CategoryRow(
-              category: category,
-              getEnabled: (ch) => _get(ch, category),
-              onToggle: (ch, {required enabled}) =>
-                _toggle(ch, category, enabled: enabled),
-            ),
+        ),
+      ),
+      _ChannelHeader(),
+      const Divider(height: 1),
+      ...NotifCategory.all.map(
+        (category) => _CategoryRow(
+          category: category,
+          getEnabled: (ch) => _get(ch, category),
+          onToggle: (ch, {required enabled}) =>
+              _toggle(ch, category, enabled: enabled),
+        ),
+      ),
+      const SizedBox(height: 8),
+      _MessagePreviewToggle(
+        chatPushEnabled: _get(NotifChannel.push, NotifCategory.chatMessages),
+      ),
+      const SizedBox(height: 16),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Text(
+          'SMS alerts are stored but not yet active. '
+          'Push and email delivery depends on your device and account settings.',
+          style: TextStyle(
+            fontSize: 12,
+            color: context.colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(height: 8),
-          _MessagePreviewToggle(
-            chatPushEnabled: _get(NotifChannel.push, NotifCategory.chatMessages),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              'SMS alerts are stored but not yet active. '
-              'Push and email delivery depends on your device and account settings.',
-              style: TextStyle(
-                fontSize: 12,
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-        ],
-      );
+        ),
+      ),
+      const SizedBox(height: 32),
+    ],
+  );
 }
 
 // ── Channel header row ────────────────────────────────────────────────────────
@@ -142,35 +137,35 @@ class _PrefsBodyState extends ConsumerState<_PrefsBody> {
 class _ChannelHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Row(
-          children: [
-            const Expanded(child: SizedBox()),
-            ...NotifChannel.all.map(
-              (ch) => SizedBox(
-                width: 60,
-                child: Text(
-                  _channelLabel(ch),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                ),
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+    child: Row(
+      children: [
+        const Expanded(child: SizedBox()),
+        ...NotifChannel.all.map(
+          (ch) => SizedBox(
+            width: 60,
+            child: Text(
+              _channelLabel(ch),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: context.colorScheme.onSurfaceVariant,
               ),
             ),
-          ],
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   String _channelLabel(String ch) => switch (ch) {
-        NotifChannel.push  => 'PUSH',
-        NotifChannel.email => 'EMAIL',
-        NotifChannel.sms   => 'SMS',
-        _                  => ch.toUpperCase(),
-      };
+    NotifChannel.push => 'PUSH',
+    NotifChannel.email => 'EMAIL',
+    NotifChannel.sms => 'SMS',
+    _ => ch.toUpperCase(),
+  };
 }
 
 // ── One row per notification category ────────────────────────────────────────
@@ -188,38 +183,38 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    NotifCategory.label(category),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: context.colorScheme.onSurface,
-                    ),
-                  ),
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                NotifCategory.label(category),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: context.colorScheme.onSurface,
                 ),
-                ...NotifChannel.all.map(
-                  (ch) => SizedBox(
-                    width: 60,
-                    child: Switch(
-                      value: getEnabled(ch),
-                      onChanged: (v) => onToggle(ch, enabled: v),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-          const Divider(height: 1, indent: 20),
-        ],
-      );
+            ...NotifChannel.all.map(
+              (ch) => SizedBox(
+                width: 60,
+                child: Switch(
+                  value: getEnabled(ch),
+                  onChanged: (v) => onToggle(ch, enabled: v),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const Divider(height: 1, indent: 20),
+    ],
+  );
 }
 
 // ── "Show message preview" — only meaningful while chat push is enabled ──────
@@ -244,21 +239,19 @@ class _MessagePreviewToggleState extends ConsumerState<_MessagePreviewToggle> {
         .read(userProfileRepositoryProvider)
         .updateProfile(pushMessagePreviewEnabled: enabled);
 
-    result.fold(
-      (f) {
-        if (mounted) {
-          setState(() => _optimisticValue = !enabled);
-          context.showSnackBar(f.message, isError: true);
-        }
-      },
-      (_) => ref.invalidate(userProfileProvider),
-    );
+    result.fold((f) {
+      if (mounted) {
+        setState(() => _optimisticValue = !enabled);
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) => ref.invalidate(userProfileProvider));
   }
 
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(userProfileProvider).value;
-    final value = _optimisticValue ?? profile?.pushMessagePreviewEnabled ?? true;
+    final value =
+        _optimisticValue ?? profile?.pushMessagePreviewEnabled ?? true;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),

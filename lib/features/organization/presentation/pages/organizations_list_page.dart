@@ -39,13 +39,18 @@ class OrganizationsListPage extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.work_outline,
-                        size: 36, color: context.colorScheme.outlineVariant),
+                    Icon(
+                      Icons.work_outline,
+                      size: 36,
+                      color: context.colorScheme.outlineVariant,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'You don\'t belong to any organization yet',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+                      style: TextStyle(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     FilledButton(

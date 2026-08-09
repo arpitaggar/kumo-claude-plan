@@ -41,17 +41,17 @@ class PendingExpenseApproval extends Equatable {
 
   @override
   List<Object?> get props => [
-        expenseId,
-        itineraryId,
-        tripTitle,
-        payerId,
-        payerName,
-        title,
-        amount,
-        currencyCode,
-        category,
-        submittedAt,
-        notes,
-        costCenterCode,
-      ];
+    expenseId,
+    itineraryId,
+    tripTitle,
+    payerId,
+    payerName,
+    title,
+    amount,
+    currencyCode,
+    category,
+    submittedAt,
+    notes,
+    costCenterCode,
+  ];
 }

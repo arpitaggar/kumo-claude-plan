@@ -43,10 +43,7 @@ abstract class OrganizationRepository {
 
   Future<Either<Failure, void>> approveExpense(String expenseId);
 
-  Future<Either<Failure, void>> rejectExpense(
-    String expenseId,
-    String reason,
-  );
+  Future<Either<Failure, void>> rejectExpense(String expenseId, String reason);
 
   /// An org's full cost-tracking structure — every field with its options
   /// (for `select` fields) or source field ids (for the `generated` field),

@@ -5,7 +5,8 @@ import 'package:kumo_claude/features/organization/domain/repositories/organizati
 import 'package:kumo_claude/features/organization/domain/usecases/remove_org_member_usecase.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockOrganizationRepository extends Mock implements OrganizationRepository {}
+class MockOrganizationRepository extends Mock
+    implements OrganizationRepository {}
 
 void main() {
   late MockOrganizationRepository mockRepo;
@@ -17,8 +18,9 @@ void main() {
   });
 
   test('delegates to repository with the provided id', () async {
-    when(() => mockRepo.removeMember('member-1'))
-        .thenAnswer((_) async => const Right(null));
+    when(
+      () => mockRepo.removeMember('member-1'),
+    ).thenAnswer((_) async => const Right(null));
 
     await useCase('member-1');
 
@@ -26,8 +28,9 @@ void main() {
   });
 
   test('propagates ServerFailure from repository', () async {
-    when(() => mockRepo.removeMember(any()))
-        .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+    when(
+      () => mockRepo.removeMember(any()),
+    ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
     final result = await useCase('member-1');
 

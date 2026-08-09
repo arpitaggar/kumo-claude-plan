@@ -169,31 +169,36 @@ class ProfilePage extends ConsumerWidget {
           const SizedBox(height: 24),
           const _SectionHeader('Account'),
           const SizedBox(height: 8),
-          _tile(context,
+          _tile(
+            context,
             icon: Icons.edit_outlined,
             label: 'Edit Profile',
             onTap: () => context.push('/profile/edit'),
           ),
           const SizedBox(height: 8),
-          _tile(context,
+          _tile(
+            context,
             icon: Icons.notifications_outlined,
             label: 'Notifications',
             onTap: () => context.push('/profile/notifications'),
           ),
           const SizedBox(height: 8),
-          _tile(context,
+          _tile(
+            context,
             icon: Icons.lock_outline,
             label: 'Privacy Settings',
             onTap: () => context.push('/settings/privacy'),
           ),
           const SizedBox(height: 8),
-          _tile(context,
+          _tile(
+            context,
             icon: Icons.work_outline,
             label: 'My Organizations',
             onTap: () => context.push('/organizations'),
           ),
           const SizedBox(height: 8),
-          _tile(context,
+          _tile(
+            context,
             icon: Icons.logout,
             label: 'Sign Out',
             color: context.colorScheme.primary,
@@ -259,9 +264,12 @@ class ProfilePage extends ConsumerWidget {
                 const SizedBox(width: 8),
                 trailing,
               ] else
-                Icon(Icons.chevron_right,
-                    color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.5)),
+                Icon(
+                  Icons.chevron_right,
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.5,
+                  ),
+                ),
             ],
           ),
         ),
@@ -279,17 +287,17 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: Text(
-          title.toUpperCase(),
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(left: 4),
+    child: Text(
+      title.toUpperCase(),
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.2,
+        color: context.colorScheme.onSurfaceVariant,
+      ),
+    ),
+  );
 }
 
 // ── Theme swatch (small preview used in the tile trailing area) ─────────────
@@ -311,9 +319,7 @@ class _ThemeSwatch extends StatelessWidget {
           decoration: BoxDecoration(
             color: meta.bg,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: context.colorScheme.outlineVariant,
-            ),
+            border: Border.all(color: context.colorScheme.outlineVariant),
           ),
         ),
         const SizedBox(width: 4),
@@ -323,15 +329,14 @@ class _ThemeSwatch extends StatelessWidget {
           decoration: BoxDecoration(
             color: meta.accent,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: context.colorScheme.outlineVariant,
-            ),
+            border: Border.all(color: context.colorScheme.outlineVariant),
           ),
         ),
         const SizedBox(width: 8),
-        Icon(Icons.chevron_right,
-            color:
-                context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+        Icon(
+          Icons.chevron_right,
+          color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+        ),
       ],
     );
   }
@@ -444,8 +449,7 @@ class _ThemeOption extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
                 // Color preview
@@ -485,11 +489,15 @@ class _ThemeOption extends StatelessWidget {
                   ),
                 ),
                 if (isSelected)
-                  Icon(Icons.check_circle_rounded,
-                      color: context.colorScheme.primary)
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: context.colorScheme.primary,
+                  )
                 else
-                  Icon(Icons.circle_outlined,
-                      color: context.colorScheme.outlineVariant),
+                  Icon(
+                    Icons.circle_outlined,
+                    color: context.colorScheme.outlineVariant,
+                  ),
               ],
             ),
           ),
@@ -509,8 +517,9 @@ class _MapProviderPickerSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(mapProviderConfigProvider);
-    final canUseGoogleMaps =
-        ref.watch(canUseFeatureProvider(PremiumFeatureKeys.googleMaps));
+    final canUseGoogleMaps = ref.watch(
+      canUseFeatureProvider(PremiumFeatureKeys.googleMaps),
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -603,8 +612,7 @@ class _MapProviderOption extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
                 Icon(meta.icon, color: context.colorScheme.onSurface),
@@ -632,14 +640,20 @@ class _MapProviderOption extends StatelessWidget {
                   ),
                 ),
                 if (isLocked)
-                  Icon(Icons.lock_outline,
-                      color: context.colorScheme.onSurfaceVariant)
+                  Icon(
+                    Icons.lock_outline,
+                    color: context.colorScheme.onSurfaceVariant,
+                  )
                 else if (isSelected)
-                  Icon(Icons.check_circle_rounded,
-                      color: context.colorScheme.primary)
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: context.colorScheme.primary,
+                  )
                 else
-                  Icon(Icons.circle_outlined,
-                      color: context.colorScheme.outlineVariant),
+                  Icon(
+                    Icons.circle_outlined,
+                    color: context.colorScheme.outlineVariant,
+                  ),
               ],
             ),
           ),
@@ -666,7 +680,10 @@ class _StatsCard extends ConsumerWidget {
     final upcoming = trips.where((t) => t.startDate.isAfter(now)).length;
     final daysTraveled = trips
         .where((t) => t.endDate.isBefore(now))
-        .fold(0, (sum, t) => sum + t.endDate.difference(t.startDate).inDays + 1);
+        .fold(
+          0,
+          (sum, t) => sum + t.endDate.difference(t.startDate).inDays + 1,
+        );
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -678,9 +695,17 @@ class _StatsCard extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _StatPill(value: '${trips.length}', label: 'Trips'),
-          Container(width: 1, height: 32, color: context.colorScheme.outlineVariant),
+          Container(
+            width: 1,
+            height: 32,
+            color: context.colorScheme.outlineVariant,
+          ),
           _StatPill(value: '$upcoming', label: 'Upcoming'),
-          Container(width: 1, height: 32, color: context.colorScheme.outlineVariant),
+          Container(
+            width: 1,
+            height: 32,
+            color: context.colorScheme.outlineVariant,
+          ),
           _StatPill(value: '$daysTraveled', label: 'Days traveled'),
         ],
       ),
@@ -696,20 +721,23 @@ class _StatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: context.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, color: context.colorScheme.onSurfaceVariant),
-          ),
-        ],
-      );
+    children: [
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: context.colorScheme.primary,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    ],
+  );
 }

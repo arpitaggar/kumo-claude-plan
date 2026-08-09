@@ -73,8 +73,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         .markMessagesRead(widget.itineraryId)
         .ignore();
 
-    final channel = KumoSupabaseClient.client
-        .channel('typing:${widget.itineraryId}');
+    final channel = KumoSupabaseClient.client.channel(
+      'typing:${widget.itineraryId}',
+    );
     _typingChannel = channel;
     channel
         .onBroadcast(
@@ -185,7 +186,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _inputController.clear();
     setState(() => _isSending = true);
 
-    final result = await ref.read(sendMessageUseCaseProvider).call(
+    final result = await ref
+        .read(sendMessageUseCaseProvider)
+        .call(
           itineraryId: widget.itineraryId,
           senderId: authState.user.id,
           senderName: authState.user.displayName ?? authState.user.email,
@@ -214,8 +217,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   };
 
   String _mimeTypeFor(String fileName) {
-    final ext =
-        fileName.contains('.') ? fileName.split('.').last.toLowerCase() : '';
+    final ext = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : '';
     return _extToMime[ext] ?? 'application/octet-stream';
   }
 
@@ -244,8 +248,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final picked =
-        await ImagePicker().pickImage(source: source, imageQuality: 85);
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 85,
+    );
     if (picked == null) {
       return;
     }
@@ -287,7 +293,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
       final caption = _inputController.text.trim();
 
-      final result = await ref.read(sendMessageUseCaseProvider).call(
+      final result = await ref
+          .read(sendMessageUseCaseProvider)
+          .call(
             itineraryId: widget.itineraryId,
             senderId: authState.user.id,
             senderName: authState.user.displayName ?? authState.user.email,
@@ -328,11 +336,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         ? _earlierMessages.first.createdAt
         : currentMessages.first.createdAt;
 
-    final result =
-        await ref.read(chatRepositoryRefProvider).fetchMessagesBefore(
-              itineraryId: widget.itineraryId,
-              before: oldest,
-            );
+    final result = await ref
+        .read(chatRepositoryRefProvider)
+        .fetchMessagesBefore(itineraryId: widget.itineraryId, before: oldest);
 
     if (!mounted) {
       return;
@@ -367,11 +373,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(chatStreamProvider(widget.itineraryId));
     final authState = ref.watch(authNotifierProvider);
-    final currentUserId =
-        authState is AuthAuthenticated ? authState.user.id : '';
+    final currentUserId = authState is AuthAuthenticated
+        ? authState.user.id
+        : '';
     final tripTitle =
         ref.watch(itineraryStreamProvider(widget.itineraryId)).value?.title ??
-            'Trip chat';
+        'Trip chat';
 
     ref.listen(chatStreamProvider(widget.itineraryId), (_, next) {
       if (next is AsyncData) {
@@ -400,7 +407,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
             Text(
               'Group chat',
-              style: TextStyle(fontSize: 12, color: context.colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 12,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -409,8 +419,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         children: [
           Expanded(
             child: messagesAsync.when(
-              loading: () =>
-                  const LoadingWidget(message: 'Loading messages…'),
+              loading: () => const LoadingWidget(message: 'Loading messages…'),
               error: (e, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -422,17 +431,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 ),
               ),
               data: (streamMessages) {
-                final allMessages = [
-                  ..._earlierMessages,
-                  ...streamMessages,
-                ];
+                final allMessages = [..._earlierMessages, ...streamMessages];
                 if (allMessages.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.chat_bubble_outline,
-                            size: 48, color: context.colorScheme.outlineVariant),
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 48,
+                          color: context.colorScheme.outlineVariant,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           'No messages yet',
@@ -482,9 +491,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     final olderNeighbor = i + 1 < displayMessages.length
                         ? displayMessages[i + 1]
                         : null;
-                    final showSender = olderNeighbor == null ||
+                    final showSender =
+                        olderNeighbor == null ||
                         olderNeighbor.senderId != msg.senderId;
-                    final isNewDay = olderNeighbor == null ||
+                    final isNewDay =
+                        olderNeighbor == null ||
                         !_isSameDay(olderNeighbor.createdAt, msg.createdAt);
                     final bubble = _MessageBubble(
                       message: msg,
@@ -542,25 +553,25 @@ class _DateDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: context.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              _label(),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    child: Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: context.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          _label(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: context.colorScheme.onSurfaceVariant,
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _LoadEarlierButton extends StatelessWidget {
@@ -582,7 +593,10 @@ class _LoadEarlierButton extends StatelessWidget {
         child: Center(
           child: Text(
             'Beginning of conversation',
-            style: TextStyle(fontSize: 12, color: context.colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 12,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       );
@@ -601,11 +615,17 @@ class _LoadEarlierButton extends StatelessWidget {
               )
             : TextButton.icon(
                 onPressed: onTap,
-                icon: Icon(Icons.expand_less,
-                    size: 16, color: context.colorScheme.onSurfaceVariant),
+                icon: Icon(
+                  Icons.expand_less,
+                  size: 16,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
                 label: Text(
                   'Load earlier messages',
-                  style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
       ),
@@ -688,31 +708,31 @@ class _DotsAnimationState extends State<_DotsAnimation>
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _anim,
-        builder: (_, _) {
-          final t = _anim.value;
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(3, (i) {
-              final opacity = (t * 3 - i).clamp(0.0, 1.0);
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                child: Opacity(
-                  opacity: opacity,
-                  child: Container(
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.onSurfaceVariant,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+    animation: _anim,
+    builder: (_, _) {
+      final t = _anim.value;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(3, (i) {
+          final opacity = (t * 3 - i).clamp(0.0, 1.0);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 1.5),
+            child: Opacity(
+              opacity: opacity,
+              child: Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: context.colorScheme.onSurfaceVariant,
+                  shape: BoxShape.circle,
                 ),
-              );
-            }),
+              ),
+            ),
           );
-        },
+        }),
       );
+    },
+  );
 }
 
 class _ReadTick extends StatelessWidget {
@@ -785,10 +805,12 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bubbleColor =
-        isMe ? context.colorScheme.primary : context.colorScheme.surface;
-    final textColor =
-        isMe ? context.colorScheme.surface : context.colorScheme.onSurface;
+    final bubbleColor = isMe
+        ? context.colorScheme.primary
+        : context.colorScheme.surface;
+    final textColor = isMe
+        ? context.colorScheme.surface
+        : context.colorScheme.onSurface;
     final hasCaption = message.content.trim().isNotEmpty;
 
     return Padding(
@@ -802,8 +824,9 @@ class _MessageBubble extends StatelessWidget {
               maxWidth: MediaQuery.sizeOf(context).width * 0.72,
             ),
             child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 if (showSender)
                   Padding(
@@ -835,7 +858,9 @@ class _MessageBubble extends StatelessWidget {
                 else
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: bubbleColor,
                       borderRadius: BorderRadius.only(
@@ -846,8 +871,9 @@ class _MessageBubble extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: context.colorScheme.onSurface
-                              .withValues(alpha: 0.06),
+                          color: context.colorScheme.onSurface.withValues(
+                            alpha: 0.06,
+                          ),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -887,42 +913,44 @@ class _ImageAttachmentBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => _FullScreenImageViewer(url: attachment.url),
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 220, minWidth: 160),
-            child: Image.network(
-              attachment.url,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) {
-                  return child;
-                }
-                return Container(
-                  width: 160,
-                  height: 160,
-                  color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
-                  alignment: Alignment.center,
-                  child: const CircularProgressIndicator(strokeWidth: 2),
-                );
-              },
-              errorBuilder: (context, error, stack) => Container(
-                width: 160,
-                height: 120,
-                color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
-                alignment: Alignment.center,
-                child: Icon(Icons.broken_image_outlined,
-                    color: context.colorScheme.onSurfaceVariant),
-              ),
+    onTap: () => Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _FullScreenImageViewer(url: attachment.url),
+      ),
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 220, minWidth: 160),
+        child: Image.network(
+          attachment.url,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) {
+              return child;
+            }
+            return Container(
+              width: 160,
+              height: 160,
+              color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              alignment: Alignment.center,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            );
+          },
+          errorBuilder: (context, error, stack) => Container(
+            width: 160,
+            height: 120,
+            color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.broken_image_outlined,
+              color: context.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _FullScreenImageViewer extends StatelessWidget {
@@ -932,17 +960,13 @@ class _FullScreenImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          iconTheme: const IconThemeData(color: Colors.white),
-        ),
-        body: Center(
-          child: InteractiveViewer(
-            child: Image.network(url),
-          ),
-        ),
-      );
+    backgroundColor: Colors.black,
+    appBar: AppBar(
+      backgroundColor: Colors.black,
+      iconTheme: const IconThemeData(color: Colors.white),
+    ),
+    body: Center(child: InteractiveViewer(child: Image.network(url))),
+  );
 }
 
 // ── File attachment chip ──────────────────────────────────────────────────────
@@ -972,7 +996,8 @@ class _FileAttachmentChip extends StatelessWidget {
 
   Future<void> _open(BuildContext context) async {
     final uri = Uri.tryParse(attachment.url);
-    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    if (uri == null ||
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
         context.showSnackBar('Could not open file', isError: true);
       }
@@ -982,7 +1007,9 @@ class _FileAttachmentChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = isMe ? context.colorScheme.primary : context.colorScheme.surface;
-    final fg = isMe ? context.colorScheme.surface : context.colorScheme.onSurface;
+    final fg = isMe
+        ? context.colorScheme.surface
+        : context.colorScheme.onSurface;
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () => _open(context),
@@ -1046,36 +1073,36 @@ class _AttachSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 4),
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Photo Library'),
-                onTap: () => Navigator.of(context).pop(_AttachChoice.gallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Camera'),
-                onTap: () => Navigator.of(context).pop(_AttachChoice.camera),
-              ),
-              const SizedBox(height: 4),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 4),
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: context.colorScheme.outlineVariant,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-        ),
-      );
+          const SizedBox(height: 12),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined),
+            title: const Text('Photo Library'),
+            onTap: () => Navigator.of(context).pop(_AttachChoice.gallery),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_camera_outlined),
+            title: const Text('Camera'),
+            onTap: () => Navigator.of(context).pop(_AttachChoice.camera),
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    ),
+  );
 }
 
 // ── Message info sheet — long-press "who has seen this" detail ───────────────
@@ -1119,8 +1146,9 @@ class _MessageInfoSheet extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  DateFormat('MMM d, h:mm a')
-                      .format(message.createdAt.toLocal()),
+                  DateFormat(
+                    'MMM d, h:mm a',
+                  ).format(message.createdAt.toLocal()),
                   style: TextStyle(
                     fontSize: 12,
                     color: context.colorScheme.onSurfaceVariant,
@@ -1160,8 +1188,7 @@ class _MessageInfoSheet extends ConsumerWidget {
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: receipts.length,
-                  itemBuilder: (_, i) =>
-                      _ReadReceiptRow(receipt: receipts[i]),
+                  itemBuilder: (_, i) => _ReadReceiptRow(receipt: receipts[i]),
                 );
               },
             ),
@@ -1179,28 +1206,28 @@ class _ReadReceiptRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-        leading: CircleAvatar(
-          radius: 18,
-          backgroundImage: receipt.avatarUrl != null
-              ? NetworkImage(receipt.avatarUrl!)
-              : null,
-          child: receipt.avatarUrl == null
-              ? Text(
-                  receipt.displayName.isNotEmpty
-                      ? receipt.displayName[0].toUpperCase()
-                      : '?',
-                )
-              : null,
-        ),
-        title: Text(receipt.displayName),
-        trailing: Text(
-          'Seen ${DateFormat('h:mm a').format(receipt.readAt.toLocal())}',
-          style: TextStyle(
-            fontSize: 12,
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
+    leading: CircleAvatar(
+      radius: 18,
+      backgroundImage: receipt.avatarUrl != null
+          ? NetworkImage(receipt.avatarUrl!)
+          : null,
+      child: receipt.avatarUrl == null
+          ? Text(
+              receipt.displayName.isNotEmpty
+                  ? receipt.displayName[0].toUpperCase()
+                  : '?',
+            )
+          : null,
+    ),
+    title: Text(receipt.displayName),
+    trailing: Text(
+      'Seen ${DateFormat('h:mm a').format(receipt.readAt.toLocal())}',
+      style: TextStyle(
+        fontSize: 12,
+        color: context.colorScheme.onSurfaceVariant,
+      ),
+    ),
+  );
 }
 
 class _InputBar extends StatelessWidget {
@@ -1220,85 +1247,87 @@ class _InputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: context.colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: context.colorScheme.onSurface.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
+    decoration: BoxDecoration(
+      color: context.colorScheme.surface,
+      boxShadow: [
+        BoxShadow(
+          color: context.colorScheme.onSurface.withValues(alpha: 0.06),
+          blurRadius: 16,
+          offset: const Offset(0, -4),
         ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 10, 12, 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                IconButton(
-                  onPressed: isUploadingAttachment ? null : onAttach,
-                  icon: isUploadingAttachment
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: context.colorScheme.primary,
-                          ),
-                        )
-                      : Icon(
-                          Icons.attach_file,
-                          color: context.colorScheme.onSurfaceVariant,
-                        ),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    textCapitalization: TextCapitalization.sentences,
-                    maxLines: 4,
-                    minLines: 1,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => onSend(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: context.colorScheme.onSurface,
+      ],
+    ),
+    child: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 10, 12, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            IconButton(
+              onPressed: isUploadingAttachment ? null : onAttach,
+              icon: isUploadingAttachment
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: context.colorScheme.primary,
+                      ),
+                    )
+                  : Icon(
+                      Icons.attach_file,
+                      color: context.colorScheme.onSurfaceVariant,
                     ),
-                    decoration: InputDecoration(
-                      hintText: 'Message…',
-                      hintStyle: TextStyle(color: context.colorScheme.onSurfaceVariant),
-                      filled: true,
-                      fillColor: Theme.of(context).scaffoldBackgroundColor,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(22),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(22),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(22),
-                        borderSide: BorderSide(
-                          color: context.colorScheme.primary,
-                          width: 1.5,
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
+            ),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                textCapitalization: TextCapitalization.sentences,
+                maxLines: 4,
+                minLines: 1,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => onSend(),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Message…',
+                  hintStyle: TextStyle(
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(22),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(22),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(22),
+                    borderSide: BorderSide(
+                      color: context.colorScheme.primary,
+                      width: 1.5,
                     ),
                   ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                _SendButton(isSending: isSending, onSend: onSend),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            _SendButton(isSending: isSending, onSend: onSend),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _SendButton extends StatelessWidget {
@@ -1309,37 +1338,37 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        label: isSending ? 'Sending message' : 'Send message',
-        button: true,
-        enabled: !isSending,
-        child: GestureDetector(
-          onTap: isSending ? null : onSend,
-          child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: isSending
-                ? context.colorScheme.outlineVariant
-                : context.colorScheme.primary,
-            shape: BoxShape.circle,
-          ),
-          child: isSending
-              ? Center(
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: context.colorScheme.surface,
-                    ),
-                  ),
-                )
-              : Icon(
-                  Icons.send_rounded,
-                  color: context.colorScheme.surface,
-                  size: 20,
-                ),
-          ),
+    label: isSending ? 'Sending message' : 'Send message',
+    button: true,
+    enabled: !isSending,
+    child: GestureDetector(
+      onTap: isSending ? null : onSend,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: isSending
+              ? context.colorScheme.outlineVariant
+              : context.colorScheme.primary,
+          shape: BoxShape.circle,
         ),
-      );
+        child: isSending
+            ? Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: context.colorScheme.surface,
+                  ),
+                ),
+              )
+            : Icon(
+                Icons.send_rounded,
+                color: context.colorScheme.surface,
+                size: 20,
+              ),
+      ),
+    ),
+  );
 }

@@ -6,7 +6,8 @@ import 'package:kumo_claude/features/organization/domain/repositories/organizati
 import 'package:kumo_claude/features/organization/domain/usecases/update_org_member_role_usecase.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockOrganizationRepository extends Mock implements OrganizationRepository {}
+class MockOrganizationRepository extends Mock
+    implements OrganizationRepository {}
 
 void main() {
   late MockOrganizationRepository mockRepo;
@@ -22,27 +23,35 @@ void main() {
   });
 
   test('delegates to repository with orgMemberId and role', () async {
-    when(() => mockRepo.updateMemberRole(
-          orgMemberId: 'member-1',
-          role: OrgMemberRole.admin,
-        )).thenAnswer((_) async => const Right(null));
+    when(
+      () => mockRepo.updateMemberRole(
+        orgMemberId: 'member-1',
+        role: OrgMemberRole.admin,
+      ),
+    ).thenAnswer((_) async => const Right(null));
 
     await useCase(orgMemberId: 'member-1', role: OrgMemberRole.admin);
 
-    verify(() => mockRepo.updateMemberRole(
-          orgMemberId: 'member-1',
-          role: OrgMemberRole.admin,
-        )).called(1);
+    verify(
+      () => mockRepo.updateMemberRole(
+        orgMemberId: 'member-1',
+        role: OrgMemberRole.admin,
+      ),
+    ).called(1);
   });
 
   test('propagates ServerFailure from repository', () async {
-    when(() => mockRepo.updateMemberRole(
-          orgMemberId: any(named: 'orgMemberId'),
-          role: any(named: 'role'),
-        )).thenAnswer((_) async => const Left(ServerFailure('DB error')));
+    when(
+      () => mockRepo.updateMemberRole(
+        orgMemberId: any(named: 'orgMemberId'),
+        role: any(named: 'role'),
+      ),
+    ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
-    final result =
-        await useCase(orgMemberId: 'member-1', role: OrgMemberRole.member);
+    final result = await useCase(
+      orgMemberId: 'member-1',
+      role: OrgMemberRole.member,
+    );
 
     result.fold(
       (f) => expect(f, isA<ServerFailure>()),

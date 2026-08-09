@@ -12,9 +12,21 @@ import '../providers/user_profile_provider.dart';
 import 'profile_field_data.dart';
 
 const _kTravelTags = [
-  'adventure', 'backpacking', 'beach', 'budget', 'city',
-  'cultural', 'family', 'foodie', 'hiking', 'luxury',
-  'nature', 'nightlife', 'road trip', 'solo', 'wellness',
+  'adventure',
+  'backpacking',
+  'beach',
+  'budget',
+  'city',
+  'cultural',
+  'family',
+  'foodie',
+  'hiking',
+  'luxury',
+  'nature',
+  'nightlife',
+  'road trip',
+  'solo',
+  'wellness',
 ];
 
 class EditProfilePage extends ConsumerStatefulWidget {
@@ -49,10 +61,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _nameCtrl      = TextEditingController();
-    _usernameCtrl  = TextEditingController();
-    _bioCtrl       = TextEditingController();
-    _cityCtrl      = TextEditingController();
+    _nameCtrl = TextEditingController();
+    _usernameCtrl = TextEditingController();
+    _bioCtrl = TextEditingController();
+    _cityCtrl = TextEditingController();
     _cityFocusNode = FocusNode();
   }
 
@@ -71,19 +83,27 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       return;
     }
     _controllersReady = true;
-    _nameCtrl.text     = profile?.displayName ?? '';
-    _usernameCtrl.text = profile?.username    ?? '';
-    _bioCtrl.text      = profile?.bio         ?? '';
-    _cityCtrl.text     = profile?.city        ?? '';
+    _nameCtrl.text = profile?.displayName ?? '';
+    _usernameCtrl.text = profile?.username ?? '';
+    _bioCtrl.text = profile?.bio ?? '';
+    _cityCtrl.text = profile?.city ?? '';
     setState(() {
       _avatarUrl = (profile?.avatarUrl as String?)?.isNotEmpty == true
           ? profile!.avatarUrl as String
           : null;
-      _country  = (profile?.country           as String?)?.isNotEmpty == true ? profile!.country           as String : null;
-      _timezone = (profile?.timezone          as String?)?.isNotEmpty == true ? profile!.timezone          as String : null;
-      _currency = (profile?.preferredCurrency as String?)?.isNotEmpty == true ? profile!.preferredCurrency as String : null;
-      _language = (profile?.preferredLanguage as String?)?.isNotEmpty == true ? profile!.preferredLanguage as String : null;
-      _units        = profile?.unitsPreference       ?? 'metric';
+      _country = (profile?.country as String?)?.isNotEmpty == true
+          ? profile!.country as String
+          : null;
+      _timezone = (profile?.timezone as String?)?.isNotEmpty == true
+          ? profile!.timezone as String
+          : null;
+      _currency = (profile?.preferredCurrency as String?)?.isNotEmpty == true
+          ? profile!.preferredCurrency as String
+          : null;
+      _language = (profile?.preferredLanguage as String?)?.isNotEmpty == true
+          ? profile!.preferredLanguage as String
+          : null;
+      _units = profile?.unitsPreference ?? 'metric';
       _selectedTags = List<String>.from(profile?.travelPreferenceTags ?? []);
     });
   }
@@ -114,10 +134,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             ),
             if (_avatarUrl != null)
               ListTile(
-                leading: Icon(Icons.delete_outline,
-                    color: context.colorScheme.error),
-                title: Text('Remove Photo',
-                    style: TextStyle(color: context.colorScheme.error)),
+                leading: Icon(
+                  Icons.delete_outline,
+                  color: context.colorScheme.error,
+                ),
+                title: Text(
+                  'Remove Photo',
+                  style: TextStyle(color: context.colorScheme.error),
+                ),
                 onTap: () => Navigator.of(context).pop(_AvatarAction.remove),
               ),
             const SizedBox(height: 8),
@@ -158,23 +182,22 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
     try {
       final supabase = Supabase.instance.client;
-      final userId   = supabase.auth.currentUser?.id;
+      final userId = supabase.auth.currentUser?.id;
       if (userId == null) {
         throw Exception('Not authenticated');
       }
 
       final bytes = await file.readAsBytes();
-      final ext   = file.path.split('.').last.toLowerCase();
-      final path  = '$userId/avatar.$ext';
+      final ext = file.path.split('.').last.toLowerCase();
+      final path = '$userId/avatar.$ext';
 
-      await supabase.storage.from('avatars').uploadBinary(
-        path,
-        bytes,
-        fileOptions: FileOptions(
-          contentType: 'image/$ext',
-          upsert: true,
-        ),
-      );
+      await supabase.storage
+          .from('avatars')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
+          );
 
       final url =
           '${supabase.storage.from('avatars').getPublicUrl(path)}'
@@ -236,7 +259,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   void _onCitySelected(CityEntry city) {
     setState(() {
-      _country  = city.country;
+      _country = city.country;
       _timezone = city.timezone;
       _currency = city.currency;
     });
@@ -255,63 +278,66 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     });
   }
 
-  Widget _cityFieldView(BuildContext context, TextEditingController controller,
-          FocusNode focusNode, VoidCallback onFieldSubmitted) =>
-      ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) => TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          onFieldSubmitted: (_) => onFieldSubmitted(),
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            hintText: 'e.g. Tokyo',
-            prefixIcon: const Icon(Icons.location_city_outlined),
-            suffixIcon: controller.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    onPressed: controller.clear,
-                  )
-                : null,
-          ),
-        ),
-      );
+  Widget _cityFieldView(
+    BuildContext context,
+    TextEditingController controller,
+    FocusNode focusNode,
+    VoidCallback onFieldSubmitted,
+  ) => ListenableBuilder(
+    listenable: controller,
+    builder: (context, _) => TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      onFieldSubmitted: (_) => onFieldSubmitted(),
+      textCapitalization: TextCapitalization.words,
+      decoration: InputDecoration(
+        hintText: 'e.g. Tokyo',
+        prefixIcon: const Icon(Icons.location_city_outlined),
+        suffixIcon: controller.text.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 18),
+                onPressed: controller.clear,
+              )
+            : null,
+      ),
+    ),
+  );
 
   Widget _cityOptionsView(
     BuildContext context,
     AutocompleteOnSelected<CityEntry> onSelected,
     Iterable<CityEntry> options,
-  ) =>
-      Align(
-        alignment: Alignment.topLeft,
-        child: Material(
-          elevation: 6,
-          borderRadius: BorderRadius.circular(12),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 256),
-            child: ListView.separated(
-              padding: EdgeInsets.zero,
-              shrinkWrap: true,
-              itemCount: options.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (_, i) {
-                final city = options.elementAt(i);
-                final countryName = kCountries
-                        .where((c) => c.code == city.country)
-                        .firstOrNull
-                        ?.name ??
-                    city.country;
-                return ListTile(
-                  dense: true,
-                  title: Text(city.name),
-                  subtitle: Text('$countryName  ·  ${city.currency}'),
-                  onTap: () => onSelected(city),
-                );
-              },
-            ),
-          ),
+  ) => Align(
+    alignment: Alignment.topLeft,
+    child: Material(
+      elevation: 6,
+      borderRadius: BorderRadius.circular(12),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 256),
+        child: ListView.separated(
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          itemCount: options.length,
+          separatorBuilder: (_, _) => const Divider(height: 1),
+          itemBuilder: (_, i) {
+            final city = options.elementAt(i);
+            final countryName =
+                kCountries
+                    .where((c) => c.code == city.country)
+                    .firstOrNull
+                    ?.name ??
+                city.country;
+            return ListTile(
+              dense: true,
+              title: Text(city.name),
+              subtitle: Text('$countryName  ·  ${city.currency}'),
+              onTap: () => onSelected(city),
+            );
+          },
         ),
-      );
+      ),
+    ),
+  );
 
   // ── Save ─────────────────────────────────────────────────────────────────
 
@@ -321,15 +347,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
     setState(() => _saving = true);
 
-    final name     = _nameCtrl.text.trim();
+    final name = _nameCtrl.text.trim();
     final username = _usernameCtrl.text.trim();
-    final repo     = ref.read(userProfileRepositoryProvider);
+    final repo = ref.read(userProfileRepositoryProvider);
 
     final authResult = await ref
         .read(authNotifierProvider.notifier)
         .updateProfile(
           displayName: name.isNotEmpty ? name : null,
-          avatarUrl:   _avatarUrl,
+          avatarUrl: _avatarUrl,
         );
 
     if (!mounted) {
@@ -348,21 +374,17 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
 
     final profileResult = await repo.updateProfile(
-      displayName:          name.isNotEmpty ? name : null,
-      username:             username.isNotEmpty ? username : null,
-      bio:                  _bioCtrl.text.trim().isNotEmpty
-          ? _bioCtrl.text.trim()
-          : null,
-      city:                 _cityCtrl.text.trim().isNotEmpty
-          ? _cityCtrl.text.trim()
-          : null,
-      country:              _country,
-      timezone:             _timezone,
-      preferredCurrency:    _currency,
-      preferredLanguage:    _language,
-      unitsPreference:      _units,
+      displayName: name.isNotEmpty ? name : null,
+      username: username.isNotEmpty ? username : null,
+      bio: _bioCtrl.text.trim().isNotEmpty ? _bioCtrl.text.trim() : null,
+      city: _cityCtrl.text.trim().isNotEmpty ? _cityCtrl.text.trim() : null,
+      country: _country,
+      timezone: _timezone,
+      preferredCurrency: _currency,
+      preferredLanguage: _language,
+      unitsPreference: _units,
       travelPreferenceTags: _selectedTags,
-      avatarUrl:            _avatarUrl,
+      avatarUrl: _avatarUrl,
     );
 
     if (!mounted) {
@@ -370,15 +392,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
     setState(() => _saving = false);
 
-    profileResult.fold(
-      (f) => context.showSnackBar(f.message, isError: true),
-      (_) {
-        ref.invalidate(userProfileProvider);
-        context
-          ..showSnackBar('Profile updated')
-          ..pop();
-      },
-    );
+    profileResult.fold((f) => context.showSnackBar(f.message, isError: true), (
+      _,
+    ) {
+      ref.invalidate(userProfileProvider);
+      context
+        ..showSnackBar('Profile updated')
+        ..pop();
+    });
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -388,9 +409,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     final profileAsync = ref.watch(userProfileProvider);
 
     return profileAsync.when(
-      loading: () => const Scaffold(
-        body: LoadingWidget(message: 'Loading profile…'),
-      ),
+      loading: () =>
+          const Scaffold(body: LoadingWidget(message: 'Loading profile…')),
       error: (_, _) => Scaffold(
         appBar: AppBar(title: const Text('Edit Profile')),
         body: Center(
@@ -432,10 +452,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           children: [
             // ── Avatar ────────────────────────────────────────────────────
             _AvatarHeader(
-              avatarUrl:   _avatarUrl,
+              avatarUrl: _avatarUrl,
               displayName: _nameCtrl.text,
-              uploading:   _uploadingAvatar,
-              onTap:       _onEditAvatar,
+              uploading: _uploadingAvatar,
+              onTap: _onEditAvatar,
             ),
             const SizedBox(height: 32),
 
@@ -466,15 +486,16 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               enabled: !cooldownActive,
               helperText: cooldownActive && nextChange != null
                   ? 'Next change available '
-                    '${DateFormat.yMMMd().format(nextChange)}'
+                        '${DateFormat.yMMMd().format(nextChange)}'
                   : '3–30 chars · letters, numbers, underscores',
               validator: (v) {
                 if (v == null || v.trim().isEmpty) {
                   return null;
                 }
                 final trimmed = v.trim();
-                if (!RegExp(r'^[a-zA-Z0-9][a-zA-Z0-9_]{1,28}[a-zA-Z0-9]$')
-                    .hasMatch(trimmed)) {
+                if (!RegExp(
+                  r'^[a-zA-Z0-9][a-zA-Z0-9_]{1,28}[a-zA-Z0-9]$',
+                ).hasMatch(trimmed)) {
                   return '3–30 chars, letters/numbers/underscores, '
                       'no leading/trailing underscore';
                 }
@@ -610,13 +631,13 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Widget _fieldLabel(String label) => Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: context.colorScheme.onSurfaceVariant,
-        ),
-      );
+    label,
+    style: TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: context.colorScheme.onSurfaceVariant,
+    ),
+  );
 
   Widget _field({
     required String label,
@@ -629,28 +650,27 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     bool enabled = true,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
-  }) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _fieldLabel(label),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: controller,
-            enabled: enabled,
-            maxLines: maxLines ?? 1,
-            maxLength: maxLength,
-            keyboardType: keyboardType,
-            decoration: InputDecoration(
-              hintText: hint,
-              helperText: helperText,
-              helperMaxLines: 2,
-              prefixIcon: Icon(icon),
-            ),
-            validator: validator,
-          ),
-        ],
-      );
+  }) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _fieldLabel(label),
+      const SizedBox(height: 6),
+      TextFormField(
+        controller: controller,
+        enabled: enabled,
+        maxLines: maxLines ?? 1,
+        maxLength: maxLength,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          hintText: hint,
+          helperText: helperText,
+          helperMaxLines: 2,
+          prefixIcon: Icon(icon),
+        ),
+        validator: validator,
+      ),
+    ],
+  );
 }
 
 enum _AvatarAction { gallery, camera, url, remove }
@@ -692,23 +712,24 @@ class _AvatarHeader extends StatelessWidget {
           CircleAvatar(
             radius: 56,
             backgroundColor: colorScheme.primaryContainer,
-            backgroundImage:
-                avatarUrl != null && !uploading ? NetworkImage(avatarUrl!) : null,
+            backgroundImage: avatarUrl != null && !uploading
+                ? NetworkImage(avatarUrl!)
+                : null,
             child: uploading
                 ? CircularProgressIndicator(
                     strokeWidth: 2.5,
                     color: colorScheme.onPrimaryContainer,
                   )
                 : avatarUrl == null
-                    ? Text(
-                        _initials(),
-                        style: TextStyle(
-                          fontSize: 38,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onPrimaryContainer,
-                        ),
-                      )
-                    : null,
+                ? Text(
+                    _initials(),
+                    style: TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                  )
+                : null,
           ),
           Positioned(
             bottom: 0,
@@ -720,16 +741,9 @@ class _AvatarHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: colorScheme.primary,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: colorScheme.surface,
-                    width: 2.5,
-                  ),
+                  border: Border.all(color: colorScheme.surface, width: 2.5),
                 ),
-                child: Icon(
-                  Icons.edit,
-                  size: 15,
-                  color: colorScheme.onPrimary,
-                ),
+                child: Icon(Icons.edit, size: 15, color: colorScheme.onPrimary),
               ),
             ),
           ),
@@ -747,14 +761,14 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-          color: context.colorScheme.onSurfaceVariant,
-        ),
-      );
+    title.toUpperCase(),
+    style: TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.2,
+      color: context.colorScheme.onSurfaceVariant,
+    ),
+  );
 }
 
 // ── Units toggle ──────────────────────────────────────────────────────────────
@@ -767,27 +781,27 @@ class _UnitsToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Units',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'metric',   label: Text('Metric')),
-              ButtonSegment(value: 'imperial', label: Text('Imperial')),
-            ],
-            selected: {value},
-            onSelectionChanged: (set) => onChanged(set.first),
-          ),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Units',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(height: 8),
+      SegmentedButton<String>(
+        segments: const [
+          ButtonSegment(value: 'metric', label: Text('Metric')),
+          ButtonSegment(value: 'imperial', label: Text('Imperial')),
         ],
-      );
+        selected: {value},
+        onSelectionChanged: (set) => onChanged(set.first),
+      ),
+    ],
+  );
 }
 
 // ── Travel interest tag picker ────────────────────────────────────────────────
@@ -805,18 +819,18 @@ class _TagPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Wrap(
-        spacing: 8,
-        runSpacing: 6,
-        children: allTags
-            .map(
-              (tag) => FilterChip(
-                label: Text(tag),
-                selected: selected.contains(tag),
-                onSelected: (_) => onToggle(tag),
-              ),
-            )
-            .toList(),
-      );
+    spacing: 8,
+    runSpacing: 6,
+    children: allTags
+        .map(
+          (tag) => FilterChip(
+            label: Text(tag),
+            selected: selected.contains(tag),
+            onSelected: (_) => onToggle(tag),
+          ),
+        )
+        .toList(),
+  );
 }
 
 // ── Searchable picker field ───────────────────────────────────────────────────
@@ -903,11 +917,7 @@ class _PickerField extends StatelessWidget {
 // ── Search bottom sheet ───────────────────────────────────────────────────────
 
 class _LookupSheet extends StatefulWidget {
-  const _LookupSheet({
-    required this.title,
-    required this.data,
-    this.selected,
-  });
+  const _LookupSheet({required this.title, required this.data, this.selected});
 
   final String title;
   final List<LookupEntry> data;
@@ -939,12 +949,12 @@ class _LookupSheetState extends State<_LookupSheet> {
       _filtered = q.isEmpty
           ? widget.data
           : widget.data
-              .where(
-                (e) =>
-                    e.name.toLowerCase().contains(q) ||
-                    e.code.toLowerCase().contains(q),
-              )
-              .toList();
+                .where(
+                  (e) =>
+                      e.name.toLowerCase().contains(q) ||
+                      e.code.toLowerCase().contains(q),
+                )
+                .toList();
     });
   }
 

@@ -20,8 +20,5 @@ class OrganizationModel extends Organization {
         updatedAt: DateTime.parse(json['updated_at'] as String).toUtc(),
       );
 
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'slug': slug,
-      };
+  Map<String, dynamic> toJson() => {'name': name, 'slug': slug};
 }

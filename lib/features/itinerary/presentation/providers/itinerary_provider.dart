@@ -14,11 +14,13 @@ import '../../domain/usecases/update_itinerary_usecase.dart';
 // Infrastructure providers
 // ---------------------------------------------------------------------------
 
-final itineraryRemoteDataSourceProvider =
-    Provider<ItineraryRemoteDataSource>((_) => const ItineraryRemoteDataSourceImpl());
+final itineraryRemoteDataSourceProvider = Provider<ItineraryRemoteDataSource>(
+  (_) => const ItineraryRemoteDataSourceImpl(),
+);
 
-final itineraryLocalDataSourceProvider =
-    Provider<ItineraryLocalDataSource>((_) => const ItineraryLocalDataSource());
+final itineraryLocalDataSourceProvider = Provider<ItineraryLocalDataSource>(
+  (_) => const ItineraryLocalDataSource(),
+);
 
 final itineraryRepositoryProvider = Provider<ItineraryRepositoryImpl>(
   (ref) => ItineraryRepositoryImpl(
@@ -44,10 +46,12 @@ final itineraryStreamProvider = StreamProvider.family<TravelItinerary, String>(
   (ref, id) => ref
       .watch(itineraryRepositoryProvider)
       .watchItinerary(id)
-      .map((either) => either.fold(
-            (failure) => throw Exception(failure.message),
-            (itinerary) => itinerary,
-          )),
+      .map(
+        (either) => either.fold(
+          (failure) => throw Exception(failure.message),
+          (itinerary) => itinerary,
+        ),
+      ),
 );
 
 final createItineraryUseCaseProvider = Provider<CreateItineraryUseCase>(
@@ -175,17 +179,12 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
 
   Future<void> deleteItinerary(String id) async {
     final result = await deleteUseCase(id);
-    result.fold(
-      (failure) => state = ItineraryListError(failure.message),
-      (_) {
-        if (state is ItineraryListLoaded) {
-          final current = (state as ItineraryListLoaded).itineraries;
-          state = ItineraryListLoaded(
-            current.where((i) => i.id != id).toList(),
-          );
-        }
-      },
-    );
+    result.fold((failure) => state = ItineraryListError(failure.message), (_) {
+      if (state is ItineraryListLoaded) {
+        final current = (state as ItineraryListLoaded).itineraries;
+        state = ItineraryListLoaded(current.where((i) => i.id != id).toList());
+      }
+    });
   }
 }
 

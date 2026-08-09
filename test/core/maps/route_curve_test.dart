@@ -5,11 +5,21 @@ import 'package:kumo_claude/features/itinerary/domain/entities/trip_segment.dart
 import 'package:kumo_claude/features/itinerary/domain/entities/waypoint.dart';
 
 void main() {
-  const munich = Waypoint(name: 'Munich', latitude: 48.1351, longitude: 11.5820);
-  const bangkok =
-      Waypoint(name: 'Bangkok', latitude: 13.7563, longitude: 100.5018);
-  const chiangMai =
-      Waypoint(name: 'Chiang Mai', latitude: 18.7883, longitude: 98.9853);
+  const munich = Waypoint(
+    name: 'Munich',
+    latitude: 48.1351,
+    longitude: 11.5820,
+  );
+  const bangkok = Waypoint(
+    name: 'Bangkok',
+    latitude: 13.7563,
+    longitude: 100.5018,
+  );
+  const chiangMai = Waypoint(
+    name: 'Chiang Mai',
+    latitude: 18.7883,
+    longitude: 98.9853,
+  );
   const pai = Waypoint(name: 'Pai', latitude: 19.3583, longitude: 98.4400);
 
   TripSegment segment(String id, Waypoint origin, Waypoint destination) =>
@@ -28,8 +38,11 @@ void main() {
     });
 
     test('true for coordinates within the epsilon', () {
-      const nearMunich =
-          Waypoint(name: 'Munich (2nd search)', latitude: 48.15, longitude: 11.60);
+      const nearMunich = Waypoint(
+        name: 'Munich (2nd search)',
+        latitude: 48.15,
+        longitude: 11.60,
+      );
       expect(sameWaypoint(munich, nearMunich), isTrue);
     });
 
@@ -78,8 +91,11 @@ void main() {
         latitude: 18.80,
         longitude: 98.98,
       );
-      const paiSecondSearch =
-          Waypoint(name: 'Pai, Thailand', latitude: 19.36, longitude: 98.44);
+      const paiSecondSearch = Waypoint(
+        name: 'Pai, Thailand',
+        latitude: 19.36,
+        longitude: 98.44,
+      );
       final segments = [
         segment('out', chiangMai, pai),
         segment('back', paiSecondSearch, chiangMaiSecondSearch),
@@ -139,7 +155,8 @@ void main() {
       final midpoint = path[path.length ~/ 2];
       final straightMidLat = (chiangMai.latitude + pai.latitude) / 2;
       final straightMidLng = (chiangMai.longitude + pai.longitude) / 2;
-      final deviation = (midpoint.$1 - straightMidLat).abs() +
+      final deviation =
+          (midpoint.$1 - straightMidLat).abs() +
           (midpoint.$2 - straightMidLng).abs();
       expect(deviation, greaterThan(0.001));
     });

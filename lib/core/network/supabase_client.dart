@@ -21,7 +21,8 @@ class _SecureSessionStorage extends LocalStorage {
   Future<String?> accessToken() => _storage.read(key: _key);
 
   @override
-  Future<bool> hasAccessToken() async => (await _storage.read(key: _key)) != null;
+  Future<bool> hasAccessToken() async =>
+      (await _storage.read(key: _key)) != null;
 
   @override
   Future<void> persistSession(String persistSessionString) =>
@@ -46,6 +47,13 @@ class KumoSupabaseClient {
   ///
   /// @throws Exception if initialization fails
   static Future<void> initialize() async {
+    if (Environment.supabaseUrl.isEmpty ||
+        Environment.supabaseAnonKey.isEmpty) {
+      throw StateError(
+        'SUPABASE_URL/SUPABASE_ANON_KEY are not set. Run with '
+        '--dart-define-from-file=env.local.json (see env.example.json).',
+      );
+    }
     try {
       _supabaseInstance = await Supabase.initialize(
         url: Environment.supabaseUrl,

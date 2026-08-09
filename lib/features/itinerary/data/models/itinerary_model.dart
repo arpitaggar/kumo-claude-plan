@@ -40,7 +40,11 @@ class ItineraryModel extends TravelItinerary {
         .toList(),
     expenseSummary: ExpenseSummaryModel.fromJson(
       json['expense_summary'] as Map<String, dynamic>? ??
-          const {'total_spent': 0, 'spent_by_category': {}, 'member_balances': {}},
+          const {
+            'total_spent': 0,
+            'spent_by_category': {},
+            'member_balances': {},
+          },
     ),
     createdAt: DateTime.parse(json['created_at'] as String),
     updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -113,19 +117,18 @@ class GroupMemberModel extends GroupMember {
     required super.joinedAt,
   });
 
-  factory GroupMemberModel.fromJson(Map<String, dynamic> json) =>
-      GroupMemberModel(
-        // Handle both snake_case (Flutter client) and camelCase (Postgres trigger).
-        userId: (json['user_id'] ?? json['userId']) as String,
-        userName: (json['user_name'] ?? json['userName'] ?? '') as String,
-        role: GroupMemberRole.values.firstWhere(
-          (r) => r.name == (json['role'] as String),
-          orElse: () => GroupMemberRole.viewer,
-        ),
-        joinedAt: DateTime.parse(
-          (json['joined_at'] ?? json['joinedAt']) as String,
-        ),
-      );
+  factory GroupMemberModel.fromJson(
+    Map<String, dynamic> json,
+  ) => GroupMemberModel(
+    // Handle both snake_case (Flutter client) and camelCase (Postgres trigger).
+    userId: (json['user_id'] ?? json['userId']) as String,
+    userName: (json['user_name'] ?? json['userName'] ?? '') as String,
+    role: GroupMemberRole.values.firstWhere(
+      (r) => r.name == (json['role'] as String),
+      orElse: () => GroupMemberRole.viewer,
+    ),
+    joinedAt: DateTime.parse((json['joined_at'] ?? json['joinedAt']) as String),
+  );
 
   factory GroupMemberModel.fromEntity(GroupMember e) => GroupMemberModel(
     userId: e.userId,
@@ -168,17 +171,16 @@ class ItineraryItemModel extends ItineraryItem {
         longitude: (json['longitude'] as num?)?.toDouble(),
       );
 
-  factory ItineraryItemModel.fromEntity(ItineraryItem e) =>
-      ItineraryItemModel(
-        id: e.id,
-        itemType: e.itemType,
-        title: e.title,
-        startTime: e.startTime,
-        endTime: e.endTime,
-        location: e.location,
-        latitude: e.latitude,
-        longitude: e.longitude,
-      );
+  factory ItineraryItemModel.fromEntity(ItineraryItem e) => ItineraryItemModel(
+    id: e.id,
+    itemType: e.itemType,
+    title: e.title,
+    startTime: e.startTime,
+    endTime: e.endTime,
+    location: e.location,
+    latitude: e.latitude,
+    longitude: e.longitude,
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id,

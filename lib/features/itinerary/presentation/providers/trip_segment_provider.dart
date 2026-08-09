@@ -42,29 +42,31 @@ final deleteTripSegmentUseCaseProvider = Provider<DeleteTripSegmentUseCase>(
   (ref) => DeleteTripSegmentUseCase(ref.watch(tripSegmentRepositoryProvider)),
 );
 
-final reorderTripSegmentsUseCaseProvider =
-    Provider<ReorderTripSegmentsUseCase>(
+final reorderTripSegmentsUseCaseProvider = Provider<ReorderTripSegmentsUseCase>(
   (ref) => ReorderTripSegmentsUseCase(ref.watch(tripSegmentRepositoryProvider)),
 );
 
 final setTripSegmentVisibilityUseCaseProvider =
     Provider<SetTripSegmentVisibilityUseCase>(
-  (ref) =>
-      SetTripSegmentVisibilityUseCase(ref.watch(tripSegmentRepositoryProvider)),
-);
+      (ref) => SetTripSegmentVisibilityUseCase(
+        ref.watch(tripSegmentRepositoryProvider),
+      ),
+    );
 
 // ---------------------------------------------------------------------------
 // Stream provider — live segment list per itinerary, ordered by orderIndex
 // ---------------------------------------------------------------------------
 
 final tripSegmentsStreamProvider =
-    StreamProvider.family<List<TripSegment>, String>((ref, itineraryId) => ref
-        .watch(tripSegmentRepositoryProvider)
-        .watchSegments(itineraryId)
-        .map((either) => either.fold(
-              (f) => throw Exception(f.message),
-              (list) => list,
-            )));
+    StreamProvider.family<List<TripSegment>, String>(
+      (ref, itineraryId) => ref
+          .watch(tripSegmentRepositoryProvider)
+          .watchSegments(itineraryId)
+          .map(
+            (either) =>
+                either.fold((f) => throw Exception(f.message), (list) => list),
+          ),
+    );
 
 // ---------------------------------------------------------------------------
 // Route geometry — composes RoutingService (core/) with the repository, so
@@ -120,5 +122,6 @@ final fetchTripSegmentRouteGeometryProvider =
 /// since `_RouteTab` is a stateless `ConsumerWidget` that rebuilds on every
 /// segment-list change) so re-rendering the map doesn't re-request the same
 /// segment's geometry on every rebuild.
-final routeGeometryBackfillRequestedProvider =
-    Provider<Set<String>>((_) => <String>{});
+final routeGeometryBackfillRequestedProvider = Provider<Set<String>>(
+  (_) => <String>{},
+);

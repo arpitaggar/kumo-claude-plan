@@ -6,23 +6,17 @@ import 'package:kumo_claude/features/legal/presentation/pages/terms_page.dart';
 void main() {
   group('PrivacyPolicyPage', () {
     testWidgets('renders page title in AppBar', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: PrivacyPolicyPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: PrivacyPolicyPage()));
       expect(find.text('Privacy Policy'), findsWidgets);
     });
 
     testWidgets('contains effective date', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: PrivacyPolicyPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: PrivacyPolicyPage()));
       expect(find.textContaining('1 July 2026'), findsOneWidget);
     });
 
     testWidgets('contains data collection section', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: PrivacyPolicyPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: PrivacyPolicyPage()));
       await tester.scrollUntilVisible(
         find.textContaining('Data We Collect'),
         200,
@@ -31,20 +25,13 @@ void main() {
     });
 
     testWidgets('contains GDPR rights section', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: PrivacyPolicyPage()),
-      );
-      await tester.scrollUntilVisible(
-        find.textContaining('Your Rights'),
-        200,
-      );
+      await tester.pumpWidget(const MaterialApp(home: PrivacyPolicyPage()));
+      await tester.scrollUntilVisible(find.textContaining('Your Rights'), 200);
       expect(find.textContaining('Your Rights'), findsOneWidget);
     });
 
     testWidgets('mentions account deletion (right to erasure)', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: PrivacyPolicyPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: PrivacyPolicyPage()));
       await tester.scrollUntilVisible(
         find.textContaining('Delete Account'),
         200,
@@ -53,9 +40,7 @@ void main() {
     });
 
     testWidgets('mentions Supabase as sub-processor', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: PrivacyPolicyPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: PrivacyPolicyPage()));
       await tester.scrollUntilVisible(
         find.textContaining('Supabase').first,
         200,
@@ -88,23 +73,17 @@ void main() {
 
   group('TermsPage', () {
     testWidgets('renders page title in AppBar', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: TermsPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: TermsPage()));
       expect(find.text('Terms of Service'), findsWidgets);
     });
 
     testWidgets('contains effective date', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: TermsPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: TermsPage()));
       expect(find.textContaining('1 July 2026'), findsOneWidget);
     });
 
     testWidgets('contains acceptable use section', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: TermsPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: TermsPage()));
       await tester.scrollUntilVisible(
         find.textContaining('Acceptable Use'),
         200,
@@ -112,11 +91,10 @@ void main() {
       expect(find.textContaining('Acceptable Use'), findsOneWidget);
     });
 
-    testWidgets('contains termination section referencing Delete Account',
-        (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: TermsPage()),
-      );
+    testWidgets('contains termination section referencing Delete Account', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: TermsPage()));
       await tester.scrollUntilVisible(
         find.textContaining('Delete Account'),
         200,
@@ -125,9 +103,7 @@ void main() {
     });
 
     testWidgets('contains Katha AI disclaimer', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: TermsPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: TermsPage()));
       await tester.scrollUntilVisible(
         find.textContaining('Katha AI').first,
         200,
@@ -136,9 +112,7 @@ void main() {
     });
 
     testWidgets('mentions governing law (England and Wales)', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: TermsPage()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: TermsPage()));
       await tester.scrollUntilVisible(
         find.textContaining('England and Wales'),
         200,

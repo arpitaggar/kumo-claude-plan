@@ -16,9 +16,16 @@ void main() {
   late MockTripSegmentRepository mockRepo;
   late AddTripSegmentUseCase useCase;
 
-  const tOrigin = Waypoint(name: 'Munich', latitude: 48.1351, longitude: 11.5820);
-  const tDestination =
-      Waypoint(name: 'Bangkok', latitude: 13.7563, longitude: 100.5018);
+  const tOrigin = Waypoint(
+    name: 'Munich',
+    latitude: 48.1351,
+    longitude: 11.5820,
+  );
+  const tDestination = Waypoint(
+    name: 'Bangkok',
+    latitude: 13.7563,
+    longitude: 100.5018,
+  );
 
   setUpAll(() {
     registerFallbackValue(FakeTripSegment());
@@ -56,8 +63,7 @@ void main() {
         notes: 'rental booked',
       );
 
-      final captured =
-          verify(() => mockRepo.addSegment(captureAny())).captured;
+      final captured = verify(() => mockRepo.addSegment(captureAny())).captured;
       final segment = captured.first as TripSegment;
 
       expect(segment.itineraryId, 'it-1');
@@ -77,8 +83,7 @@ void main() {
         destination: tDestination,
       );
 
-      final captured =
-          verify(() => mockRepo.addSegment(captureAny())).captured;
+      final captured = verify(() => mockRepo.addSegment(captureAny())).captured;
       final segment = captured.first as TripSegment;
       expect(segment.id, isNotEmpty);
       expect(segment.id.length, 36);
@@ -97,8 +102,9 @@ void main() {
     });
 
     test('propagates ServerFailure from repository', () async {
-      when(() => mockRepo.addSegment(any()))
-          .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+      when(
+        () => mockRepo.addSegment(any()),
+      ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
       final result = await useCase(
         itineraryId: 'it-1',

@@ -79,7 +79,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   onPressed: _finish,
                   child: Text(
                     'Skip',
-                    style: TextStyle(color: context.colorScheme.onSurfaceVariant, fontSize: 14),
+                    style: TextStyle(
+                      color: context.colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
@@ -91,8 +94,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 controller: _pageController,
                 onPageChanged: (i) => setState(() => _currentPage = i),
                 itemCount: _pages.length,
-                itemBuilder: (context, i) =>
-                    _OnboardingSlide(data: _pages[i]),
+                itemBuilder: (context, i) => _OnboardingSlide(data: _pages[i]),
               ),
             ),
 
@@ -159,42 +161,42 @@ class _OnboardingSlide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: context.featuredGradient,
-                borderRadius: BorderRadius.circular(36),
-              ),
-              child: Icon(data.icon, size: 56, color: context.colorScheme.surface),
-            ),
-            const SizedBox(height: 40),
-            Text(
-              data.title,
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: context.colorScheme.onSurface,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              data.subtitle,
-              style: TextStyle(
-                fontSize: 16,
-                color: context.colorScheme.onSurfaceVariant,
-                height: 1.6,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(horizontal: 40),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            gradient: context.featuredGradient,
+            borderRadius: BorderRadius.circular(36),
+          ),
+          child: Icon(data.icon, size: 56, color: context.colorScheme.surface),
         ),
-      );
+        const SizedBox(height: 40),
+        Text(
+          data.title,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: context.colorScheme.onSurface,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          data.subtitle,
+          style: TextStyle(
+            fontSize: 16,
+            color: context.colorScheme.onSurfaceVariant,
+            height: 1.6,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ),
+  );
 }
 
 class _OnboardingData {

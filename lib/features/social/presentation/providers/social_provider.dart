@@ -64,19 +64,19 @@ final fetchFollowStatsUseCaseProvider = Provider<FetchFollowStatsUseCase>(
 /// All public posts, optionally filtered by a search term. Keyed by the
 /// (trimmed, nullable-if-empty) query so typing a new search term reads a
 /// fresh provider instance instead of needing manual invalidation.
-final explorePostsProvider =
-    FutureProvider.autoDispose.family<List<ItineraryPost>, String?>(
-  (ref, query) async {
-    final result =
-        await ref.read(fetchExplorePostsUseCaseProvider).call(query: query);
-    return result.fold((f) => throw Exception(f.message), (posts) => posts);
-  },
-);
+final explorePostsProvider = FutureProvider.autoDispose
+    .family<List<ItineraryPost>, String?>((ref, query) async {
+      final result = await ref
+          .read(fetchExplorePostsUseCaseProvider)
+          .call(query: query);
+      return result.fold((f) => throw Exception(f.message), (posts) => posts);
+    });
 
 /// Posts from authors the current user follows. Empty (not an error) when
 /// signed out or following nobody yet.
-final followingFeedProvider =
-    FutureProvider.autoDispose<List<ItineraryPost>>((ref) async {
+final followingFeedProvider = FutureProvider.autoDispose<List<ItineraryPost>>((
+  ref,
+) async {
   final auth = ref.watch(authNotifierProvider);
   if (auth is! AuthAuthenticated) {
     return [];
@@ -89,28 +89,24 @@ final followingFeedProvider =
 });
 
 /// All posts by a given author, newest first — used on the public profile page.
-final authorPostsProvider =
-    FutureProvider.autoDispose.family<List<ItineraryPost>, String>(
-  (ref, authorId) async {
-    final result =
-        await ref.read(fetchPostsByAuthorUseCaseProvider).call(authorId);
-    return result.fold((f) => throw Exception(f.message), (posts) => posts);
-  },
-);
+final authorPostsProvider = FutureProvider.autoDispose
+    .family<List<ItineraryPost>, String>((ref, authorId) async {
+      final result = await ref
+          .read(fetchPostsByAuthorUseCaseProvider)
+          .call(authorId);
+      return result.fold((f) => throw Exception(f.message), (posts) => posts);
+    });
 
 /// Follow counts + whether the current user follows the given user id.
-final followStatsProvider =
-    FutureProvider.autoDispose.family<FollowStats?, String>(
-  (ref, userId) async {
-    final auth = ref.watch(authNotifierProvider);
-    if (auth is! AuthAuthenticated) {
-      return null;
-    }
+final followStatsProvider = FutureProvider.autoDispose
+    .family<FollowStats?, String>((ref, userId) async {
+      final auth = ref.watch(authNotifierProvider);
+      if (auth is! AuthAuthenticated) {
+        return null;
+      }
 
-    final result = await ref.read(fetchFollowStatsUseCaseProvider).call(
-      userId: userId,
-      currentUserId: auth.user.id,
-    );
-    return result.fold((f) => throw Exception(f.message), (stats) => stats);
-  },
-);
+      final result = await ref
+          .read(fetchFollowStatsUseCaseProvider)
+          .call(userId: userId, currentUserId: auth.user.id);
+      return result.fold((f) => throw Exception(f.message), (stats) => stats);
+    });

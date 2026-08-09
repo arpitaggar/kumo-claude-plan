@@ -11,6 +11,5 @@ class SetTripCostFieldValuesUseCase {
   Future<Either<Failure, void>> call(
     String itineraryId,
     Map<String, String> fieldIdToOptionId,
-  ) =>
-      _repository.setValues(itineraryId, fieldIdToOptionId);
+  ) => _repository.setValues(itineraryId, fieldIdToOptionId);
 }

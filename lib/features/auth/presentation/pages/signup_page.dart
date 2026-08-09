@@ -54,7 +54,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    await ref.read(authNotifierProvider.notifier).signup(
+    await ref
+        .read(authNotifierProvider.notifier)
+        .signup(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           displayName: _nameController.text.trim().isEmpty
@@ -77,9 +79,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     });
 
     if (authState is AuthLoading) {
-      return const Scaffold(
-        body: LoadingWidget(message: 'Creating account…'),
-      );
+      return const Scaffold(body: LoadingWidget(message: 'Creating account…'));
     }
 
     return Scaffold(

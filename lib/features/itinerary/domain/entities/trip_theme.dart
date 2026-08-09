@@ -154,58 +154,145 @@ class TripTheme {
     final t = title.toLowerCase();
 
     if (_matches(t, [
-      'japan', 'tokyo', 'kyoto', 'osaka', 'sakura', 'cherry',
-      'okinawa', 'hiroshima', 'nara', 'sapporo', 'hokkaido', 'fukuoka',
+      'japan',
+      'tokyo',
+      'kyoto',
+      'osaka',
+      'sakura',
+      'cherry',
+      'okinawa',
+      'hiroshima',
+      'nara',
+      'sapporo',
+      'hokkaido',
+      'fukuoka',
     ])) {
       return sakura;
     }
 
     if (_matches(t, [
-      'bali', 'hawaii', 'thailand', 'phuket', 'maldives', 'caribbean',
-      'cancun', 'jamaica', 'fiji', 'tropical', 'beach', 'island',
-      'indonesia', 'vietnam', 'philippines', 'singapore', 'malaysia',
-      'sri lanka', 'bora bora', 'lombok',
+      'bali',
+      'hawaii',
+      'thailand',
+      'phuket',
+      'maldives',
+      'caribbean',
+      'cancun',
+      'jamaica',
+      'fiji',
+      'tropical',
+      'beach',
+      'island',
+      'indonesia',
+      'vietnam',
+      'philippines',
+      'singapore',
+      'malaysia',
+      'sri lanka',
+      'bora bora',
+      'lombok',
     ])) {
       return tropical;
     }
 
     if (_matches(t, [
-      'alps', 'switzerland', 'swiss', 'austria', 'iceland', 'ski',
-      'skiing', 'snowboard', 'aspen', 'zermatt', 'chamonix', 'innsbruck',
-      'mont blanc', 'winter',
+      'alps',
+      'switzerland',
+      'swiss',
+      'austria',
+      'iceland',
+      'ski',
+      'skiing',
+      'snowboard',
+      'aspen',
+      'zermatt',
+      'chamonix',
+      'innsbruck',
+      'mont blanc',
+      'winter',
     ])) {
       return alpine;
     }
 
     if (_matches(t, [
-      'morocco', 'dubai', 'egypt', 'sahara', 'jordan', 'oman', 'uae',
-      'marrakech', 'abu dhabi', 'riyadh', 'saudi', 'petra', 'desert',
-      'cairo', 'luxor',
+      'morocco',
+      'dubai',
+      'egypt',
+      'sahara',
+      'jordan',
+      'oman',
+      'uae',
+      'marrakech',
+      'abu dhabi',
+      'riyadh',
+      'saudi',
+      'petra',
+      'desert',
+      'cairo',
+      'luxor',
     ])) {
       return desert;
     }
 
     if (_matches(t, [
-      'norway', 'sweden', 'finland', 'denmark', 'oslo', 'stockholm',
-      'copenhagen', 'helsinki', 'aurora', 'northern lights', 'lapland',
-      'reykjavik', 'scandinavia',
+      'norway',
+      'sweden',
+      'finland',
+      'denmark',
+      'oslo',
+      'stockholm',
+      'copenhagen',
+      'helsinki',
+      'aurora',
+      'northern lights',
+      'lapland',
+      'reykjavik',
+      'scandinavia',
     ])) {
       return nordic;
     }
 
     if (_matches(t, [
-      'italy', 'greece', 'spain', 'croatia', 'portugal', 'turkey',
-      'rome', 'barcelona', 'athens', 'lisbon', 'dubrovnik', 'santorini',
-      'mykonos', 'amalfi', 'sicily', 'malta', 'mediterranean',
-      'positano', 'venice', 'florence',
+      'italy',
+      'greece',
+      'spain',
+      'croatia',
+      'portugal',
+      'turkey',
+      'rome',
+      'barcelona',
+      'athens',
+      'lisbon',
+      'dubrovnik',
+      'santorini',
+      'mykonos',
+      'amalfi',
+      'sicily',
+      'malta',
+      'mediterranean',
+      'positano',
+      'venice',
+      'florence',
     ])) {
       return mediterranean;
     }
 
     if (_matches(t, [
-      'costa rica', 'amazon', 'new zealand', 'rainforest', 'jungle',
-      'ecuador', 'colombia', 'peru', 'patagonia', 'brazil', 'kenya',
-      'safari', 'africa', 'tanzania', 'rwanda',
+      'costa rica',
+      'amazon',
+      'new zealand',
+      'rainforest',
+      'jungle',
+      'ecuador',
+      'colombia',
+      'peru',
+      'patagonia',
+      'brazil',
+      'kenya',
+      'safari',
+      'africa',
+      'tanzania',
+      'rwanda',
     ])) {
       return rainforest;
     }

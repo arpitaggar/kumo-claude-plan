@@ -10,15 +10,16 @@ void main() {
   // fetches / platform channels), which isn't safe or meaningful in a plain
   // widget test.
   Widget buildEmpty() => ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: RouteMapView(segments: const [], onSegmentTap: (_) {}),
-          ),
-        ),
-      );
+    child: MaterialApp(
+      home: Scaffold(
+        body: RouteMapView(segments: const [], onSegmentTap: (_) {}),
+      ),
+    ),
+  );
 
-  testWidgets('shows a prompt instead of a map when there are no segments',
-      (tester) async {
+  testWidgets('shows a prompt instead of a map when there are no segments', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildEmpty());
     expect(find.text('Add a segment to see the route map'), findsOneWidget);
   });

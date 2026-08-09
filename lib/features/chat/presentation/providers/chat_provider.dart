@@ -41,14 +41,17 @@ final sendMessageUseCaseProvider = Provider<SendMessageUseCase>(
 // Stream provider — live message list for one itinerary (last 100)
 // ---------------------------------------------------------------------------
 
-final chatStreamProvider =
-    StreamProvider.family<List<Message>, String>((ref, itineraryId) =>
-        ref.watch(chatRepositoryProvider).watchMessages(itineraryId).map(
-              (either) => either.fold(
-                (failure) => throw Exception(failure.message),
-                (messages) => messages,
-              ),
-            ));
+final chatStreamProvider = StreamProvider.family<List<Message>, String>(
+  (ref, itineraryId) => ref
+      .watch(chatRepositoryProvider)
+      .watchMessages(itineraryId)
+      .map(
+        (either) => either.fold(
+          (failure) => throw Exception(failure.message),
+          (messages) => messages,
+        ),
+      ),
+);
 
 // ---------------------------------------------------------------------------
 // Earlier-messages: direct repository access for REST pagination
@@ -63,15 +66,18 @@ final chatRepositoryRefProvider = Provider<ChatRepositoryImpl>(
 // ---------------------------------------------------------------------------
 
 final messageReadReceiptsProvider =
-    FutureProvider.family<List<MessageReadReceipt>, String>(
-        (ref, messageId) async {
-  final result =
-      await ref.watch(chatRepositoryProvider).getReadReceipts(messageId);
-  return result.fold(
-    (failure) => throw Exception(failure.message),
-    (receipts) => receipts,
-  );
-});
+    FutureProvider.family<List<MessageReadReceipt>, String>((
+      ref,
+      messageId,
+    ) async {
+      final result = await ref
+          .watch(chatRepositoryProvider)
+          .getReadReceipts(messageId);
+      return result.fold(
+        (failure) => throw Exception(failure.message),
+        (receipts) => receipts,
+      );
+    });
 
 // ---------------------------------------------------------------------------
 // Inbox badge — tracks last visit time and whether there are unread messages
@@ -133,8 +139,10 @@ final chatMessageWatcherProvider = Provider<void>((ref) {
   }
 
   for (final trip in listState.itineraries) {
-    ref.listen<AsyncValue<List<Message>>>(chatStreamProvider(trip.id),
-        (prev, next) {
+    ref.listen<AsyncValue<List<Message>>>(chatStreamProvider(trip.id), (
+      prev,
+      next,
+    ) {
       // Only a data→data transition is a genuinely new message; the initial
       // loading→data transition is just the existing history downloading.
       if (prev is! AsyncData<List<Message>> ||
@@ -149,7 +157,12 @@ final chatMessageWatcherProvider = Provider<void>((ref) {
       if (latest.id == prevLatestId) {
         return;
       }
-      _maybeNotify(ref, tripId: trip.id, tripTitle: trip.title, message: latest);
+      _maybeNotify(
+        ref,
+        tripId: trip.id,
+        tripTitle: trip.title,
+        message: latest,
+      );
     });
   }
 });
@@ -161,8 +174,9 @@ void _maybeNotify(
   required Message message,
 }) {
   final authState = ref.read(authNotifierProvider);
-  final currentUserId =
-      authState is AuthAuthenticated ? authState.user.id : null;
+  final currentUserId = authState is AuthAuthenticated
+      ? authState.user.id
+      : null;
   if (currentUserId == null || message.senderId == currentUserId) {
     return;
   }
@@ -185,7 +199,8 @@ void _maybeNotify(
   final prefs = ref.read(notificationPreferencesProvider).value ?? const [];
   NotificationPreference? chatPref;
   for (final p in prefs) {
-    if (p.channel == NotifChannel.push && p.category == NotifCategory.chatMessages) {
+    if (p.channel == NotifChannel.push &&
+        p.category == NotifCategory.chatMessages) {
       chatPref = p;
       break;
     }
@@ -201,13 +216,16 @@ void _maybeNotify(
   final body = !showPreview
       ? 'New message'
       : message.content.isNotEmpty
-          ? message.content
-          : message.attachments.isNotEmpty &&
-                  message.attachments.first.kind == AttachmentKind.image
-              ? '📷 Photo'
-              : '📎 Attachment';
+      ? message.content
+      : message.attachments.isNotEmpty &&
+            message.attachments.first.kind == AttachmentKind.image
+      ? '📷 Photo'
+      : '📎 Attachment';
 
-  ref.read(notificationServiceProvider).value?.showChatMessageNotification(
+  ref
+      .read(notificationServiceProvider)
+      .value
+      ?.showChatMessageNotification(
         tripId: tripId,
         tripTitle: tripTitle,
         senderName: message.senderName,

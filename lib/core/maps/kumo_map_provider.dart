@@ -1,15 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum KumoMapProvider {
-  openStreetMap,
-  googleMaps,
-}
+enum KumoMapProvider { openStreetMap, googleMaps }
 
 final mapProviderConfigProvider =
     StateNotifierProvider<MapProviderNotifier, KumoMapProvider>(
-  (_) => MapProviderNotifier(),
-);
+      (_) => MapProviderNotifier(),
+    );
 
 class MapProviderNotifier extends StateNotifier<KumoMapProvider> {
   MapProviderNotifier() : super(KumoMapProvider.openStreetMap) {
@@ -24,8 +21,9 @@ class MapProviderNotifier extends StateNotifier<KumoMapProvider> {
     if (saved == null) {
       return;
     }
-    final found =
-        KumoMapProvider.values.where((p) => p.name == saved).firstOrNull;
+    final found = KumoMapProvider.values
+        .where((p) => p.name == saved)
+        .firstOrNull;
     if (found != null && found != state) {
       state = found;
     }

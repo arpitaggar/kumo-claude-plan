@@ -39,7 +39,16 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
   Map<String, String> _costFieldValues = {};
   List<ItineraryItem> _generatedItems = const [];
 
-  static const _currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'SGD'];
+  static const _currencies = [
+    'USD',
+    'EUR',
+    'GBP',
+    'JPY',
+    'AUD',
+    'CAD',
+    'CHF',
+    'SGD',
+  ];
 
   @override
   void initState() {
@@ -70,7 +79,8 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
   Future<void> _pickDate({required bool isStart}) async {
     final initial = isStart
         ? (_startDate ?? DateTime.now())
-        : (_endDate ?? (_startDate ?? DateTime.now()).add(const Duration(days: 7)));
+        : (_endDate ??
+              (_startDate ?? DateTime.now()).add(const Duration(days: 7)));
 
     final picked = await showDatePicker(
       context: context,
@@ -114,21 +124,23 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
 
     setState(() => _isSubmitting = true);
 
-    final created = await ref.read(itineraryListProvider.notifier).createItinerary(
-      title: _titleController.text.trim(),
-      ownerId: authState.user.id,
-      ownerName: authState.user.displayName ?? authState.user.email,
-      startDate: _startDate!,
-      endDate: _endDate!,
-      totalBudget: double.tryParse(_budgetController.text) ?? 0,
-      currencyCode: _currency,
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      items: _generatedItems.isEmpty ? null : _generatedItems,
-      themeKey: _themeKey,
-      orgId: _selectedOrgId,
-    );
+    final created = await ref
+        .read(itineraryListProvider.notifier)
+        .createItinerary(
+          title: _titleController.text.trim(),
+          ownerId: authState.user.id,
+          ownerName: authState.user.displayName ?? authState.user.email,
+          startDate: _startDate!,
+          endDate: _endDate!,
+          totalBudget: double.tryParse(_budgetController.text) ?? 0,
+          currencyCode: _currency,
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          items: _generatedItems.isEmpty ? null : _generatedItems,
+          themeKey: _themeKey,
+          orgId: _selectedOrgId,
+        );
 
     if (created != null && _costFieldValues.isNotEmpty) {
       await ref
@@ -198,10 +210,7 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  'Dates',
-                  style: context.textTheme.labelLarge,
-                ),
+                Text('Dates', style: context.textTheme.labelLarge),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -231,9 +240,13 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
                       width: 100,
                       child: DropdownButtonFormField<String>(
                         initialValue: _currency,
-                        decoration: const InputDecoration(labelText: 'Currency'),
+                        decoration: const InputDecoration(
+                          labelText: 'Currency',
+                        ),
                         items: _currencies
-                            .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                            .map(
+                              (c) => DropdownMenuItem(value: c, child: Text(c)),
+                            )
                             .toList(),
                         onChanged: (v) {
                           if (v != null) {
@@ -246,7 +259,9 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
                     Expanded(
                       child: TextFormField(
                         controller: _budgetController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.done,
                         decoration: const InputDecoration(labelText: 'Amount'),
                         validator: (v) {
@@ -286,7 +301,10 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
                     orgId: _selectedOrgId!,
                     values: _costFieldValues,
                     onChanged: (fieldId, optionId) => setState(() {
-                      _costFieldValues = {..._costFieldValues, fieldId: optionId};
+                      _costFieldValues = {
+                        ..._costFieldValues,
+                        fieldId: optionId,
+                      };
                     }),
                   ),
                 ],
@@ -372,9 +390,7 @@ class _DatePickerField extends StatelessWidget {
         prefixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
       ),
       child: Text(
-        date != null
-            ? DateFormat('MMM d, yyyy').format(date!)
-            : 'Select',
+        date != null ? DateFormat('MMM d, yyyy').format(date!) : 'Select',
         style: context.textTheme.bodyMedium?.copyWith(
           color: date == null ? context.colorScheme.onSurfaceVariant : null,
         ),
@@ -422,8 +438,11 @@ class _AiSection extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.auto_awesome,
-                      size: 13, color: context.colorScheme.surface),
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 13,
+                    color: context.colorScheme.surface,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${generatedItems.length} activities',
@@ -450,8 +469,7 @@ class _AiSection extends StatelessWidget {
               onPressed: onClear,
               style: TextButton.styleFrom(
                 foregroundColor: context.colorScheme.onSurfaceVariant,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               ),
               child: const Text('Remove', style: TextStyle(fontSize: 12)),
             ),
@@ -469,11 +487,15 @@ class _AiSection extends StatelessWidget {
               for (int i = 0; i < generatedItems.length && i < 3; i++)
                 Padding(
                   padding: EdgeInsets.only(
-                      bottom: i < 2 && i < generatedItems.length - 1 ? 6 : 0),
+                    bottom: i < 2 && i < generatedItems.length - 1 ? 6 : 0,
+                  ),
                   child: Row(
                     children: [
-                      Icon(Icons.circle,
-                          size: 6, color: context.colorScheme.primary),
+                      Icon(
+                        Icons.circle,
+                        size: 6,
+                        color: context.colorScheme.primary,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(

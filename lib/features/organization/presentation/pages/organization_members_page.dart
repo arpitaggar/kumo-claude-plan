@@ -75,22 +75,17 @@ class OrganizationMembersPage extends ConsumerWidget {
       return;
     }
 
-    final result = await ref.read(inviteOrgMemberUseCaseProvider).call(
-          orgId: orgId,
-          email: emailController.text.trim(),
-          role: role,
-        );
+    final result = await ref
+        .read(inviteOrgMemberUseCaseProvider)
+        .call(orgId: orgId, email: emailController.text.trim(), role: role);
 
     if (!context.mounted) {
       return;
     }
-    result.fold(
-      (f) => context.showSnackBar(f.message, isError: true),
-      (_) {
-        ref.invalidate(orgMembersProvider(orgId));
-        context.showSnackBar('Member added');
-      },
-    );
+    result.fold((f) => context.showSnackBar(f.message, isError: true), (_) {
+      ref.invalidate(orgMembersProvider(orgId));
+      context.showSnackBar('Member added');
+    });
   }
 
   Future<void> _changeRole(
@@ -122,9 +117,14 @@ class OrganizationMembersPage extends ConsumerWidget {
         title: const Text('Remove member?'),
         content: Text('Remove ${member.userName} from this organization?'),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: context.colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colorScheme.error,
+            ),
             onPressed: () => ctx.pop(true),
             child: const Text('Remove'),
           ),
@@ -135,7 +135,9 @@ class OrganizationMembersPage extends ConsumerWidget {
       return;
     }
 
-    final result = await ref.read(removeOrgMemberUseCaseProvider).call(member.id);
+    final result = await ref
+        .read(removeOrgMemberUseCaseProvider)
+        .call(member.id);
     if (!context.mounted) {
       return;
     }
@@ -149,8 +151,9 @@ class OrganizationMembersPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final membersAsync = ref.watch(orgMembersProvider(orgId));
     final authState = ref.watch(authNotifierProvider);
-    final currentUserId =
-        authState is AuthAuthenticated ? authState.user.id : null;
+    final currentUserId = authState is AuthAuthenticated
+        ? authState.user.id
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -177,9 +180,13 @@ class OrganizationMembersPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (members) {
-          final me = members.where((m) => m.userId == currentUserId).firstOrNull;
+          final me = members
+              .where((m) => m.userId == currentUserId)
+              .firstOrNull;
           final canManage =
-              me != null && (me.role == OrgMemberRole.owner || me.role == OrgMemberRole.admin);
+              me != null &&
+              (me.role == OrgMemberRole.owner ||
+                  me.role == OrgMemberRole.admin);
 
           return ListView.separated(
             padding: const EdgeInsets.all(16),
@@ -188,8 +195,16 @@ class OrganizationMembersPage extends ConsumerWidget {
             itemBuilder: (context, i) {
               final member = members[i];
               return ListTile(
-                leading: CircleAvatar(child: Text(member.userName.isNotEmpty ? member.userName[0].toUpperCase() : '?')),
-                title: Text(member.userName.isEmpty ? '(no name)' : member.userName),
+                leading: CircleAvatar(
+                  child: Text(
+                    member.userName.isNotEmpty
+                        ? member.userName[0].toUpperCase()
+                        : '?',
+                  ),
+                ),
+                title: Text(
+                  member.userName.isEmpty ? '(no name)' : member.userName,
+                ),
                 subtitle: Text(member.role.name),
                 trailing: canManage && member.role != OrgMemberRole.owner
                     ? PopupMenuButton<String>(
@@ -201,16 +216,27 @@ class OrganizationMembersPage extends ConsumerWidget {
                               context,
                               ref,
                               member,
-                              action == 'admin' ? OrgMemberRole.admin : OrgMemberRole.member,
+                              action == 'admin'
+                                  ? OrgMemberRole.admin
+                                  : OrgMemberRole.member,
                             );
                           }
                         },
                         itemBuilder: (_) => [
                           if (member.role != OrgMemberRole.admin)
-                            const PopupMenuItem(value: 'admin', child: Text('Make admin')),
+                            const PopupMenuItem(
+                              value: 'admin',
+                              child: Text('Make admin'),
+                            ),
                           if (member.role != OrgMemberRole.member)
-                            const PopupMenuItem(value: 'member', child: Text('Make member')),
-                          const PopupMenuItem(value: 'remove', child: Text('Remove')),
+                            const PopupMenuItem(
+                              value: 'member',
+                              child: Text('Make member'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'remove',
+                            child: Text('Remove'),
+                          ),
                         ],
                       )
                     : null,

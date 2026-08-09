@@ -19,17 +19,21 @@ class OrgCostFieldModel extends OrgCostField {
   /// `OrganizationRemoteDataSourceImpl.fetchOrgCostFields`.
   factory OrgCostFieldModel.fromJson(Map<String, dynamic> json) {
     final rawOptions = json['org_cost_field_options'] as List<dynamic>? ?? [];
-    final options = rawOptions
-        .map((o) => OrgCostFieldOptionModel.fromJson(o as Map<String, dynamic>))
-        .toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final options =
+        rawOptions
+            .map(
+              (o) =>
+                  OrgCostFieldOptionModel.fromJson(o as Map<String, dynamic>),
+            )
+            .toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     final rawSources = json['org_cost_field_sources'] as List<dynamic>? ?? [];
     final sortedSources = rawSources.cast<Map<String, dynamic>>().toList()
-      ..sort((a, b) =>
-          (a['position'] as int).compareTo(b['position'] as int));
-    final sourceFieldIds =
-        sortedSources.map((s) => s['source_field_id'] as String).toList();
+      ..sort((a, b) => (a['position'] as int).compareTo(b['position'] as int));
+    final sourceFieldIds = sortedSources
+        .map((s) => s['source_field_id'] as String)
+        .toList();
 
     return OrgCostFieldModel(
       id: json['id'] as String,

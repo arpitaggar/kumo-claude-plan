@@ -43,9 +43,7 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
   }
 
   @override
-  Future<Either<Failure, List<OrgMember>>> fetchOrgMembers(
-    String orgId,
-  ) async {
+  Future<Either<Failure, List<OrgMember>>> fetchOrgMembers(String orgId) async {
     try {
       final members = await dataSource.fetchOrgMembers(orgId);
       return Right(members);

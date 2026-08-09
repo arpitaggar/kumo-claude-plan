@@ -81,28 +81,28 @@ class Expense extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        itineraryId,
-        title,
-        amount,
-        currencyCode,
-        category,
-        payerId,
-        payerName,
-        splits,
-        createdAt,
-        splitMode,
-        exchangeRateToBase,
-        isSettlement,
-        isOfficial,
-        approvalStatus,
-        notes,
-        rejectionReason,
-        submittedAt,
-        reviewedAt,
-        reviewedBy,
-        costCenterCode,
-      ];
+    id,
+    itineraryId,
+    title,
+    amount,
+    currencyCode,
+    category,
+    payerId,
+    payerName,
+    splits,
+    createdAt,
+    splitMode,
+    exchangeRateToBase,
+    isSettlement,
+    isOfficial,
+    approvalStatus,
+    notes,
+    rejectionReason,
+    submittedAt,
+    reviewedAt,
+    reviewedBy,
+    costCenterCode,
+  ];
 }
 
 enum ExpenseApprovalStatus { notSubmitted, pending, approved, rejected }
@@ -152,8 +152,14 @@ class Settlement extends Equatable {
   final String currencyCode;
 
   @override
-  List<Object> get props =>
-      [fromUserId, fromUserName, toUserId, toUserName, amount, currencyCode];
+  List<Object> get props => [
+    fromUserId,
+    fromUserName,
+    toUserId,
+    toUserName,
+    amount,
+    currencyCode,
+  ];
 }
 
 enum ExpenseCategory {

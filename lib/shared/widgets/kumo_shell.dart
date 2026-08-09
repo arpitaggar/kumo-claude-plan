@@ -13,11 +13,11 @@ class KumoShell extends ConsumerWidget {
   final Widget child;
 
   static const _destinations = [
-    _NavDest('/home',     Icons.home_outlined,        Icons.home,        'Home'),
-    _NavDest('/trips',    Icons.luggage_outlined,      Icons.luggage,     'Trips'),
-    _NavDest('/inbox',    Icons.chat_bubble_outline,   Icons.chat_bubble, 'Inbox'),
-    _NavDest('/discover', Icons.explore_outlined,      Icons.explore,     'Discover'),
-    _NavDest('/profile',  Icons.person_outline,        Icons.person,      'Profile'),
+    _NavDest('/home', Icons.home_outlined, Icons.home, 'Home'),
+    _NavDest('/trips', Icons.luggage_outlined, Icons.luggage, 'Trips'),
+    _NavDest('/inbox', Icons.chat_bubble_outline, Icons.chat_bubble, 'Inbox'),
+    _NavDest('/discover', Icons.explore_outlined, Icons.explore, 'Discover'),
+    _NavDest('/profile', Icons.person_outline, Icons.person, 'Profile'),
   ];
 
   static const _inboxIndex = 2;
@@ -97,23 +97,23 @@ class _BadgedIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Icon(icon),
-          Positioned(
-            top: -2,
-            right: -4,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: context.colorScheme.error,
-                shape: BoxShape.circle,
-              ),
-            ),
+    clipBehavior: Clip.none,
+    children: [
+      Icon(icon),
+      Positioned(
+        top: -2,
+        right: -4,
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: context.colorScheme.error,
+            shape: BoxShape.circle,
           ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 }
 
 class _NavDest {

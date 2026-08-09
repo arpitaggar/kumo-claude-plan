@@ -10,22 +10,15 @@ Future<void> showAddRatingSheet(
   BuildContext context, {
   required String itineraryId,
   required List<ItineraryItem> items,
-}) =>
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AddRatingSheet(
-        itineraryId: itineraryId,
-        items: items,
-      ),
-    );
+}) => showModalBottomSheet(
+  context: context,
+  isScrollControlled: true,
+  backgroundColor: Colors.transparent,
+  builder: (_) => _AddRatingSheet(itineraryId: itineraryId, items: items),
+);
 
 class _AddRatingSheet extends ConsumerStatefulWidget {
-  const _AddRatingSheet({
-    required this.itineraryId,
-    required this.items,
-  });
+  const _AddRatingSheet({required this.itineraryId, required this.items});
 
   final String itineraryId;
   final List<ItineraryItem> items;
@@ -85,7 +78,9 @@ class _AddRatingSheetState extends ConsumerState<_AddRatingSheet> {
 
     setState(() => _isSubmitting = true);
 
-    final result = await ref.read(addRatingUseCaseProvider).call(
+    final result = await ref
+        .read(addRatingUseCaseProvider)
+        .call(
           itineraryId: widget.itineraryId,
           targetName: name,
           stars: _stars,
@@ -110,140 +105,142 @@ class _AddRatingSheetState extends ConsumerState<_AddRatingSheet> {
 
   @override
   Widget build(BuildContext context) => Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+    child: Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 20),
+              ),
+              const SizedBox(height: 20),
 
+              Text(
+                'Rate your experience',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: context.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // What to rate
+              if (widget.items.isNotEmpty) ...[
                 Text(
-                  'Rate your experience',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: context.colorScheme.onSurface,
-                  ),
+                  'What are you rating?',
+                  style: context.textTheme.labelLarge,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
+                _SourceToggle(
+                  useCustom: _useCustomName,
+                  onChanged: (v) => setState(() {
+                    _useCustomName = v;
+                    _selectedItem = null;
+                  }),
+                ),
+                const SizedBox(height: 12),
+              ],
 
-                // What to rate
-                if (widget.items.isNotEmpty) ...[
-                  Text('What are you rating?',
-                      style: context.textTheme.labelLarge),
-                  const SizedBox(height: 8),
-                  _SourceToggle(
-                    useCustom: _useCustomName,
-                    onChanged: (v) => setState(() {
-                      _useCustomName = v;
-                      _selectedItem = null;
-                    }),
+              if (!_useCustomName && widget.items.isNotEmpty) ...[
+                DropdownButtonFormField<ItineraryItem>(
+                  initialValue: _selectedItem,
+                  hint: const Text('Pick an activity'),
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.place_outlined),
                   ),
-                  const SizedBox(height: 12),
-                ],
-
-                if (!_useCustomName && widget.items.isNotEmpty) ...[
-                  DropdownButtonFormField<ItineraryItem>(
-                    initialValue: _selectedItem,
-                    hint: const Text('Pick an activity'),
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.place_outlined),
-                    ),
-                    items: widget.items
-                        .map((item) => DropdownMenuItem(
-                              value: item,
-                              child: Text(
-                                item.title,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedItem = v),
-                  ),
-                  const SizedBox(height: 16),
-                ] else ...[
-                  TextFormField(
-                    controller: _customNameController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Place or activity name',
-                      prefixIcon: Icon(Icons.edit_location_alt_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Stars
-                Text('Your rating', style: context.textTheme.labelLarge),
-                const SizedBox(height: 10),
-                _StarPicker(
-                  value: _stars,
-                  onChanged: (v) => setState(() => _stars = v),
+                  items: widget.items
+                      .map(
+                        (item) => DropdownMenuItem(
+                          value: item,
+                          child: Text(
+                            item.title,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedItem = v),
                 ),
                 const SizedBox(height: 16),
-
-                // Comment
+              ] else ...[
                 TextFormField(
-                  controller: _commentController,
-                  maxLines: 3,
-                  textCapitalization: TextCapitalization.sentences,
+                  controller: _customNameController,
+                  textCapitalization: TextCapitalization.words,
                   decoration: const InputDecoration(
-                    labelText: 'Comment (optional)',
-                    alignLabelWithHint: true,
-                    prefixIcon: Padding(
-                      padding: EdgeInsets.only(bottom: 40),
-                      child: Icon(Icons.comment_outlined),
-                    ),
+                    labelText: 'Place or activity name',
+                    prefixIcon: Icon(Icons.edit_location_alt_outlined),
                   ),
                 ),
-                const SizedBox(height: 28),
-
-                FilledButton(
-                  onPressed: _isSubmitting ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.colorScheme.primary,
-                    foregroundColor: context.colorScheme.surface,
-                    minimumSize: const Size.fromHeight(50),
-                  ),
-                  child: _isSubmitting
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: context.colorScheme.surface,
-                          ),
-                        )
-                      : const Text('Submit Review'),
-                ),
+                const SizedBox(height: 16),
               ],
-            ),
+
+              // Stars
+              Text('Your rating', style: context.textTheme.labelLarge),
+              const SizedBox(height: 10),
+              _StarPicker(
+                value: _stars,
+                onChanged: (v) => setState(() => _stars = v),
+              ),
+              const SizedBox(height: 16),
+
+              // Comment
+              TextFormField(
+                controller: _commentController,
+                maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Comment (optional)',
+                  alignLabelWithHint: true,
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.only(bottom: 40),
+                    child: Icon(Icons.comment_outlined),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              FilledButton(
+                onPressed: _isSubmitting ? null : _submit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: context.colorScheme.primary,
+                  foregroundColor: context.colorScheme.surface,
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: _isSubmitting
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: context.colorScheme.surface,
+                        ),
+                      )
+                    : const Text('Submit Review'),
+              ),
+            ],
           ),
         ),
       ),
-    );
+    ),
+  );
 }
 
 class _SourceToggle extends StatelessWidget {
@@ -254,20 +251,20 @@ class _SourceToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          _Chip(
-            label: 'Trip activity',
-            selected: !useCustom,
-            onTap: () => onChanged(false),
-          ),
-          const SizedBox(width: 8),
-          _Chip(
-            label: 'Other place',
-            selected: useCustom,
-            onTap: () => onChanged(true),
-          ),
-        ],
-      );
+    children: [
+      _Chip(
+        label: 'Trip activity',
+        selected: !useCustom,
+        onTap: () => onChanged(false),
+      ),
+      const SizedBox(width: 8),
+      _Chip(
+        label: 'Other place',
+        selected: useCustom,
+        onTap: () => onChanged(true),
+      ),
+    ],
+  );
 }
 
 class _Chip extends StatelessWidget {
@@ -283,33 +280,33 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color:
-                selected ? context.colorScheme.primary : context.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected
-                  ? context.colorScheme.primary
-                  : context.colorScheme.outlineVariant,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: selected
-                  ? context.colorScheme.surface
-                  : context.colorScheme.onSurface,
-            ),
-          ),
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: selected
+            ? context.colorScheme.primary
+            : context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: selected
+              ? context.colorScheme.primary
+              : context.colorScheme.outlineVariant,
         ),
-      );
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: selected
+              ? context.colorScheme.surface
+              : context.colorScheme.onSurface,
+        ),
+      ),
+    ),
+  );
 }
 
 class _StarPicker extends StatelessWidget {
@@ -320,22 +317,22 @@ class _StarPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(5, (i) {
-          final star = i + 1;
-          return GestureDetector(
-            onTap: () => onChanged(star),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Icon(
-                star <= value ? Icons.star_rounded : Icons.star_outline_rounded,
-                size: 40,
-                color: star <= value
-                    ? const Color(0xFFFFC107)
-                    : context.colorScheme.outlineVariant,
-              ),
-            ),
-          );
-        }),
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: List.generate(5, (i) {
+      final star = i + 1;
+      return GestureDetector(
+        onTap: () => onChanged(star),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Icon(
+            star <= value ? Icons.star_rounded : Icons.star_outline_rounded,
+            size: 40,
+            color: star <= value
+                ? const Color(0xFFFFC107)
+                : context.colorScheme.outlineVariant,
+          ),
+        ),
       );
+    }),
+  );
 }

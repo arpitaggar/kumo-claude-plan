@@ -79,9 +79,8 @@ class _AddEditTripSegmentPageState
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => LocationSearchSheet(
-        title: isOrigin ? 'Origin' : 'Destination',
-      ),
+      builder: (_) =>
+          LocationSearchSheet(title: isOrigin ? 'Origin' : 'Destination'),
     );
     if (result == null || !mounted) {
       return;
@@ -112,7 +111,7 @@ class _AddEditTripSegmentPageState
     final initial = isDeparture
         ? (_departureTime ?? DateTime.now())
         : (_arrivalTime ??
-            (_departureTime ?? DateTime.now()).add(const Duration(hours: 2)));
+              (_departureTime ?? DateTime.now()).add(const Duration(hours: 2)));
 
     final date = await showDatePicker(
       context: context,
@@ -189,29 +188,29 @@ class _AddEditTripSegmentPageState
         arrivalTime: _arrivalTime,
         notes: notes.isEmpty ? null : notes,
       );
-      final result =
-          await ref.read(updateTripSegmentUseCaseProvider).call(updated);
+      final result = await ref
+          .read(updateTripSegmentUseCaseProvider)
+          .call(updated);
       if (!mounted) {
         return;
       }
       setState(() => _isSubmitting = false);
-      result.fold(
-        (f) => context.showSnackBar(f.message, isError: true),
-        (saved) {
-          // Not awaited — routing is an external API call and shouldn't
-          // block save/navigation; the map shows the existing straight/
-          // curved line until this resolves and the realtime stream
-          // picks up the patched row.
-          unawaited(
-            ref.read(fetchTripSegmentRouteGeometryProvider).call(saved),
-          );
-          context.pop();
-        },
-      );
+      result.fold((f) => context.showSnackBar(f.message, isError: true), (
+        saved,
+      ) {
+        // Not awaited — routing is an external API call and shouldn't
+        // block save/navigation; the map shows the existing straight/
+        // curved line until this resolves and the realtime stream
+        // picks up the patched row.
+        unawaited(ref.read(fetchTripSegmentRouteGeometryProvider).call(saved));
+        context.pop();
+      });
       return;
     }
 
-    final addResult = await ref.read(addTripSegmentUseCaseProvider).call(
+    final addResult = await ref
+        .read(addTripSegmentUseCaseProvider)
+        .call(
           itineraryId: widget.itineraryId,
           orderIndex: currentSegments.length,
           mode: _mode,
@@ -236,11 +235,14 @@ class _AddEditTripSegmentPageState
         );
         final continueFrom = widget.continueFromSegment;
         if (continueFrom != null) {
-          final afterIndex =
-              currentSegments.indexWhere((s) => s.id == continueFrom.id);
+          final afterIndex = currentSegments.indexWhere(
+            (s) => s.id == continueFrom.id,
+          );
           final reordered = [...currentSegments]
-            ..insert(afterIndex == -1 ? currentSegments.length : afterIndex + 1,
-                inserted);
+            ..insert(
+              afterIndex == -1 ? currentSegments.length : afterIndex + 1,
+              inserted,
+            );
           await ref
               .read(reorderTripSegmentsUseCaseProvider)
               .call(widget.itineraryId, reordered);
@@ -259,10 +261,12 @@ class _AddEditTripSegmentPageState
   @override
   Widget build(BuildContext context) {
     if (widget.segmentId != null) {
-      final segments =
-          ref.watch(tripSegmentsStreamProvider(widget.itineraryId)).value;
-      final segment =
-          segments?.where((s) => s.id == widget.segmentId).firstOrNull;
+      final segments = ref
+          .watch(tripSegmentsStreamProvider(widget.itineraryId))
+          .value;
+      final segment = segments
+          ?.where((s) => s.id == widget.segmentId)
+          .firstOrNull;
       if (segment != null) {
         _initFromSegment(segment);
       }
@@ -399,23 +403,22 @@ class _LocationField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: label,
-            prefixIcon: const Icon(Icons.location_on_outlined),
-          ),
-          child: Text(
-            waypoint?.name ?? 'Select a location',
-            style: context.textTheme.bodyMedium?.copyWith(
-              color:
-                  waypoint == null ? context.colorScheme.onSurfaceVariant : null,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: const Icon(Icons.location_on_outlined),
+      ),
+      child: Text(
+        waypoint?.name ?? 'Select a location',
+        style: context.textTheme.bodyMedium?.copyWith(
+          color: waypoint == null ? context.colorScheme.onSurfaceVariant : null,
         ),
-      );
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+  );
 }
 
 class _DateTimePickerField extends StatelessWidget {
@@ -431,22 +434,21 @@ class _DateTimePickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: label,
-            prefixIcon: const Icon(Icons.schedule_outlined, size: 18),
-          ),
-          child: Text(
-            dateTime != null
-                ? DateFormat('MMM d, yyyy · h:mm a').format(dateTime!.toLocal())
-                : 'Select',
-            style: context.textTheme.bodyMedium?.copyWith(
-              color:
-                  dateTime == null ? context.colorScheme.onSurfaceVariant : null,
-            ),
-          ),
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: const Icon(Icons.schedule_outlined, size: 18),
+      ),
+      child: Text(
+        dateTime != null
+            ? DateFormat('MMM d, yyyy · h:mm a').format(dateTime!.toLocal())
+            : 'Select',
+        style: context.textTheme.bodyMedium?.copyWith(
+          color: dateTime == null ? context.colorScheme.onSurfaceVariant : null,
         ),
-      );
+      ),
+    ),
+  );
 }

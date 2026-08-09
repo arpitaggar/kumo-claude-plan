@@ -1,8 +1,10 @@
 # Kumo — SOLID Compliance Audit
 
-- **Last Updated:** 2026-08-05
+- **Last Updated:** 2026-08-05 (see 2026-08-09 addendum below — findings 1-12 were not re-verified against the codebase as it stands today)
 - **Scope:** full `lib/` tree (180 Dart files), read in full across five parallel passes — core/config/shared, domain layer (all features), data layer (all features), presentation layer group A (itinerary/social/chat/expense_split/ai_generation), presentation layer group B (auth/profile/settings/packing/ratings/onboarding/legal/shell/home/splash).
 - **Overall verdict:** the architecture is fundamentally sound — Clean Architecture layering, `Either<Failure,T>`, one-usecase-per-operation, and Riverpod-as-DI are followed correctly in the large majority of the codebase. The violations found are consistent, learnable patterns repeated a handful of times each, not structural rot. Nothing here is an emergency; everything is fixable incrementally.
+
+> **2026-08-09 addendum:** `lib/features/organization/` (work mode — orgs, expense approval, cost fields; ~50 files, stage28-30) and `lib/core/routing/` (OSRM/Google Directions route-geometry service) shipped after this audit was written and were **not** run through the same five-pass process — a fresh architecture spot-check (not a full SOLID pass) found no domain-layer framework leaks and no data/presentation reaching past the repository abstraction in either addition, consistent with priority item #1 in the ranked list below (both follow the abstract-class+Impl+Provider convention this audit already calls out as correct, not an ISP violation). `OrganizationRepository` bundles org CRUD, member management, cost-field CRUD, and pending-approval reads in one interface — worth checking against the same "fat interface" lens as `SocialRepository` (priority #2) in a future pass, but not verified in depth here.
 
 ---
 

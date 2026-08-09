@@ -47,6 +47,22 @@ const CORS = {
 // gets targeted) shouldn't be able to spam every member indefinitely.
 const MAX_FORWARDS_PER_HOUR = 20
 
+// Plain `!==` short-circuits on the first differing byte, so an attacker
+// timing many requests could in principle narrow down INBOUND_WEBHOOK_SECRET
+// character-by-character. Always walks the full (max) length of both inputs
+// regardless of where — or whether — they diverge, so comparison time
+// doesn't leak how much of the guess was correct.
+function timingSafeEqual(a: string, b: string): boolean {
+  const aBytes = new TextEncoder().encode(a)
+  const bBytes = new TextEncoder().encode(b)
+  const length = Math.max(aBytes.length, bBytes.length)
+  let diff = aBytes.length === bBytes.length ? 0 : 1
+  for (let i = 0; i < length; i++) {
+    diff |= (aBytes[i] ?? 0) ^ (bBytes[i] ?? 0)
+  }
+  return diff === 0
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS })
@@ -55,7 +71,7 @@ serve(async (req) => {
   try {
     const expectedSecret = Deno.env.get('INBOUND_WEBHOOK_SECRET')
     const providedSecret = req.headers.get('Authorization')?.replace('Bearer ', '')
-    if (!expectedSecret || providedSecret !== expectedSecret) {
+    if (!expectedSecret || !providedSecret || !timingSafeEqual(providedSecret, expectedSecret)) {
       return json({ error: 'Unauthorized' }, 401)
     }
 

@@ -12,6 +12,5 @@ class CreateOrganizationUseCase {
   Future<Either<Failure, Organization>> call({
     required String name,
     required String slug,
-  }) =>
-      _repository.createOrganization(name: name, slug: slug);
+  }) => _repository.createOrganization(name: name, slug: slug);
 }

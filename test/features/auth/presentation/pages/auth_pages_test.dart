@@ -85,8 +85,9 @@ void main() {
       expect(btn.onPressed, isNull);
     });
 
-    testWidgets('Create Account button enabled after ticking consent',
-        (tester) async {
+    testWidgets('Create Account button enabled after ticking consent', (
+      tester,
+    ) async {
       await tester.pumpWidget(await authScope(const SignupPage()));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(Checkbox));
@@ -121,9 +122,8 @@ void main() {
   group('PasswordResetPage', () {
     // PasswordResetPage does not watch any provider in build(), so a bare
     // ProviderScope suffices — no Supabase setup needed.
-    Widget resetScope() => const ProviderScope(
-          child: MaterialApp(home: PasswordResetPage()),
-        );
+    Widget resetScope() =>
+        const ProviderScope(child: MaterialApp(home: PasswordResetPage()));
 
     testWidgets('renders without crash', (tester) async {
       await tester.pumpWidget(resetScope());

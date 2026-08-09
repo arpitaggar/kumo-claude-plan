@@ -99,8 +99,10 @@ class PostCard extends StatelessWidget {
                 if (post.forkedFromPostId != null) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: context.colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(20),

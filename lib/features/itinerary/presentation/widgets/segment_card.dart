@@ -84,7 +84,9 @@ class SegmentCard extends ConsumerWidget {
                     onPressed: onToggleVisibility,
                     tooltip: isVisible ? 'Hide from map' : 'Show on map',
                     icon: Icon(
-                      isVisible ? Icons.visibility_outlined : Icons.visibility_off,
+                      isVisible
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),

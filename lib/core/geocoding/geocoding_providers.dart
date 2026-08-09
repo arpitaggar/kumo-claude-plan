@@ -11,7 +11,10 @@ import 'nominatim_geocoding_service.dart';
 /// come back in one consistent language rather than each place's own local
 /// script.
 final geocodingServiceProvider = Provider<GeocodingService>((ref) {
-  final preferredLanguage = ref.watch(userProfileProvider).valueOrNull?.preferredLanguage;
+  final preferredLanguage = ref
+      .watch(userProfileProvider)
+      .valueOrNull
+      ?.preferredLanguage;
   final languageCode = preferredLanguage?.isNotEmpty == true
       ? preferredLanguage
       : PlatformDispatcher.instance.locale.languageCode;

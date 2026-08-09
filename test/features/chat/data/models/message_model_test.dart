@@ -6,14 +6,14 @@ void main() {
   const createdAt = '2026-07-01T10:00:00.000Z';
 
   Map<String, dynamic> baseJson({List<String>? readBy}) => {
-        'id': 'msg-1',
-        'itinerary_id': 'trip-1',
-        'sender_id': 'user-1',
-        'sender_name': 'Alice',
-        'content': 'Hello!',
-        'created_at': createdAt,
-        'read_by': readBy, // null handled by fromJson → defaults to []
-      };
+    'id': 'msg-1',
+    'itinerary_id': 'trip-1',
+    'sender_id': 'user-1',
+    'sender_name': 'Alice',
+    'content': 'Hello!',
+    'created_at': createdAt,
+    'read_by': readBy, // null handled by fromJson → defaults to []
+  };
 
   group('Message entity', () {
     test('readBy defaults to empty list', () {
@@ -98,9 +98,7 @@ void main() {
 
   group('MessageModel.toJson', () {
     test('includes read_by in output', () {
-      final model = MessageModel.fromJson(
-        baseJson(readBy: ['user-2']),
-      );
+      final model = MessageModel.fromJson(baseJson(readBy: ['user-2']));
       final json = model.toJson();
       expect(json['read_by'], ['user-2']);
     });

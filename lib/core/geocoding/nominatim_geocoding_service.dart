@@ -12,8 +12,8 @@ import 'geocoding_service.dart';
 /// so requests are also throttled to a minimum spacing here.
 class NominatimGeocodingService implements GeocodingService {
   NominatimGeocodingService({http.Client? client, String? acceptLanguage})
-      : _client = client ?? http.Client(),
-        _acceptLanguage = acceptLanguage ?? 'en';
+    : _client = client ?? http.Client(),
+      _acceptLanguage = acceptLanguage ?? 'en';
 
   final http.Client _client;
 
@@ -57,10 +57,7 @@ class NominatimGeocodingService implements GeocodingService {
 
     final response = await _client.get(
       uri,
-      headers: {
-        'User-Agent': _userAgent,
-        'Accept-Language': _acceptLanguage,
-      },
+      headers: {'User-Agent': _userAgent, 'Accept-Language': _acceptLanguage},
     );
 
     if (response.statusCode != 200) {
@@ -68,15 +65,13 @@ class NominatimGeocodingService implements GeocodingService {
     }
 
     final decoded = jsonDecode(response.body) as List<dynamic>;
-    return decoded
-        .map((raw) {
-          final entry = raw as Map<String, dynamic>;
-          return GeocodingResult(
-            name: entry['display_name'] as String,
-            latitude: double.parse(entry['lat'] as String),
-            longitude: double.parse(entry['lon'] as String),
-          );
-        })
-        .toList();
+    return decoded.map((raw) {
+      final entry = raw as Map<String, dynamic>;
+      return GeocodingResult(
+        name: entry['display_name'] as String,
+        latitude: double.parse(entry['lat'] as String),
+        longitude: double.parse(entry['lon'] as String),
+      );
+    }).toList();
   }
 }

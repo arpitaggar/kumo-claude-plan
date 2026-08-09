@@ -17,8 +17,9 @@ void main() {
   });
 
   test('delegates to repository with the provided ids', () async {
-    when(() => mockRepo.submitForApproval(['e-1', 'e-2']))
-        .thenAnswer((_) async => const Right(null));
+    when(
+      () => mockRepo.submitForApproval(['e-1', 'e-2']),
+    ).thenAnswer((_) async => const Right(null));
 
     await useCase(['e-1', 'e-2']);
 
@@ -26,8 +27,9 @@ void main() {
   });
 
   test('works for a single expense id', () async {
-    when(() => mockRepo.submitForApproval(['e-1']))
-        .thenAnswer((_) async => const Right(null));
+    when(
+      () => mockRepo.submitForApproval(['e-1']),
+    ).thenAnswer((_) async => const Right(null));
 
     final result = await useCase(['e-1']);
 
@@ -35,8 +37,9 @@ void main() {
   });
 
   test('propagates ServerFailure from repository', () async {
-    when(() => mockRepo.submitForApproval(any()))
-        .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+    when(
+      () => mockRepo.submitForApproval(any()),
+    ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
     final result = await useCase(['e-1']);
 

@@ -14,27 +14,29 @@ class MessageModel extends Message {
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) => MessageModel(
-        id: json['id'] as String,
-        itineraryId: json['itinerary_id'] as String,
-        senderId: json['sender_id'] as String,
-        senderName: (json['sender_name'] as String?) ?? '',
-        content: (json['content'] as String?) ?? '',
-        createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
-        readBy: (json['read_by'] as List?)?.cast<String>() ?? const [],
-        attachments: (json['message_attachments'] as List?)
-                ?.map((a) =>
-                    MessageAttachmentModel.fromJson(a as Map<String, dynamic>))
-                .toList() ??
-            const [],
-      );
+    id: json['id'] as String,
+    itineraryId: json['itinerary_id'] as String,
+    senderId: json['sender_id'] as String,
+    senderName: (json['sender_name'] as String?) ?? '',
+    content: (json['content'] as String?) ?? '',
+    createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
+    readBy: (json['read_by'] as List?)?.cast<String>() ?? const [],
+    attachments:
+        (json['message_attachments'] as List?)
+            ?.map(
+              (a) => MessageAttachmentModel.fromJson(a as Map<String, dynamic>),
+            )
+            .toList() ??
+        const [],
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'itinerary_id': itineraryId,
-        'sender_id': senderId,
-        'sender_name': senderName,
-        'content': content,
-        'created_at': createdAt.toIso8601String(),
-        'read_by': readBy,
-      };
+    'id': id,
+    'itinerary_id': itineraryId,
+    'sender_id': senderId,
+    'sender_name': senderName,
+    'content': content,
+    'created_at': createdAt.toIso8601String(),
+    'read_by': readBy,
+  };
 }

@@ -30,8 +30,7 @@ void main() {
     });
 
     test('parses null itemId correctly', () {
-      final json = Map<String, dynamic>.from(fullJson)
-        ..['item_id'] = null;
+      final json = Map<String, dynamic>.from(fullJson)..['item_id'] = null;
       final model = RatingModel.fromJson(json);
       expect(model.itemId, isNull);
     });

@@ -22,7 +22,8 @@ import '../../domain/usecases/signup_usecase.dart';
 // ---------------------------------------------------------------------------
 
 final sharedPreferencesProvider = Provider<SharedPreferences>(
-  (_) => throw UnimplementedError('sharedPreferencesProvider must be overridden'),
+  (_) =>
+      throw UnimplementedError('sharedPreferencesProvider must be overridden'),
 );
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>(
@@ -34,9 +35,7 @@ final secureStorageProvider = Provider<FlutterSecureStorage>(
 );
 
 final authLocalDataSourceProvider = Provider<AuthLocalDataSource>(
-  (ref) => AuthLocalDataSourceImpl(
-    ref.watch(secureStorageProvider),
-  ),
+  (ref) => AuthLocalDataSourceImpl(ref.watch(secureStorageProvider)),
 );
 
 final authRepositoryProvider = Provider<AuthRepositoryImpl>(
@@ -113,7 +112,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required this.repository,
   }) : super(const AuthInitial()) {
     _checkCurrentUser();
-    _authSubscription = KumoSupabaseClient.auth.onAuthStateChange.listen((data) {
+    _authSubscription = KumoSupabaseClient.auth.onAuthStateChange.listen((
+      data,
+    ) {
       if (data.event == sb.AuthChangeEvent.passwordRecovery) {
         state = const AuthPasswordRecovery();
       }
@@ -138,8 +139,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final result = await repository.getCurrentUser();
     result.fold(
       (_) => state = const AuthUnauthenticated(),
-      (user) => state =
-          user != null ? AuthAuthenticated(user) : const AuthUnauthenticated(),
+      (user) => state = user != null
+          ? AuthAuthenticated(user)
+          : const AuthUnauthenticated(),
     );
   }
 
@@ -181,13 +183,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> updatePassword(String newPassword) async {
     state = const AuthLoading();
     final result = await repository.resetPassword(newPassword: newPassword);
-    await result.fold(
-      (failure) async => state = AuthError(failure.message),
-      (_) async {
-        await repository.logout();
-        state = const AuthUnauthenticated();
-      },
-    );
+    await result.fold((failure) async => state = AuthError(failure.message), (
+      _,
+    ) async {
+      await repository.logout();
+      state = const AuthUnauthenticated();
+    });
   }
 
   Future<Either<Failure, User>> updateProfile({
@@ -198,19 +199,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       displayName: displayName,
       avatarUrl: avatarUrl,
     );
-    result.fold(
-      (_) {},
-      (user) => state = AuthAuthenticated(user),
-    );
+    result.fold((_) {}, (user) => state = AuthAuthenticated(user));
     return result;
   }
 
   Future<Either<Failure, void>> deleteAccount() async {
     final result = await deleteAccountUseCase();
-    result.fold(
-      (_) {},
-      (_) => state = const AuthUnauthenticated(),
-    );
+    result.fold((_) {}, (_) => state = const AuthUnauthenticated());
     return result;
   }
 

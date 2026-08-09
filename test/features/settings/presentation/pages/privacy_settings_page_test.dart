@@ -6,11 +6,9 @@ import 'package:kumo_claude/features/settings/presentation/pages/privacy_setting
 // Override currentUserProfileProvider with a pre-resolved null profile so the
 // page renders _PrivacyBody immediately without hitting Supabase.
 Widget _buildPage() => ProviderScope(
-      overrides: [
-        currentUserProfileProvider.overrideWith((ref) async => null),
-      ],
-      child: const MaterialApp(home: PrivacySettingsPage()),
-    );
+  overrides: [currentUserProfileProvider.overrideWith((ref) async => null)],
+  child: const MaterialApp(home: PrivacySettingsPage()),
+);
 
 // The page's ListView has grown past one screen (Discoverability, Profile
 // visibility, and Contact visibility sections were added above Legal /
@@ -85,8 +83,9 @@ void main() {
       expect(find.text('Delete Account'), findsOneWidget);
     });
 
-    testWidgets('tapping Delete Account shows confirmation dialog',
-        (tester) async {
+    testWidgets('tapping Delete Account shows confirmation dialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildPage());
       await tester.pumpAndSettle();
       await _scrollToText(tester, 'Delete Account');
@@ -95,8 +94,9 @@ void main() {
       expect(find.text('Delete account?'), findsOneWidget);
     });
 
-    testWidgets('confirmation dialog has Cancel and Delete buttons',
-        (tester) async {
+    testWidgets('confirmation dialog has Cancel and Delete buttons', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildPage());
       await tester.pumpAndSettle();
       await _scrollToText(tester, 'Delete Account');

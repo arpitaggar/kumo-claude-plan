@@ -15,24 +15,20 @@ Future<AiGenerationResult?> showAiGenerateSheet(
   BuildContext context, {
   required DateTime startDate,
   required DateTime endDate,
-}) =>
-    showModalBottomSheet<AiGenerationResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => ProviderScope(
-        child: _AiGenerateSheet(startDate: startDate, endDate: endDate),
-      ),
-    );
+}) => showModalBottomSheet<AiGenerationResult>(
+  context: context,
+  isScrollControlled: true,
+  backgroundColor: context.colorScheme.surface,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  ),
+  builder: (_) => ProviderScope(
+    child: _AiGenerateSheet(startDate: startDate, endDate: endDate),
+  ),
+);
 
 class _AiGenerateSheet extends ConsumerStatefulWidget {
-  const _AiGenerateSheet({
-    required this.startDate,
-    required this.endDate,
-  });
+  const _AiGenerateSheet({required this.startDate, required this.endDate});
 
   final DateTime startDate;
   final DateTime endDate;
@@ -59,7 +55,9 @@ class _AiGenerateSheetState extends ConsumerState<_AiGenerateSheet> {
       context.showSnackBar('Please enter a destination', isError: true);
       return;
     }
-    await ref.read(aiGenerationProvider.notifier).generate(
+    await ref
+        .read(aiGenerationProvider.notifier)
+        .generate(
           AiGenerationRequest(
             destination: dest,
             startDate: widget.startDate,
@@ -92,18 +90,17 @@ class _AiGenerateSheetState extends ConsumerState<_AiGenerateSheet> {
       child: switch (state) {
         AiGenerationLoading() => const _LoadingView(),
         AiGenerationSuccess(:final result) => _SuccessView(
-            result: result,
-            onUse: () => Navigator.of(context).pop(result),
-            onRegenerate: () =>
-                ref.read(aiGenerationProvider.notifier).reset(),
-          ),
+          result: result,
+          onUse: () => Navigator.of(context).pop(result),
+          onRegenerate: () => ref.read(aiGenerationProvider.notifier).reset(),
+        ),
         _ => _FormView(
-            destinationController: _destinationController,
-            interestsController: _interestsController,
-            selectedStyle: _style,
-            onStyleChanged: (s) => setState(() => _style = s),
-            onGenerate: _generate,
-          ),
+          destinationController: _destinationController,
+          interestsController: _interestsController,
+          selectedStyle: _style,
+          onStyleChanged: (s) => setState(() => _style = s),
+          onGenerate: _generate,
+        ),
       },
     );
   }
@@ -116,41 +113,44 @@ class _LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 260,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                gradient: context.featuredGradient,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: context.colorScheme.surface,
-                  strokeWidth: 2.5,
-                ),
-              ),
+    height: 260,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            gradient: context.featuredGradient,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: CircularProgressIndicator(
+              color: context.colorScheme.surface,
+              strokeWidth: 2.5,
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Crafting your itinerary…',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: context.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'This usually takes 5–10 seconds',
-              style: TextStyle(fontSize: 13, color: context.colorScheme.onSurfaceVariant),
-            ),
-          ],
+          ),
         ),
-      );
+        const SizedBox(height: 20),
+        Text(
+          'Crafting your itinerary…',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'This usually takes 5–10 seconds',
+          style: TextStyle(
+            fontSize: 13,
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Success ───────────────────────────────────────────────────────────────────
@@ -187,8 +187,11 @@ class _SuccessView extends StatelessWidget {
                 gradient: context.featuredGradient,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.auto_awesome,
-                  color: context.colorScheme.surface, size: 18),
+              child: Icon(
+                Icons.auto_awesome,
+                color: context.colorScheme.surface,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -206,7 +209,9 @@ class _SuccessView extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                        fontSize: 12, color: context.colorScheme.onSurfaceVariant),
+                      fontSize: 12,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -248,7 +253,9 @@ class _SuccessView extends StatelessWidget {
                           Text(
                             item.location!,
                             style: TextStyle(
-                                fontSize: 11, color: context.colorScheme.onSurfaceVariant),
+                              fontSize: 11,
+                              color: context.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                       ],
                     ),
@@ -284,8 +291,11 @@ class _SuccessView extends StatelessWidget {
                 final segment = segments[i];
                 return Row(
                   children: [
-                    Icon(iconForTransportMode(segment.mode),
-                        size: 16, color: context.colorScheme.primary),
+                    Icon(
+                      iconForTransportMode(segment.mode),
+                      size: 16,
+                      color: context.colorScheme.primary,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -345,120 +355,122 @@ class _FormView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: context.featuredGradient,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.auto_awesome,
-                    color: context.colorScheme.surface, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Generate with Katha',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: context.colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: destinationController,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: 'Destination',
-              hintText: 'e.g. Tokyo, Japan',
-              prefixIcon: const Icon(Icons.location_on_outlined),
-              filled: true,
-              fillColor: Theme.of(context).scaffoldBackgroundColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: context.featuredGradient,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.auto_awesome,
+              color: context.colorScheme.surface,
+              size: 18,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(width: 12),
           Text(
-            'Travel style',
+            'Generate with Katha',
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
               color: context.colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: TravelStyle.values.map((s) {
-              final selected = s == selectedStyle;
-              return GestureDetector(
-                onTap: () => onStyleChanged(s),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? context.colorScheme.primary
-                        : Theme.of(context).scaffoldBackgroundColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    s.label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: selected
-                          ? context.colorScheme.surface
-                          : context.colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+        ],
+      ),
+      const SizedBox(height: 20),
+      TextField(
+        controller: destinationController,
+        textCapitalization: TextCapitalization.words,
+        textInputAction: TextInputAction.next,
+        decoration: InputDecoration(
+          labelText: 'Destination',
+          hintText: 'e.g. Tokyo, Japan',
+          prefixIcon: const Icon(Icons.location_on_outlined),
+          filled: true,
+          fillColor: Theme.of(context).scaffoldBackgroundColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: interestsController,
-            textCapitalization: TextCapitalization.sentences,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => onGenerate(),
-            decoration: InputDecoration(
-              labelText: 'Interests (optional)',
-              hintText: 'e.g. street food, temples, hiking',
-              prefixIcon: const Icon(Icons.favorite_border_outlined),
-              filled: true,
-              fillColor: Theme.of(context).scaffoldBackgroundColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+        ),
+      ),
+      const SizedBox(height: 16),
+      Text(
+        'Travel style',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.colorScheme.onSurface,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: TravelStyle.values.map((s) {
+          final selected = s == selectedStyle;
+          return GestureDetector(
+            onTap: () => onStyleChanged(s),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: selected
+                    ? context.colorScheme.primary
+                    : Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                s.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: selected
+                      ? context.colorScheme.surface
+                      : context.colorScheme.onSurface,
+                ),
               ),
             ),
+          );
+        }).toList(),
+      ),
+      const SizedBox(height: 16),
+      TextField(
+        controller: interestsController,
+        textCapitalization: TextCapitalization.sentences,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => onGenerate(),
+        decoration: InputDecoration(
+          labelText: 'Interests (optional)',
+          hintText: 'e.g. street food, temples, hiking',
+          prefixIcon: const Icon(Icons.favorite_border_outlined),
+          filled: true,
+          fillColor: Theme.of(context).scaffoldBackgroundColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: onGenerate,
-            icon: const Icon(Icons.auto_awesome, size: 18),
-            label: const Text('Generate itinerary'),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.colorScheme.primary,
-              foregroundColor: context.colorScheme.surface,
-            ),
-          ),
-        ],
-      );
+        ),
+      ),
+      const SizedBox(height: 24),
+      FilledButton.icon(
+        onPressed: onGenerate,
+        icon: const Icon(Icons.auto_awesome, size: 18),
+        label: const Text('Generate itinerary'),
+        style: FilledButton.styleFrom(
+          backgroundColor: context.colorScheme.primary,
+          foregroundColor: context.colorScheme.surface,
+        ),
+      ),
+    ],
+  );
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

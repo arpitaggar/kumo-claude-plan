@@ -5,8 +5,14 @@ void main() {
   group('TripTheme.forKey', () {
     test('returns correct preset for every defined key', () {
       const keys = [
-        'classic', 'sakura', 'tropical', 'alpine',
-        'desert', 'nordic', 'mediterranean', 'rainforest',
+        'classic',
+        'sakura',
+        'tropical',
+        'alpine',
+        'desert',
+        'nordic',
+        'mediterranean',
+        'rainforest',
       ];
       for (final key in keys) {
         final theme = TripTheme.forKey(key);

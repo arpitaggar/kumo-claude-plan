@@ -65,8 +65,11 @@ void main() {
       ),
     ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
-    final result =
-        await useCase(followerId: 'user-1', followeeId: 'user-2', follow: true);
+    final result = await useCase(
+      followerId: 'user-1',
+      followeeId: 'user-2',
+      follow: true,
+    );
 
     expect(result.isLeft(), isTrue);
   });

@@ -15,9 +15,8 @@ final ratingDataSourceProvider = Provider<RatingRemoteDataSource>(
 );
 
 final ratingRepositoryProvider = Provider<RatingRepositoryImpl>(
-  (ref) => RatingRepositoryImpl(
-    dataSource: ref.watch(ratingDataSourceProvider),
-  ),
+  (ref) =>
+      RatingRepositoryImpl(dataSource: ref.watch(ratingDataSourceProvider)),
 );
 
 // ---------------------------------------------------------------------------
@@ -36,11 +35,12 @@ final deleteRatingUseCaseProvider = Provider<DeleteRatingUseCase>(
 // Stream provider — live rating list per itinerary
 // ---------------------------------------------------------------------------
 
-final ratingStreamProvider =
-    StreamProvider.family<List<Rating>, String>((ref, itineraryId) => ref
-        .watch(ratingRepositoryProvider)
-        .watchRatings(itineraryId)
-        .map((either) => either.fold(
-              (f) => throw Exception(f.message),
-              (list) => list,
-            )));
+final ratingStreamProvider = StreamProvider.family<List<Rating>, String>(
+  (ref, itineraryId) => ref
+      .watch(ratingRepositoryProvider)
+      .watchRatings(itineraryId)
+      .map(
+        (either) =>
+            either.fold((f) => throw Exception(f.message), (list) => list),
+      ),
+);

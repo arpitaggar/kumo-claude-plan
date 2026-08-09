@@ -6,10 +6,10 @@ extension ContextExtensions on BuildContext {
 
   /// Theme-aware featured gradient: primary-container → primary (top-left → bottom-right).
   LinearGradient get featuredGradient => LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [colorScheme.primaryContainer, colorScheme.primary],
-      );
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [colorScheme.primaryContainer, colorScheme.primary],
+  );
   TextTheme get textTheme => theme.textTheme;
   MediaQueryData get mediaQuery => MediaQuery.of(this);
   Size get screenSize => mediaQuery.size;

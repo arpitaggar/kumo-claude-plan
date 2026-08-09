@@ -24,8 +24,9 @@ Future<void> initTestSupabase() async {
   // real platform channel with no test-environment implementation — without
   // this, any widget that touches it during a test hangs pumpAndSettle
   // forever. The package ships this in-memory fake for exactly this case.
-  FlutterSecureStoragePlatform.instance =
-      TestFlutterSecureStoragePlatform(<String, String>{});
+  FlutterSecureStoragePlatform.instance = TestFlutterSecureStoragePlatform(
+    <String, String>{},
+  );
   late Supabase instance;
   try {
     instance = await Supabase.initialize(

@@ -160,8 +160,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             // ── Header ──────────────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
                 child: Row(
                   children: [
                     Expanded(
@@ -241,16 +240,22 @@ class _HomePageState extends ConsumerState<HomePage> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: context.colorScheme.outlineVariant),
+                      borderSide: BorderSide(
+                        color: context.colorScheme.outlineVariant,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: context.colorScheme.outlineVariant),
+                      borderSide: BorderSide(
+                        color: context.colorScheme.outlineVariant,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(
-                        color: context.colorScheme.primary.withValues(alpha: 0.6),
+                        color: context.colorScheme.primary.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                   ),
@@ -260,14 +265,15 @@ class _HomePageState extends ConsumerState<HomePage> {
 
             // ── Trip list / empty state ──────────────────────────────────────
             switch (listState) {
-              ItineraryListLoading() || ItineraryListInitial() =>
-                const SliverFillRemaining(
-                  child: LoadingWidget(message: 'Loading trips…'),
-                ),
+              ItineraryListLoading() ||
+              ItineraryListInitial() => const SliverFillRemaining(
+                child: LoadingWidget(message: 'Loading trips…'),
+              ),
               ItineraryListError(:final message) => SliverFillRemaining(
-                  child: AppErrorWidget(message: message, onRetry: _load),
-                ),
-              ItineraryListLoaded(:final itineraries) when itineraries.isEmpty =>
+                child: AppErrorWidget(message: message, onRetry: _load),
+              ),
+              ItineraryListLoaded(:final itineraries)
+                  when itineraries.isEmpty =>
                 SliverFillRemaining(
                   child: _EmptyState(
                     onCreate: () async {
@@ -285,23 +291,23 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 ),
               ItineraryListLoaded(:final itineraries) => _buildTripList(
-                  context,
-                  ref,
-                  _searchQuery.isEmpty
-                      ? itineraries
-                      : itineraries
+                context,
+                ref,
+                _searchQuery.isEmpty
+                    ? itineraries
+                    : itineraries
                           .where(
                             (t) =>
                                 t.title.toLowerCase().contains(
+                                  _searchQuery.toLowerCase(),
+                                ) ||
+                                (t.description?.toLowerCase().contains(
                                       _searchQuery.toLowerCase(),
-                                    ) ||
-                                (t.description
-                                        ?.toLowerCase()
-                                        .contains(_searchQuery.toLowerCase()) ??
+                                    ) ??
                                     false),
                           )
                           .toList(),
-                ),
+              ),
             },
           ],
         ),
@@ -318,19 +324,19 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: context.colorScheme.onSurface,
-            ),
-          ),
-          const Spacer(),
-          ?trailing,
-        ],
-      );
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: context.colorScheme.onSurface,
+        ),
+      ),
+      const Spacer(),
+      ?trailing,
+    ],
+  );
 }
 
 class _EmptyState extends StatelessWidget {
@@ -340,52 +346,52 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                gradient: context.featuredGradient,
-                borderRadius: BorderRadius.circular(32),
-              ),
-              child: Icon(
-                Icons.explore_outlined,
-                size: 48,
-                color: context.colorScheme.surface,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'No trips yet',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: context.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Start planning your next adventure\nand create your first itinerary.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: onCreate,
-                icon: const Icon(Icons.add),
-                label: const Text('Plan a Trip'),
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.all(32),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            gradient: context.featuredGradient,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Icon(
+            Icons.explore_outlined,
+            size: 48,
+            color: context.colorScheme.surface,
+          ),
         ),
-      );
+        const SizedBox(height: 24),
+        Text(
+          'No trips yet',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: context.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Start planning your next adventure\nand create your first itinerary.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 32),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: onCreate,
+            icon: const Icon(Icons.add),
+            label: const Text('Plan a Trip'),
+          ),
+        ),
+      ],
+    ),
+  );
 }

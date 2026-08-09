@@ -109,10 +109,7 @@ void main() {
 
     test('does not throw for same start and end date', () {
       final date = DateTime(2026, 6);
-      expect(
-        () => Validators.validateDateRange(date, date),
-        returnsNormally,
-      );
+      expect(() => Validators.validateDateRange(date, date), returnsNormally);
     });
 
     test('throws ValidationException when start is after end', () {
@@ -128,10 +125,7 @@ void main() {
 
   group('Validators.validateNonEmpty', () {
     test('does not throw for non-empty string', () {
-      expect(
-        () => Validators.validateNonEmpty('hello'),
-        returnsNormally,
-      );
+      expect(() => Validators.validateNonEmpty('hello'), returnsNormally);
     });
 
     test('throws ValidationException for empty string', () {

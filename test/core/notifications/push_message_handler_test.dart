@@ -25,9 +25,9 @@ void main() {
       expect(rootNavigatorKey.currentContext, isNull);
 
       expect(
-        () => handleIosPushTap(const RemoteMessage(
-          data: {'tripId': 'trip-1', 'body': 'hi'},
-        )),
+        () => handleIosPushTap(
+          const RemoteMessage(data: {'tripId': 'trip-1', 'body': 'hi'}),
+        ),
         returnsNormally,
       );
     });

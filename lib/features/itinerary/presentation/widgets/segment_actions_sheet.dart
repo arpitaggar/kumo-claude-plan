@@ -8,52 +8,50 @@ enum SegmentAction { continueFrom, edit, delete }
 Future<SegmentAction?> showSegmentActionsSheet(
   BuildContext context, {
   required String destinationName,
-}) =>
-    showModalBottomSheet<SegmentAction>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  destinationName,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
+}) => showModalBottomSheet<SegmentAction>(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  builder: (context) => SafeArea(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              destinationName,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
-            ListTile(
-              leading: const Icon(Icons.arrow_forward_outlined),
-              title: const Text('Continue trip from here'),
-              subtitle:
-                  const Text('Add the next leg starting from this stop'),
-              onTap: () =>
-                  Navigator.of(context).pop(SegmentAction.continueFrom),
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Edit segment'),
-              onTap: () => Navigator.of(context).pop(SegmentAction.edit),
-            ),
-            ListTile(
-              leading: Icon(Icons.delete_outline,
-                  color: Theme.of(context).colorScheme.error),
-              title: Text(
-                'Delete segment',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-              onTap: () => Navigator.of(context).pop(SegmentAction.delete),
-            ),
-            const SizedBox(height: 8),
-          ],
+          ),
         ),
-      ),
-    );
+        ListTile(
+          leading: const Icon(Icons.arrow_forward_outlined),
+          title: const Text('Continue trip from here'),
+          subtitle: const Text('Add the next leg starting from this stop'),
+          onTap: () => Navigator.of(context).pop(SegmentAction.continueFrom),
+        ),
+        ListTile(
+          leading: const Icon(Icons.edit_outlined),
+          title: const Text('Edit segment'),
+          onTap: () => Navigator.of(context).pop(SegmentAction.edit),
+        ),
+        ListTile(
+          leading: Icon(
+            Icons.delete_outline,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          title: Text(
+            'Delete segment',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+          onTap: () => Navigator.of(context).pop(SegmentAction.delete),
+        ),
+        const SizedBox(height: 8),
+      ],
+    ),
+  ),
+);

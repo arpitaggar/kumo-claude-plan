@@ -44,14 +44,16 @@ class ExpenseModel extends Expense {
 
     final rawSplits = json['splits'] as List<dynamic>? ?? [];
     final splits = rawSplits
-        .map((s) => ExpenseSplit(
-              userId: s['userId'] as String,
-              userName: s['userName'] as String,
-              shareAmount: (s['shareAmount'] as num).toDouble(),
-              rawValue: s['rawValue'] != null
-                  ? (s['rawValue'] as num).toDouble()
-                  : null,
-            ))
+        .map(
+          (s) => ExpenseSplit(
+            userId: s['userId'] as String,
+            userName: s['userName'] as String,
+            shareAmount: (s['shareAmount'] as num).toDouble(),
+            rawValue: s['rawValue'] != null
+                ? (s['rawValue'] as num).toDouble()
+                : null,
+          ),
+        )
         .toList();
 
     return ExpenseModel(
@@ -85,45 +87,46 @@ class ExpenseModel extends Expense {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'itinerary_id': itineraryId,
-        'title': title,
-        'amount': amount,
-        'currency_code': currencyCode,
-        'category': category.name,
-        'payer_id': payerId,
-        'payer_name': payerName,
-        'splits': splits
-            .map((s) => {
-                  'userId': s.userId,
-                  'userName': s.userName,
-                  'shareAmount': s.shareAmount,
-                  if (s.rawValue != null) 'rawValue': s.rawValue,
-                })
-            .toList(),
-        'created_at': createdAt.toIso8601String(),
-        'split_mode': splitMode.name,
-        'exchange_rate_to_base': exchangeRateToBase,
-        'is_settlement': isSettlement,
-        'is_official': isOfficial,
-        'approval_status': _approvalStatusToJson(approvalStatus),
-        if (notes != null) 'notes': notes,
-      };
+    'id': id,
+    'itinerary_id': itineraryId,
+    'title': title,
+    'amount': amount,
+    'currency_code': currencyCode,
+    'category': category.name,
+    'payer_id': payerId,
+    'payer_name': payerName,
+    'splits': splits
+        .map(
+          (s) => {
+            'userId': s.userId,
+            'userName': s.userName,
+            'shareAmount': s.shareAmount,
+            if (s.rawValue != null) 'rawValue': s.rawValue,
+          },
+        )
+        .toList(),
+    'created_at': createdAt.toIso8601String(),
+    'split_mode': splitMode.name,
+    'exchange_rate_to_base': exchangeRateToBase,
+    'is_settlement': isSettlement,
+    'is_official': isOfficial,
+    'approval_status': _approvalStatusToJson(approvalStatus),
+    if (notes != null) 'notes': notes,
+  };
 }
 
 /// `ExpenseApprovalStatus.notSubmitted` <-> `'not_submitted'` — every other
 /// value's Dart name already matches its DB value verbatim.
 ExpenseApprovalStatus _approvalStatusFromJson(String? raw) => switch (raw) {
-      'pending' => ExpenseApprovalStatus.pending,
-      'approved' => ExpenseApprovalStatus.approved,
-      'rejected' => ExpenseApprovalStatus.rejected,
-      _ => ExpenseApprovalStatus.notSubmitted,
-    };
+  'pending' => ExpenseApprovalStatus.pending,
+  'approved' => ExpenseApprovalStatus.approved,
+  'rejected' => ExpenseApprovalStatus.rejected,
+  _ => ExpenseApprovalStatus.notSubmitted,
+};
 
-String _approvalStatusToJson(ExpenseApprovalStatus status) =>
-    switch (status) {
-      ExpenseApprovalStatus.notSubmitted => 'not_submitted',
-      ExpenseApprovalStatus.pending => 'pending',
-      ExpenseApprovalStatus.approved => 'approved',
-      ExpenseApprovalStatus.rejected => 'rejected',
-    };
+String _approvalStatusToJson(ExpenseApprovalStatus status) => switch (status) {
+  ExpenseApprovalStatus.notSubmitted => 'not_submitted',
+  ExpenseApprovalStatus.pending => 'pending',
+  ExpenseApprovalStatus.approved => 'approved',
+  ExpenseApprovalStatus.rejected => 'rejected',
+};

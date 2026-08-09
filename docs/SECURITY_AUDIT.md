@@ -2,9 +2,10 @@
 
 ## Executive Summary
 
-- **Last Updated:** 2026-08-05
+- **Last Updated:** 2026-08-09
 - **Overall Posture:** Action Required — remediation applied, one item needs manual follow-up
-- **Open Critical/High Issues:** 0 code-fixable (24 of 25 findings resolved in the 2026-08-05 remediation pass; SEC-014 remains open pending a manual Firebase console action — key rotation can't be done from a code change)
+- **Open Critical/High Issues:** 0 code-fixable (30 of 31 findings resolved across the 2026-08-05 and 2026-08-09 remediation passes; SEC-014 remains open pending a manual Firebase console action — key rotation can't be done from a code change)
+- **2026-08-09 update:** A security review of the work-mode/org feature (stages 28-30, shipped 2026-08-08) and the current uncommitted diff found and fixed 6 new findings — SEC-026 through SEC-031 — covering an RLS self-recursion bug, an unauthenticated trip-email-alias IDOR, a cross-tenant expense-injection path, an over-broad org-admin SELECT grant, an information-disclosure nit in the new startup-failure screen, and a non-constant-time secret comparison in `inbound-trip-email`. See those entries below.
 
 **⚠️ This remediation has not been deployed yet.** All 25 findings below were audited and 24 fixed in code/migrations on 2026-08-05, but three things still need to happen before any of it takes effect:
 1. Run `docs/supabase_migrations/stage23_security_hardening.sql` against the live Supabase project (this is where the two Critical privilege-escalation fixes and the GDPR-erasure fix actually live — nothing is protected until this runs).
@@ -595,6 +596,84 @@ Scope: full `lib/` tree, all `supabase/functions/*`, all `docs/supabase_migratio
 
 ---
 
+### [SEC-026] `org_members` RLS policies recursed into themselves — every org/work-mode policy touching membership failed with Postgres error 42P17
+
+- **Category:** RLS Defect (availability, not a data exposure)
+- **Severity:** High (breaks the feature, not exploitable for unauthorized access)
+- **Status:** ✅ Resolved (2026-08-09) — `docs/supabase_migrations/stage31_fix_org_members_rls_recursion.sql`
+- **Location:** `org_members`' own SELECT/INSERT/UPDATE/DELETE policies (stage28), plus every `organizations`/`itineraries`/`expenses`/`org_cost_fields*` policy that checked org membership via an inline `exists (select 1 from public.org_members ...)` (stage28-30)
+- **1. Cause:** `org_members_select`'s own `using` clause queried `org_members` to check membership — Postgres must re-apply `org_members`' RLS to evaluate that inner query, which means evaluating `org_members_select` again, recursively. This has been broken since the work-mode feature shipped in stage28, not a new regression.
+- **2. Impact:** Every org/work-mode read or write that needed a membership check failed outright with a hard database error rather than degrading gracefully — a reliability bug, not an authorization bypass (the recursion causes a failure, not an incorrect grant).
+- **3. Remediation:** Moved every membership/admin check into `SECURITY DEFINER` helper functions (`is_org_member`, `is_org_admin`, `is_org_member_for_cost_field`, `is_org_admin_for_cost_field`, `is_org_admin_for_itinerary`) which run with the function owner's privileges and so never re-trigger `org_members`' own RLS — the same pattern already used correctly elsewhere in this schema (e.g. `resolve_trip_cost_center_code`).
+- **4. Resolution Mechanism:** A `SECURITY DEFINER` function's internal queries bypass RLS on the tables it reads, breaking the self-referential cycle at its source rather than working around it.
+
+---
+
+### [SEC-027] `generate_trip_email_alias` RPC let any authenticated user who ever knew a trip's id retrieve its masked forwarding address indefinitely
+
+- **Category:** Security Flaw (IDOR)
+- **Severity:** High
+- **Status:** ✅ Resolved (2026-08-09) — `docs/supabase_migrations/stage32_security_hardening_2.sql`
+- **Location:** `generate_trip_email_alias(uuid)`, granted `EXECUTE` to `authenticated` (stage27)
+- **1. Cause:** The function is `SECURITY DEFINER` (needed so its `AFTER INSERT` trigger use-case can write the alias row), but it never checked the *calling* user was actually the trip's owner or a member before returning the alias — being `SECURITY DEFINER` means its internal query bypasses `trip_email_aliases_member_select`'s RLS entirely, and the grant made it directly callable as a standalone RPC, not just from the trigger it was written for.
+- **2. Impact:** Any authenticated user who ever learned an `itinerary_id` — a removed former member, a stale deep link, a social-feed fork — could resolve that trip's masked forwarding address forever, and membership removal never revoked access.
+- **3. Remediation:** The function now requires the caller be the trip's owner or a member before returning anything. The `AFTER INSERT` trigger path is unaffected — it always fires with `auth.uid()` equal to the itinerary's `owner_id`, which trivially satisfies the new check.
+- **4. Resolution Mechanism:** Explicit caller-authorization check inside the `SECURITY DEFINER` function body, since RLS itself is bypassed by definition for this function.
+
+---
+
+### [SEC-028] A payer could retarget their own expense's `itinerary_id` to any org via a direct API call, and edit financial fields after approval
+
+- **Category:** Security Flaw (cross-tenant injection / missing state lock)
+- **Severity:** High
+- **Status:** ✅ Resolved (2026-08-09) — `docs/supabase_migrations/stage32_security_hardening_2.sql`
+- **Location:** `expenses_payer_update` policy (stage29) — validated only `payer_id = auth.uid()`, no check that `itinerary_id` belonged to a trip the caller had anything to do with, and no lock on financial fields post-approval
+- **1. Cause:** `expenses_payer_update` didn't constrain `itinerary_id`, so a payer could `UPDATE` their own expense row's `itinerary_id` to point at an unrelated org's trip via a direct PostgREST call (not reachable through the app's own UI). `set_expense_cost_center_code` (stage30) would then snapshot that target org's real cost-center code onto the forged row, and `expenses_org_admin_review_select`'s `is_org_admin_for_itinerary` check (stage31) never verified the payer was actually a member of that itinerary — so the forged row would surface in a completely unrelated org's approval queue looking like a legitimate submission. Separately, nothing stopped editing `amount`/`title`/etc. on an already-approved expense afterward.
+- **2. Impact:** Cross-tenant data injection into another organization's expense-approval queue, plus post-approval tampering with financial records that should be immutable once reviewed.
+- **3. Remediation:** Two guard triggers — `itinerary_id` is now fully immutable after creation (no legitimate flow ever moves an expense between trips), and financially-meaningful fields are frozen for the payer once `approval_status = 'approved'` (an org admin's own review path, gated by `is_org_admin_for_itinerary`, is unaffected — admins only ever touch `approval_status`/`reviewed_by`/`reviewed_at`/`rejection_reason`).
+- **4. Resolution Mechanism:** `BEFORE UPDATE` triggers independently re-verify invariants (immutable foreign key, frozen fields post-approval) that RLS's row-level `with check` alone can't express.
+
+---
+
+### [SEC-029] `org_admin_trip_visibility_select` granted org admins full-row access to itineraries, exposing personal expense history and the full member roster
+
+- **Category:** Security Flaw (over-broad RLS grant)
+- **Severity:** High
+- **Status:** ✅ Resolved (2026-08-09) — `docs/supabase_migrations/stage32_security_hardening_2.sql`, `lib/features/organization/data/datasources/organization_remote_datasource.dart`
+- **Location:** `org_admin_trip_visibility_select` policy (stage28)
+- **1. Cause:** RLS is row-granular, not column-granular — the policy's own comment promised org admins only "title, dates, status," but granting `SELECT` on the row exposed everything in it, including `expense_summary` (a jsonb aggregate over the trip's entire expense history, personal spending included, not just `is_official`/submitted items) and the full `members` roster (every traveler's user id, name, and role, including people with zero relationship to the org — e.g. a spouse or friend along on the trip).
+- **2. Impact:** Org admins could read personal financial data and unrelated travelers' identities far beyond the "the trip exists, not its content" oversight the feature was designed to provide.
+- **3. Remediation:** Dropped the policy entirely. Its one real consumer — the pending-approvals list — now goes through a narrow `SECURITY DEFINER` RPC, `fetch_org_pending_approvals`, that returns only the columns that screen actually needs, with matching Dart-side changes in `organization_remote_datasource.dart`.
+- **4. Resolution Mechanism:** Replacing row-level table access with a purpose-built RPC that returns a fixed, minimal column set is the practical way to get column-level granularity RLS itself can't express.
+
+---
+
+### [SEC-030] Startup-failure screen displayed the raw exception on-screen with no debug/release distinction
+
+- **Category:** Information Disclosure
+- **Severity:** Low
+- **Status:** ✅ Resolved (2026-08-09) — `lib/main.dart` (`StartupErrorApp`)
+- **Location:** `lib/main.dart` — `StartupErrorApp` (introduced alongside a fix for the app silently hanging on the native launch screen when `KumoSupabaseClient.initialize()` fails)
+- **1. Cause:** The widget rendered `'$error'` (the raw exception `toString()`) directly on-screen in every build mode, with no distinction between debug/profile and release.
+- **2. Impact:** Low — this path only fires on a startup configuration failure (e.g. missing `--dart-define` values), and the exception text doesn't currently contain secrets. Still, on a misconfigured release build it could reveal internal details (e.g. the Supabase project URL) to anyone with physical device access.
+- **3. Remediation:** Gated the raw error text behind `kReleaseMode` — release builds now show a generic "Please contact support." message; debug/profile builds still show the full exception for developer diagnosis.
+- **4. Resolution Mechanism:** Standard debug-vs-release information-hygiene split, consistent with not logging secrets in release builds elsewhere in the codebase.
+
+---
+
+### [SEC-031] `inbound-trip-email`'s webhook-secret comparison used `!==`, which is not constant-time
+
+- **Category:** Security Hardening (timing side-channel)
+- **Severity:** Low
+- **Status:** ✅ Resolved (2026-08-09) — `supabase/functions/inbound-trip-email/index.ts`
+- **Location:** `supabase/functions/inbound-trip-email/index.ts` — the `INBOUND_WEBHOOK_SECRET` bearer-token check
+- **1. Cause:** `providedSecret !== expectedSecret` short-circuits on the first differing byte, so comparison time varies with how many leading characters of a guess are correct.
+- **2. Impact:** Low practical risk — this is a webhook secret compared over TLS, where network jitter dominates any timing signal, and the endpoint is also behind a 20-forwards/trip/hour rate limit. Still worth closing on general principle for an endpoint reachable by an unauthenticated caller.
+- **3. Remediation:** Added a `timingSafeEqual` helper that always walks the full length of both inputs regardless of where they diverge, and switched the check to use it.
+- **4. Resolution Mechanism:** Constant-time comparison removes the timing side-channel entirely, independent of how unlikely it was to be practically exploitable here.
+
+---
+
 ## Verified Compliant Controls (no action needed)
 
 - **Anthropic API key correctly server-side only** — read via `Deno.env.get` inside Edge Functions, never bundled client-side (Stage 13 migration).
@@ -622,7 +701,7 @@ Scope: full `lib/` tree, all `supabase/functions/*`, all `docs/supabase_migratio
 
 ## Resolved Findings
 
-Fixed in code/migrations on 2026-08-05 (see the **Status** line on each finding above for the specific file/mechanism). **"Resolved" here means the fix has been written and passes `flutter analyze`/`flutter test` (354 tests) — it does NOT mean deployed.** Per the Executive Summary, the SQL migration still needs to run against the live database and the Edge Functions still need redeploying before any of this takes effect in production.
+Fixed in code/migrations on 2026-08-05, plus a second pass on 2026-08-09 covering the work-mode/org feature and the routing/macOS diff (see the **Status** line on each finding above for the specific file/mechanism). **"Resolved" here means the fix has been written and passes `flutter analyze`/`flutter test` (471 tests as of 2026-08-09) — it does NOT mean deployed.** Per the Executive Summary, the SQL migrations still need to run against the live database and the Edge Functions still need redeploying before any of this takes effect in production.
 
 | ID | Title | Severity |
 |---|---|---|
@@ -650,5 +729,11 @@ Fixed in code/migrations on 2026-08-05 (see the **Status** line on each finding 
 | SEC-023 | Unsanitized LLM prompt input | Low |
 | SEC-024 | No committed `.env.example` | Low |
 | SEC-025 | No dependency-scan CI process | Low |
+| SEC-026 | `org_members` RLS self-recursion (42P17) | High |
+| SEC-027 | `generate_trip_email_alias` IDOR | High |
+| SEC-028 | Expense cross-tenant `itinerary_id` retargeting + no post-approval lock | High |
+| SEC-029 | `org_admin_trip_visibility_select` over-broad SELECT | High |
+| SEC-030 | Raw exception shown on startup-failure screen | Low |
+| SEC-031 | Non-constant-time webhook-secret comparison | Low |
 
 **Still open:** SEC-014 (Firebase key rotation — manual console action, see Active Remediation Log above).

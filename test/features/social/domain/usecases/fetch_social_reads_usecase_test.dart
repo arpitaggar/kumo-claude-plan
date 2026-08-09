@@ -36,21 +36,26 @@ void main() {
   });
 
   group('FetchExplorePostsUseCase', () {
-    test('passes the query through and returns the repository result',
-        () async {
-      when(() => mockRepo.fetchExplore(query: 'Tokyo'))
-          .thenAnswer((_) async => Right([tPost]));
+    test(
+      'passes the query through and returns the repository result',
+      () async {
+        when(
+          () => mockRepo.fetchExplore(query: 'Tokyo'),
+        ).thenAnswer((_) async => Right([tPost]));
 
-      final result =
-          await FetchExplorePostsUseCase(mockRepo).call(query: 'Tokyo');
+        final result = await FetchExplorePostsUseCase(
+          mockRepo,
+        ).call(query: 'Tokyo');
 
-      verify(() => mockRepo.fetchExplore(query: 'Tokyo')).called(1);
-      expect(result.isRight(), isTrue);
-    });
+        verify(() => mockRepo.fetchExplore(query: 'Tokyo')).called(1);
+        expect(result.isRight(), isTrue);
+      },
+    );
 
     test('defaults query to null', () async {
-      when(() => mockRepo.fetchExplore())
-          .thenAnswer((_) async => Right([tPost]));
+      when(
+        () => mockRepo.fetchExplore(),
+      ).thenAnswer((_) async => Right([tPost]));
 
       await FetchExplorePostsUseCase(mockRepo).call();
 
@@ -60,11 +65,13 @@ void main() {
 
   group('FetchFollowingFeedUseCase', () {
     test('delegates with currentUserId', () async {
-      when(() => mockRepo.fetchFeed(currentUserId: 'user-1'))
-          .thenAnswer((_) async => Right([tPost]));
+      when(
+        () => mockRepo.fetchFeed(currentUserId: 'user-1'),
+      ).thenAnswer((_) async => Right([tPost]));
 
-      final result =
-          await FetchFollowingFeedUseCase(mockRepo).call(currentUserId: 'user-1');
+      final result = await FetchFollowingFeedUseCase(
+        mockRepo,
+      ).call(currentUserId: 'user-1');
 
       verify(() => mockRepo.fetchFeed(currentUserId: 'user-1')).called(1);
       expect(result.isRight(), isTrue);
@@ -73,8 +80,9 @@ void main() {
 
   group('FetchPostsByAuthorUseCase', () {
     test('delegates with authorId', () async {
-      when(() => mockRepo.fetchPostsByAuthor('user-1'))
-          .thenAnswer((_) async => Right([tPost]));
+      when(
+        () => mockRepo.fetchPostsByAuthor('user-1'),
+      ).thenAnswer((_) async => Right([tPost]));
 
       final result = await FetchPostsByAuthorUseCase(mockRepo).call('user-1');
 
@@ -83,8 +91,9 @@ void main() {
     });
 
     test('propagates ServerFailure', () async {
-      when(() => mockRepo.fetchPostsByAuthor(any()))
-          .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+      when(
+        () => mockRepo.fetchPostsByAuthor(any()),
+      ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
       final result = await FetchPostsByAuthorUseCase(mockRepo).call('user-1');
 
@@ -106,8 +115,9 @@ void main() {
         ),
       ).thenAnswer((_) async => const Right(stats));
 
-      final result = await FetchFollowStatsUseCase(mockRepo)
-          .call(userId: 'user-2', currentUserId: 'user-1');
+      final result = await FetchFollowStatsUseCase(
+        mockRepo,
+      ).call(userId: 'user-2', currentUserId: 'user-1');
 
       verify(
         () => mockRepo.fetchFollowStats(

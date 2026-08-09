@@ -15,10 +15,13 @@ void main() {
     'submitted_at': '2026-06-02T09:00:00.000Z',
   };
 
-  test('parses the trip title from the fetch_org_pending_approvals RPC row', () {
-    final model = PendingExpenseApprovalModel.fromJson(fullRow);
-    expect(model.tripTitle, 'Berlin Offsite');
-  });
+  test(
+    'parses the trip title from the fetch_org_pending_approvals RPC row',
+    () {
+      final model = PendingExpenseApprovalModel.fromJson(fullRow);
+      expect(model.tripTitle, 'Berlin Offsite');
+    },
+  );
 
   test('defaults costCenterCode to null when absent', () {
     final model = PendingExpenseApprovalModel.fromJson(fullRow);

@@ -34,15 +34,15 @@ class OrgCostField extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        orgId,
-        label,
-        fieldType,
-        separator,
-        sortOrder,
-        options,
-        sourceFieldIds,
-      ];
+    id,
+    orgId,
+    label,
+    fieldType,
+    separator,
+    sortOrder,
+    options,
+    sourceFieldIds,
+  ];
 }
 
 enum CostFieldType { select, generated }

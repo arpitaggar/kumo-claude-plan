@@ -45,9 +45,10 @@ final createOrganizationUseCaseProvider = Provider<CreateOrganizationUseCase>(
 
 final fetchMyOrganizationsUseCaseProvider =
     Provider<FetchMyOrganizationsUseCase>(
-  (ref) =>
-      FetchMyOrganizationsUseCase(ref.watch(organizationRepositoryProvider)),
-);
+      (ref) => FetchMyOrganizationsUseCase(
+        ref.watch(organizationRepositoryProvider),
+      ),
+    );
 
 final fetchOrgMembersUseCaseProvider = Provider<FetchOrgMembersUseCase>(
   (ref) => FetchOrgMembersUseCase(ref.watch(organizationRepositoryProvider)),
@@ -57,8 +58,7 @@ final inviteOrgMemberUseCaseProvider = Provider<InviteOrgMemberUseCase>(
   (ref) => InviteOrgMemberUseCase(ref.watch(organizationRepositoryProvider)),
 );
 
-final updateOrgMemberRoleUseCaseProvider =
-    Provider<UpdateOrgMemberRoleUseCase>(
+final updateOrgMemberRoleUseCaseProvider = Provider<UpdateOrgMemberRoleUseCase>(
   (ref) =>
       UpdateOrgMemberRoleUseCase(ref.watch(organizationRepositoryProvider)),
 );
@@ -69,10 +69,10 @@ final removeOrgMemberUseCaseProvider = Provider<RemoveOrgMemberUseCase>(
 
 final fetchPendingExpenseApprovalsUseCaseProvider =
     Provider<FetchPendingExpenseApprovalsUseCase>(
-  (ref) => FetchPendingExpenseApprovalsUseCase(
-    ref.watch(organizationRepositoryProvider),
-  ),
-);
+      (ref) => FetchPendingExpenseApprovalsUseCase(
+        ref.watch(organizationRepositoryProvider),
+      ),
+    );
 
 final reviewExpenseUseCaseProvider = Provider<ReviewExpenseUseCase>(
   (ref) => ReviewExpenseUseCase(ref.watch(organizationRepositoryProvider)),
@@ -92,22 +92,24 @@ final deleteOrgCostFieldUseCaseProvider = Provider<DeleteOrgCostFieldUseCase>(
 
 final addOrgCostFieldOptionUseCaseProvider =
     Provider<AddOrgCostFieldOptionUseCase>(
-  (ref) =>
-      AddOrgCostFieldOptionUseCase(ref.watch(organizationRepositoryProvider)),
-);
+      (ref) => AddOrgCostFieldOptionUseCase(
+        ref.watch(organizationRepositoryProvider),
+      ),
+    );
 
 final deleteOrgCostFieldOptionUseCaseProvider =
     Provider<DeleteOrgCostFieldOptionUseCase>(
-  (ref) => DeleteOrgCostFieldOptionUseCase(
-    ref.watch(organizationRepositoryProvider),
-  ),
-);
+      (ref) => DeleteOrgCostFieldOptionUseCase(
+        ref.watch(organizationRepositoryProvider),
+      ),
+    );
 
 final previewCostCenterCodeUseCaseProvider =
     Provider<PreviewCostCenterCodeUseCase>(
-  (ref) =>
-      PreviewCostCenterCodeUseCase(ref.watch(organizationRepositoryProvider)),
-);
+      (ref) => PreviewCostCenterCodeUseCase(
+        ref.watch(organizationRepositoryProvider),
+      ),
+    );
 
 // ---------------------------------------------------------------------------
 // Read providers
@@ -117,33 +119,39 @@ final previewCostCenterCodeUseCaseProvider =
 /// membership changes rarely enough that a one-shot fetch (refreshed via
 /// `ref.invalidate` after create/invite actions) is simpler than a
 /// `StreamProvider`, matching `tripEmailAliasProvider`'s reasoning.
-final myOrganizationsProvider =
-    FutureProvider<List<Organization>>((ref) async {
+final myOrganizationsProvider = FutureProvider<List<Organization>>((ref) async {
   final result = await ref.watch(fetchMyOrganizationsUseCaseProvider).call();
   return result.fold((f) => throw Exception(f.message), (orgs) => orgs);
 });
 
-final orgMembersProvider =
-    FutureProvider.family<List<OrgMember>, String>((ref, orgId) async {
-  final result =
-      await ref.watch(fetchOrgMembersUseCaseProvider).call(orgId);
+final orgMembersProvider = FutureProvider.family<List<OrgMember>, String>((
+  ref,
+  orgId,
+) async {
+  final result = await ref.watch(fetchOrgMembersUseCaseProvider).call(orgId);
   return result.fold((f) => throw Exception(f.message), (members) => members);
 });
 
 final pendingApprovalsProvider =
-    FutureProvider.family<List<PendingExpenseApproval>, String>(
-        (ref, orgId) async {
-  final result =
-      await ref.watch(fetchPendingExpenseApprovalsUseCaseProvider).call(orgId);
-  return result.fold((f) => throw Exception(f.message), (list) => list);
-});
+    FutureProvider.family<List<PendingExpenseApproval>, String>((
+      ref,
+      orgId,
+    ) async {
+      final result = await ref
+          .watch(fetchPendingExpenseApprovalsUseCaseProvider)
+          .call(orgId);
+      return result.fold((f) => throw Exception(f.message), (list) => list);
+    });
 
 /// An org's cost-tracking structure. No realtime — a field builder is
 /// admin-configured occasionally, not live-collaborative; refreshed via
 /// `ref.invalidate` after create/delete actions, same reasoning as
 /// `myOrganizationsProvider`.
-final orgCostFieldsProvider =
-    FutureProvider.family<List<OrgCostField>, String>((ref, orgId) async {
-  final result = await ref.watch(fetchOrgCostFieldsUseCaseProvider).call(orgId);
-  return result.fold((f) => throw Exception(f.message), (fields) => fields);
-});
+final orgCostFieldsProvider = FutureProvider.family<List<OrgCostField>, String>(
+  (ref, orgId) async {
+    final result = await ref
+        .watch(fetchOrgCostFieldsUseCaseProvider)
+        .call(orgId);
+    return result.fold((f) => throw Exception(f.message), (fields) => fields);
+  },
+);

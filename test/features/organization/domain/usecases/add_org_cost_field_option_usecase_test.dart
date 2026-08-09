@@ -6,7 +6,8 @@ import 'package:kumo_claude/features/organization/domain/repositories/organizati
 import 'package:kumo_claude/features/organization/domain/usecases/add_org_cost_field_option_usecase.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockOrganizationRepository extends Mock implements OrganizationRepository {}
+class MockOrganizationRepository extends Mock
+    implements OrganizationRepository {}
 
 void main() {
   late MockOrganizationRepository mockRepo;
@@ -26,23 +27,39 @@ void main() {
   });
 
   test('delegates to repository with fieldId, value and code', () async {
-    when(() => mockRepo.addCostFieldOption(fieldId: 'field-1', value: 'Sales', code: 'SAL'))
-        .thenAnswer((_) async => const Right(tOption));
+    when(
+      () => mockRepo.addCostFieldOption(
+        fieldId: 'field-1',
+        value: 'Sales',
+        code: 'SAL',
+      ),
+    ).thenAnswer((_) async => const Right(tOption));
 
     await useCase(fieldId: 'field-1', value: 'Sales', code: 'SAL');
 
-    verify(() => mockRepo.addCostFieldOption(fieldId: 'field-1', value: 'Sales', code: 'SAL'))
-        .called(1);
+    verify(
+      () => mockRepo.addCostFieldOption(
+        fieldId: 'field-1',
+        value: 'Sales',
+        code: 'SAL',
+      ),
+    ).called(1);
   });
 
   test('propagates ServerFailure from repository', () async {
-    when(() => mockRepo.addCostFieldOption(
-          fieldId: any(named: 'fieldId'),
-          value: any(named: 'value'),
-          code: any(named: 'code'),
-        )).thenAnswer((_) async => const Left(ServerFailure('DB error')));
+    when(
+      () => mockRepo.addCostFieldOption(
+        fieldId: any(named: 'fieldId'),
+        value: any(named: 'value'),
+        code: any(named: 'code'),
+      ),
+    ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
-    final result = await useCase(fieldId: 'field-1', value: 'Sales', code: 'SAL');
+    final result = await useCase(
+      fieldId: 'field-1',
+      value: 'Sales',
+      code: 'SAL',
+    );
 
     result.fold(
       (f) => expect(f, isA<ServerFailure>()),

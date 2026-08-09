@@ -11,14 +11,14 @@ class OrgMemberModel extends OrgMember {
   });
 
   factory OrgMemberModel.fromJson(Map<String, dynamic> json) => OrgMemberModel(
-        id: json['id'] as String,
-        orgId: json['org_id'] as String,
-        userId: json['user_id'] as String,
-        userName: json['user_name'] as String? ?? '',
-        role: OrgMemberRole.values.firstWhere(
-          (r) => r.name == json['role'],
-          orElse: () => OrgMemberRole.member,
-        ),
-        joinedAt: DateTime.parse(json['joined_at'] as String).toUtc(),
-      );
+    id: json['id'] as String,
+    orgId: json['org_id'] as String,
+    userId: json['user_id'] as String,
+    userName: json['user_name'] as String? ?? '',
+    role: OrgMemberRole.values.firstWhere(
+      (r) => r.name == json['role'],
+      orElse: () => OrgMemberRole.member,
+    ),
+    joinedAt: DateTime.parse(json['joined_at'] as String).toUtc(),
+  );
 }

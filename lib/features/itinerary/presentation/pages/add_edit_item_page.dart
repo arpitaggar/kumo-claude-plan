@@ -10,11 +10,7 @@ import '../../domain/entities/travel_itinerary.dart';
 import '../providers/itinerary_provider.dart';
 
 class AddEditItemPage extends ConsumerStatefulWidget {
-  const AddEditItemPage({
-    required this.itineraryId,
-    this.itemId,
-    super.key,
-  });
+  const AddEditItemPage({required this.itineraryId, this.itemId, super.key});
 
   final String itineraryId;
   final String? itemId;
@@ -66,7 +62,7 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
     final initial = isStart
         ? (_startDateTime ?? DateTime.now())
         : (_endDateTime ??
-            (_startDateTime ?? DateTime.now()).add(const Duration(hours: 1)));
+              (_startDateTime ?? DateTime.now()).add(const Duration(hours: 1)));
 
     final date = await showDatePicker(
       context: context,
@@ -111,15 +107,21 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
       return;
     }
     if (_startDateTime == null) {
-      context.showSnackBar('Please select a start date and time', isError: true);
+      context.showSnackBar(
+        'Please select a start date and time',
+        isError: true,
+      );
       return;
     }
 
-    final itinerary =
-        ref.read(itineraryStreamProvider(widget.itineraryId)).value;
+    final itinerary = ref
+        .read(itineraryStreamProvider(widget.itineraryId))
+        .value;
     if (itinerary == null) {
-      context.showSnackBar('Trip data not available, please try again',
-          isError: true);
+      context.showSnackBar(
+        'Trip data not available, please try again',
+        isError: true,
+      );
       return;
     }
 
@@ -139,7 +141,7 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
     final updatedItems = widget.itemId != null
         ? itinerary.items.map((i) => i.id == widget.itemId ? item : i).toList()
         : ([...itinerary.items, item]
-          ..sort((a, b) => a.startTime.compareTo(b.startTime)));
+            ..sort((a, b) => a.startTime.compareTo(b.startTime)));
 
     final result = await ref
         .read(updateItineraryUseCaseProvider)
@@ -159,11 +161,13 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
   @override
   Widget build(BuildContext context) {
     if (widget.itemId != null) {
-      final itinerary =
-          ref.watch(itineraryStreamProvider(widget.itineraryId)).value;
+      final itinerary = ref
+          .watch(itineraryStreamProvider(widget.itineraryId))
+          .value;
       if (itinerary != null) {
-        final item =
-            itinerary.items.where((i) => i.id == widget.itemId).firstOrNull;
+        final item = itinerary.items
+            .where((i) => i.id == widget.itemId)
+            .firstOrNull;
         if (item != null) {
           _initFromItem(item);
         }
@@ -173,8 +177,9 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
     if (_isSubmitting) {
       return Scaffold(
         body: LoadingWidget(
-          message:
-              widget.itemId != null ? 'Saving activity…' : 'Adding activity…',
+          message: widget.itemId != null
+              ? 'Saving activity…'
+              : 'Adding activity…',
         ),
       );
     }
@@ -200,8 +205,9 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
                     hintText: 'e.g. Senso-ji Temple',
                     prefixIcon: Icon(Icons.label_outline),
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Name is required'
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -277,23 +283,21 @@ class _DateTimePickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: label,
-            prefixIcon: const Icon(Icons.schedule_outlined, size: 18),
-          ),
-          child: Text(
-            dateTime != null
-                ? DateFormat('MMM d, yyyy · h:mm a').format(dateTime!.toLocal())
-                : 'Select',
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: dateTime == null
-                  ? context.colorScheme.onSurfaceVariant
-                  : null,
-            ),
-          ),
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: const Icon(Icons.schedule_outlined, size: 18),
+      ),
+      child: Text(
+        dateTime != null
+            ? DateFormat('MMM d, yyyy · h:mm a').format(dateTime!.toLocal())
+            : 'Select',
+        style: context.textTheme.bodyMedium?.copyWith(
+          color: dateTime == null ? context.colorScheme.onSurfaceVariant : null,
         ),
-      );
+      ),
+    ),
+  );
 }

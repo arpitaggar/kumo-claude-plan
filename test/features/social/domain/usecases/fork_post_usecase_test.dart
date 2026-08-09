@@ -66,8 +66,11 @@ void main() {
       ),
     ).thenAnswer((_) async => Right(tForked));
 
-    final result =
-        await useCase(postId: 'post-1', newOwnerId: 'user-2', newOwnerName: 'Bob');
+    final result = await useCase(
+      postId: 'post-1',
+      newOwnerId: 'user-2',
+      newOwnerName: 'Bob',
+    );
 
     expect(result.isRight(), isTrue);
     result.fold(
@@ -85,10 +88,16 @@ void main() {
       ),
     ).thenAnswer((_) async => const Left(NotFoundFailure('Post not found')));
 
-    final result =
-        await useCase(postId: 'gone', newOwnerId: 'user-2', newOwnerName: 'Bob');
+    final result = await useCase(
+      postId: 'gone',
+      newOwnerId: 'user-2',
+      newOwnerName: 'Bob',
+    );
 
     expect(result.isLeft(), isTrue);
-    result.fold((f) => expect(f, isA<NotFoundFailure>()), (_) => fail('expected Left'));
+    result.fold(
+      (f) => expect(f, isA<NotFoundFailure>()),
+      (_) => fail('expected Left'),
+    );
   });
 }

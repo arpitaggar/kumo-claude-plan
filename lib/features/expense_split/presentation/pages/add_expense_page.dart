@@ -12,9 +12,31 @@ import '../providers/expense_provider.dart';
 
 // Common travel currencies shown in the currency picker.
 const _kCurrencies = [
-  'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'HKD', 'SGD',
-  'INR', 'MXN', 'BRL', 'KRW', 'THB', 'IDR', 'MYR', 'PHP', 'VND', 'TWD',
-  'NOK', 'SEK', 'DKK', 'NZD', 'ZAR',
+  'USD',
+  'EUR',
+  'GBP',
+  'JPY',
+  'AUD',
+  'CAD',
+  'CHF',
+  'CNY',
+  'HKD',
+  'SGD',
+  'INR',
+  'MXN',
+  'BRL',
+  'KRW',
+  'THB',
+  'IDR',
+  'MYR',
+  'PHP',
+  'VND',
+  'TWD',
+  'NOK',
+  'SEK',
+  'DKK',
+  'NZD',
+  'ZAR',
 ];
 
 class AddExpensePage extends ConsumerStatefulWidget {
@@ -37,7 +59,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
   String? _payerId;
   String _payerName = '';
   SplitMode _splitMode = SplitMode.equal;
-  String _expenseCurrency = '';  // initialised from itinerary on first load
+  String _expenseCurrency = ''; // initialised from itinerary on first load
   bool _currencyInitialised = false;
   bool _isSubmitting = false;
 
@@ -127,11 +149,13 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
     }
     final perPerson = _round(amount / members.length);
     return nonPayers
-        .map((m) => ExpenseSplit(
-              userId: m.userId,
-              userName: m.userName,
-              shareAmount: perPerson,
-            ))
+        .map(
+          (m) => ExpenseSplit(
+            userId: m.userId,
+            userName: m.userName,
+            shareAmount: perPerson,
+          ),
+        )
         .toList();
   }
 
@@ -159,7 +183,8 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
   ) {
     final totalRatio = members.fold<double>(
       0,
-      (sum, m) => sum + (double.tryParse(_splitCtrl[m.userId]?.text ?? '1') ?? 1),
+      (sum, m) =>
+          sum + (double.tryParse(_splitCtrl[m.userId]?.text ?? '1') ?? 1),
     );
     if (totalRatio <= 0) {
       return [];
@@ -184,7 +209,8 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
   String? _pctError(List<GroupMember> members) {
     final total = members.fold<double>(
       0,
-      (sum, m) => sum + (double.tryParse(_splitCtrl[m.userId]?.text ?? '0') ?? 0),
+      (sum, m) =>
+          sum + (double.tryParse(_splitCtrl[m.userId]?.text ?? '0') ?? 0),
     );
     if ((total - 100).abs() > 0.1) {
       return 'Percentages must sum to 100% (currently ${total.toStringAsFixed(1)}%)';
@@ -230,7 +256,9 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
 
     final splits = _buildSplits(amount, _payerId!, members);
 
-    final result = await ref.read(addExpenseUseCaseProvider).call(
+    final result = await ref
+        .read(addExpenseUseCaseProvider)
+        .call(
           itineraryId: widget.itineraryId,
           title: _titleController.text.trim(),
           amount: amount,
@@ -251,15 +279,12 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
     }
     setState(() => _isSubmitting = false);
 
-    result.fold(
-      (f) => context.showSnackBar(f.message, isError: true),
-      (_) {
-        if (_expenseCurrency == itinerary.currencyCode) {
-          _syncExpenseSummary(itinerary, amount);
-        }
-        context.pop();
-      },
-    );
+    result.fold((f) => context.showSnackBar(f.message, isError: true), (_) {
+      if (_expenseCurrency == itinerary.currencyCode) {
+        _syncExpenseSummary(itinerary, amount);
+      }
+      context.pop();
+    });
   }
 
   Future<void> _syncExpenseSummary(
@@ -272,7 +297,9 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
     byCategory[_category.name] =
         (byCategory[_category.name] ?? 0) + addedAmount;
 
-    await ref.read(updateItineraryUseCaseProvider).call(
+    await ref
+        .read(updateItineraryUseCaseProvider)
+        .call(
           itinerary.copyWith(
             expenseSummary: ExpenseSummary(
               totalSpent: spent,
@@ -287,13 +314,13 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
 
   @override
   Widget build(BuildContext context) {
-    final itineraryAsync =
-        ref.watch(itineraryStreamProvider(widget.itineraryId));
+    final itineraryAsync = ref.watch(
+      itineraryStreamProvider(widget.itineraryId),
+    );
 
     return itineraryAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: Center(child: Text(e.toString())),
@@ -317,8 +344,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
         }
         _initSplitControllers(members);
 
-        final isDifferentCurrency =
-            _expenseCurrency != itinerary.currencyCode;
+        final isDifferentCurrency = _expenseCurrency != itinerary.currencyCode;
 
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -339,7 +365,9 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
           body: _isSubmitting
               ? Center(
                   child: CircularProgressIndicator(
-                      color: context.colorScheme.primary))
+                    color: context.colorScheme.primary,
+                  ),
+                )
               : SafeArea(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
@@ -358,8 +386,9 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                               hintText: 'e.g. Dinner at Ramen Ichiban',
                               prefixIcon: Icon(Icons.receipt_outlined),
                             ),
-                            validator: (v) =>
-                                v == null || v.trim().isEmpty ? 'Required' : null,
+                            validator: (v) => v == null || v.trim().isEmpty
+                                ? 'Required'
+                                : null,
                           ),
                           const SizedBox(height: 16),
 
@@ -386,13 +415,15 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                                   controller: _amountController,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
-                                          decimal: true),
+                                        decimal: true,
+                                      ),
                                   textInputAction: TextInputAction.done,
                                   onChanged: (_) => setState(() {}),
                                   decoration: const InputDecoration(
                                     labelText: 'Amount',
-                                    prefixIcon:
-                                        Icon(Icons.attach_money_outlined),
+                                    prefixIcon: Icon(
+                                      Icons.attach_money_outlined,
+                                    ),
                                   ),
                                   validator: (v) {
                                     if (v == null || v.trim().isEmpty) {
@@ -420,9 +451,11 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Icon(Icons.currency_exchange,
-                                    size: 16,
-                                    color: context.colorScheme.onSurfaceVariant),
+                                Icon(
+                                  Icons.currency_exchange,
+                                  size: 16,
+                                  color: context.colorScheme.onSurfaceVariant,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   '1 $_expenseCurrency = ',
@@ -437,20 +470,25 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                                     controller: _exchangeRateController,
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
-                                            decimal: true),
+                                          decimal: true,
+                                        ),
                                     style: const TextStyle(fontSize: 13),
                                     decoration: const InputDecoration(
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 8),
+                                        horizontal: 8,
+                                        vertical: 8,
+                                      ),
                                     ),
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
-                                          RegExp(r'[\d.]')),
+                                        RegExp(r'[\d.]'),
+                                      ),
                                     ],
                                     validator: (v) {
-                                      final n =
-                                          double.tryParse(v?.trim() ?? '');
+                                      final n = double.tryParse(
+                                        v?.trim() ?? '',
+                                      );
                                       if (n == null || n <= 0) {
                                         return 'Invalid';
                                       }
@@ -473,8 +511,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                           const SizedBox(height: 16),
 
                           // ── Category ─────────────────────────────────────
-                          Text('Category',
-                              style: context.textTheme.labelLarge),
+                          Text('Category', style: context.textTheme.labelLarge),
                           const SizedBox(height: 8),
                           Wrap(
                             spacing: 8,
@@ -482,13 +519,13 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                             children: ExpenseCategory.values.map((cat) {
                               final selected = cat == _category;
                               return GestureDetector(
-                                onTap: () =>
-                                    setState(() => _category = cat),
+                                onTap: () => setState(() => _category = cat),
                                 child: AnimatedContainer(
-                                  duration:
-                                      const Duration(milliseconds: 150),
+                                  duration: const Duration(milliseconds: 150),
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 8),
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: selected
                                         ? Color(cat.colorValue)
@@ -517,8 +554,7 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                           const SizedBox(height: 24),
 
                           // ── Paid by ──────────────────────────────────────
-                          Text('Paid by',
-                              style: context.textTheme.labelLarge),
+                          Text('Paid by', style: context.textTheme.labelLarge),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
                             initialValue: _payerId,
@@ -526,17 +562,20 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                               prefixIcon: Icon(Icons.person_outline),
                             ),
                             items: members
-                                .map((m) => DropdownMenuItem(
-                                      value: m.userId,
-                                      child: Text(m.userName),
-                                    ))
+                                .map(
+                                  (m) => DropdownMenuItem(
+                                    value: m.userId,
+                                    child: Text(m.userName),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (v) {
                               if (v == null) {
                                 return;
                               }
-                              final member = members
-                                  .firstWhere((m) => m.userId == v);
+                              final member = members.firstWhere(
+                                (m) => m.userId == v,
+                              );
                               setState(() {
                                 _payerId = v;
                                 _payerName = member.userName;
@@ -550,16 +589,17 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
                           const SizedBox(height: 10),
                           _SplitModeBar(
                             mode: _splitMode,
-                            onChanged: (m) =>
-                                _onModeChanged(m, members),
+                            onChanged: (m) => _onModeChanged(m, members),
                           ),
                           const SizedBox(height: 12),
                           _SplitSection(
                             mode: _splitMode,
                             members: members,
                             payerId: _payerId,
-                            amount: double.tryParse(
-                                    _amountController.text.trim()) ??
+                            amount:
+                                double.tryParse(
+                                  _amountController.text.trim(),
+                                ) ??
                                 0,
                             splitCtrl: _splitCtrl,
                             onChanged: () => setState(() {}),
@@ -595,20 +635,20 @@ class _CurrencyPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _kCurrencies.contains(value) ? value : _kCurrencies.first,
-          isDense: true,
-          borderRadius: BorderRadius.circular(12),
-          items: _kCurrencies
-              .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) {
-              onChanged(v);
-            }
-          },
-        ),
-      );
+    child: DropdownButton<String>(
+      value: _kCurrencies.contains(value) ? value : _kCurrencies.first,
+      isDense: true,
+      borderRadius: BorderRadius.circular(12),
+      items: _kCurrencies
+          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) {
+          onChanged(v);
+        }
+      },
+    ),
+  );
 }
 
 // ── Split mode segmented button ───────────────────────────────────────────────
@@ -621,31 +661,31 @@ class _SplitModeBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SegmentedButton<SplitMode>(
-        segments: const [
-          ButtonSegment(
-            value: SplitMode.equal,
-            icon: Icon(Icons.call_split_outlined, size: 16),
-            label: Text('Equal'),
-          ),
-          ButtonSegment(
-            value: SplitMode.percentage,
-            icon: Icon(Icons.percent, size: 16),
-            label: Text('Percent'),
-          ),
-          ButtonSegment(
-            value: SplitMode.ratio,
-            icon: Icon(Icons.tune_outlined, size: 16),
-            label: Text('Ratio'),
-          ),
-        ],
-        selected: {mode},
-        onSelectionChanged: (s) => onChanged(s.first),
-        style: const ButtonStyle(
-          textStyle: WidgetStatePropertyAll(
-            TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-        ),
-      );
+    segments: const [
+      ButtonSegment(
+        value: SplitMode.equal,
+        icon: Icon(Icons.call_split_outlined, size: 16),
+        label: Text('Equal'),
+      ),
+      ButtonSegment(
+        value: SplitMode.percentage,
+        icon: Icon(Icons.percent, size: 16),
+        label: Text('Percent'),
+      ),
+      ButtonSegment(
+        value: SplitMode.ratio,
+        icon: Icon(Icons.tune_outlined, size: 16),
+        label: Text('Ratio'),
+      ),
+    ],
+    selected: {mode},
+    onSelectionChanged: (s) => onChanged(s.first),
+    style: const ButtonStyle(
+      textStyle: WidgetStatePropertyAll(
+        TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+    ),
+  );
 }
 
 // ── Split section (equal info chip or per-member inputs) ──────────────────────
@@ -678,15 +718,19 @@ class _SplitSection extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.call_split_outlined,
-                size: 18, color: context.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.call_split_outlined,
+              size: 18,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'Split equally among all ${members.length} members',
                 style: TextStyle(
-                    fontSize: 13,
-                    color: context.colorScheme.onSurfaceVariant),
+                  fontSize: 13,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],
@@ -719,15 +763,17 @@ class _SplitSection extends StatelessWidget {
                   Divider(
                     height: 1,
                     indent: 16,
-                    color: context.colorScheme.outlineVariant
-                        .withValues(alpha: 0.5),
+                    color: context.colorScheme.outlineVariant.withValues(
+                      alpha: 0.5,
+                    ),
                   ),
                 _MemberSplitRow(
                   member: members[i],
                   isPercent: isPercent,
                   isPayer: members[i].userId == payerId,
                   amount: amount,
-                  controller: splitCtrl[members[i].userId] ??
+                  controller:
+                      splitCtrl[members[i].userId] ??
                       TextEditingController(text: isPercent ? '0' : '1'),
                   onChanged: onChanged,
                 ),
@@ -740,9 +786,7 @@ class _SplitSection extends StatelessWidget {
           Row(
             children: [
               Icon(
-                pctValid
-                    ? Icons.check_circle_outline
-                    : Icons.error_outline,
+                pctValid ? Icons.check_circle_outline : Icons.error_outline,
                 size: 14,
                 color: pctValid
                     ? const Color(0xFF2E7D52)
@@ -795,66 +839,67 @@ class _MemberSplitRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    member.userName,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: context.colorScheme.onSurface,
-                    ),
-                  ),
-                  if (isPayer)
-                    Text(
-                      'Payer',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: context.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            // Input field
-            SizedBox(
-              width: 72,
-              child: TextField(
-                controller: controller,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14),
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  suffixText: isPercent ? '%' : null,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-                ],
-                onChanged: (_) => onChanged(),
-              ),
-            ),
-            // Preview amount (percentage mode only)
-            if (isPercent && amount > 0) ...[
-              const SizedBox(width: 12),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                '= ${_preview.toStringAsFixed(2)}',
+                member.userName,
                 style: TextStyle(
-                  fontSize: 12,
-                  color: context.colorScheme.onSurfaceVariant,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: context.colorScheme.onSurface,
                 ),
               ),
+              if (isPayer)
+                Text(
+                  'Payer',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
             ],
-          ],
+          ),
         ),
-      );
+        // Input field
+        SizedBox(
+          width: 72,
+          child: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 8,
+              ),
+              suffixText: isPercent ? '%' : null,
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+            ],
+            onChanged: (_) => onChanged(),
+          ),
+        ),
+        // Preview amount (percentage mode only)
+        if (isPercent && amount > 0) ...[
+          const SizedBox(width: 12),
+          Text(
+            '= ${_preview.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: 12,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
 }

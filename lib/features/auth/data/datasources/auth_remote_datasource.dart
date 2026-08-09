@@ -201,5 +201,4 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw UnexpectedException(message: e.toString());
     }
   }
-
 }

@@ -9,7 +9,8 @@ import '../../config/router.dart';
 /// the app process is alive (foreground, or briefly backgrounded) — it is
 /// not OS-level push and will not reach a fully-killed app.
 class NotificationService {
-  NotificationService(this._prefs) : _plugin = FlutterLocalNotificationsPlugin();
+  NotificationService(this._prefs)
+    : _plugin = FlutterLocalNotificationsPlugin();
 
   static const _channelId = 'chat_messages';
   static const _channelName = 'Chat Messages';
@@ -21,7 +22,9 @@ class NotificationService {
   int _nextId = 0;
 
   Future<void> initialize() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     // Permission is requested explicitly and later (see requestPermissionOnce),
     // not immediately on init — the user shouldn't be prompted before login.
     const iosSettings = DarwinInitializationSettings(
@@ -40,7 +43,8 @@ class NotificationService {
 
     await _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(
           const AndroidNotificationChannel(
             _channelId,
@@ -73,11 +77,13 @@ class NotificationService {
 
     await _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
     await _plugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
+          IOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
@@ -86,23 +92,22 @@ class NotificationService {
     required String tripTitle,
     required String senderName,
     required String body,
-  }) =>
-      _plugin.show(
-        id: _nextId++,
-        title: '$senderName · $tripTitle',
-        body: body,
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(),
-        ),
-        payload: tripId,
-      );
+  }) => _plugin.show(
+    id: _nextId++,
+    title: '$senderName · $tripTitle',
+    body: body,
+    notificationDetails: const NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    ),
+    payload: tripId,
+  );
 
   void _onTap(NotificationResponse response) {
     final tripId = response.payload;

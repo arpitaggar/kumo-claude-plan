@@ -22,6 +22,11 @@ class AiGeneratedSegment extends Equatable {
   final DateTime? arrivalTime;
 
   @override
-  List<Object?> get props =>
-      [mode, originName, destinationName, departureTime, arrivalTime];
+  List<Object?> get props => [
+    mode,
+    originName,
+    destinationName,
+    departureTime,
+    arrivalTime,
+  ];
 }

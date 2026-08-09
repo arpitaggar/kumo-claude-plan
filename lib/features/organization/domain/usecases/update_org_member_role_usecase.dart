@@ -12,6 +12,5 @@ class UpdateOrgMemberRoleUseCase {
   Future<Either<Failure, void>> call({
     required String orgMemberId,
     required OrgMemberRole role,
-  }) =>
-      _repository.updateMemberRole(orgMemberId: orgMemberId, role: role);
+  }) => _repository.updateMemberRole(orgMemberId: orgMemberId, role: role);
 }

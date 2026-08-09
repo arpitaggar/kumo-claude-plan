@@ -60,8 +60,7 @@ void main() {
         splits: tSplits,
       );
 
-      final captured =
-          verify(() => mockRepo.addExpense(captureAny())).captured;
+      final captured = verify(() => mockRepo.addExpense(captureAny())).captured;
       final expense = captured.first as Expense;
       expect(expense.title, 'Dinner');
     });
@@ -78,8 +77,7 @@ void main() {
         splits: [],
       );
 
-      final captured =
-          verify(() => mockRepo.addExpense(captureAny())).captured;
+      final captured = verify(() => mockRepo.addExpense(captureAny())).captured;
       final expense = captured.first as Expense;
       expect(expense.id, isNotEmpty);
       // Basic UUID format check: 36 chars with dashes
@@ -101,16 +99,17 @@ void main() {
       );
 
       final after = DateTime.now().toUtc();
-      final captured =
-          verify(() => mockRepo.addExpense(captureAny())).captured;
+      final captured = verify(() => mockRepo.addExpense(captureAny())).captured;
       final expense = captured.first as Expense;
 
       expect(
         expense.createdAt.isAfter(before.subtract(const Duration(seconds: 1))),
         isTrue,
       );
-      expect(expense.createdAt.isBefore(after.add(const Duration(seconds: 1))),
-          isTrue);
+      expect(
+        expense.createdAt.isBefore(after.add(const Duration(seconds: 1))),
+        isTrue,
+      );
     });
 
     test('returns Right(expense) on success', () async {
@@ -129,8 +128,9 @@ void main() {
     });
 
     test('propagates ServerFailure from repository', () async {
-      when(() => mockRepo.addExpense(any())).thenAnswer(
-          (_) async => const Left(ServerFailure('DB error')));
+      when(
+        () => mockRepo.addExpense(any()),
+      ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
       final result = await useCase(
         itineraryId: 'it-1',

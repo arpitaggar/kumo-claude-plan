@@ -46,17 +46,16 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
   }
 
   List<String> get _existingMemberIds {
-    final itinerary =
-        ref.read(itineraryStreamProvider(widget.itineraryId)).value;
+    final itinerary = ref
+        .read(itineraryStreamProvider(widget.itineraryId))
+        .value;
     return itinerary?.members.map((m) => m.userId).toList() ?? [];
   }
 
-  Future<void> _addMember(
-    ProfileResult profile,
-    GroupMemberRole role,
-  ) async {
-    final itinerary =
-        ref.read(itineraryStreamProvider(widget.itineraryId)).value;
+  Future<void> _addMember(ProfileResult profile, GroupMemberRole role) async {
+    final itinerary = ref
+        .read(itineraryStreamProvider(widget.itineraryId))
+        .value;
     if (itinerary == null) {
       return;
     }
@@ -85,12 +84,11 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
     );
   }
 
-  Future<void> _createPendingInvite(
-    String email,
-    GroupMemberRole role,
-  ) async {
+  Future<void> _createPendingInvite(String email, GroupMemberRole role) async {
     try {
-      await ref.read(_profileDataSourceProvider).createPendingInvitation(
+      await ref
+          .read(_profileDataSourceProvider)
+          .createPendingInvitation(
             itineraryId: widget.itineraryId,
             invitedEmail: email,
             role: role.name,
@@ -100,46 +98,49 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
       }
       context
         ..showSnackBar(
-            'Invite saved. $email will join automatically when they sign up.')
+          'Invite saved. $email will join automatically when they sign up.',
+        )
         ..pop();
     } catch (e) {
       if (!mounted) {
         return;
       }
-      context.showSnackBar('Failed to save invite. Please try again.',
-          isError: true);
+      context.showSnackBar(
+        'Failed to save invite. Please try again.',
+        isError: true,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(
-        title: const Text('Invite Traveller'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.search), text: 'Search people'),
-            Tab(icon: Icon(Icons.email_outlined), text: 'Invite by email'),
-          ],
-        ),
-      ),
-      body: TabBarView(
+    appBar: AppBar(
+      title: const Text('Invite Traveller'),
+      bottom: TabBar(
         controller: _tabController,
-        children: [
-          _SearchTab(
-            existingMemberIds: _existingMemberIds,
-            dataSource: ref.read(_profileDataSourceProvider),
-            onAdd: _addMember,
-          ),
-          _EmailTab(
-            existingMemberIds: _existingMemberIds,
-            dataSource: ref.read(_profileDataSourceProvider),
-            onAdd: _addMember,
-            onPendingInvite: _createPendingInvite,
-          ),
+        tabs: const [
+          Tab(icon: Icon(Icons.search), text: 'Search people'),
+          Tab(icon: Icon(Icons.email_outlined), text: 'Invite by email'),
         ],
       ),
-    );
+    ),
+    body: TabBarView(
+      controller: _tabController,
+      children: [
+        _SearchTab(
+          existingMemberIds: _existingMemberIds,
+          dataSource: ref.read(_profileDataSourceProvider),
+          onAdd: _addMember,
+        ),
+        _EmailTab(
+          existingMemberIds: _existingMemberIds,
+          dataSource: ref.read(_profileDataSourceProvider),
+          onAdd: _addMember,
+          onPendingInvite: _createPendingInvite,
+        ),
+      ],
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -213,77 +214,80 @@ class _SearchTabState extends State<_SearchTab> {
 
   @override
   Widget build(BuildContext context) => Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: TextField(
-            controller: _searchController,
-            textInputAction: TextInputAction.search,
-            onSubmitted: _search,
-            onChanged: (v) {
-              if (v.isEmpty) {
-                setState(() {
-                  _results = [];
-                  _error = null;
-                });
-              }
-            },
-            decoration: InputDecoration(
-              hintText: 'Search by name…',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _isSearching
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : null,
-            ),
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: TextField(
+          controller: _searchController,
+          textInputAction: TextInputAction.search,
+          onSubmitted: _search,
+          onChanged: (v) {
+            if (v.isEmpty) {
+              setState(() {
+                _results = [];
+                _error = null;
+              });
+            }
+          },
+          decoration: InputDecoration(
+            hintText: 'Search by name…',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _isSearching
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : null,
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline,
-                  size: 14,
-                  color: context.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Only users who have enabled discoverability appear here.',
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 14,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Only users who have enabled discoverability appear here.',
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (_error != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              _error!,
-              style: context.textTheme.bodySmall
-                  ?.copyWith(color: context.colorScheme.onSurfaceVariant),
             ),
-          ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _results.length,
-            itemBuilder: (_, i) => _ProfileTile(
-              profile: _results[i],
-              onAdd: (role) => widget.onAdd(_results[i], role),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+      if (_error != null)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            _error!,
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
-      ],
-    );
+      Expanded(
+        child: ListView.builder(
+          itemCount: _results.length,
+          itemBuilder: (_, i) => _ProfileTile(
+            profile: _results[i],
+            onAdd: (role) => widget.onAdd(_results[i], role),
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -302,7 +306,7 @@ class _EmailTab extends StatefulWidget {
   final ProfileRemoteDataSource dataSource;
   final Future<void> Function(ProfileResult, GroupMemberRole) onAdd;
   final Future<void> Function(String email, GroupMemberRole role)
-      onPendingInvite;
+  onPendingInvite;
 
   @override
   State<_EmailTab> createState() => _EmailTabState();
@@ -381,7 +385,9 @@ class _EmailTabState extends State<_EmailTab> {
       await widget.onAdd(_foundProfile!, _role);
     } else {
       await widget.onPendingInvite(
-          _emailController.text.trim().toLowerCase(), _role);
+        _emailController.text.trim().toLowerCase(),
+        _role,
+      );
     }
     if (mounted) {
       setState(() => _isSubmitting = false);
@@ -450,8 +456,7 @@ class _EmailTabState extends State<_EmailTab> {
                             child: SizedBox(
                               width: 20,
                               height: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           ),
                         )
@@ -471,8 +476,9 @@ class _EmailTabState extends State<_EmailTab> {
               const SizedBox(height: 8),
               Text(
                 _lookupError!,
-                style: context.textTheme.bodySmall
-                    ?.copyWith(color: context.colorScheme.error),
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.error,
+                ),
               ),
             ],
 
@@ -512,9 +518,9 @@ class _EmailTabState extends State<_EmailTab> {
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: _submit,
-                child: Text(_userExists == true
-                    ? 'Add to Trip'
-                    : 'Send Invite'),
+                child: Text(
+                  _userExists == true ? 'Add to Trip' : 'Send Invite',
+                ),
               ),
             ],
           ],
@@ -543,59 +549,60 @@ class _ProfileTileState extends State<_ProfileTile> {
 
   @override
   Widget build(BuildContext context) => ListTile(
-      leading: CircleAvatar(
-        backgroundColor: context.colorScheme.secondaryContainer,
-        child: Text(
-          widget.profile.displayName.isNotEmpty
-              ? widget.profile.displayName[0].toUpperCase()
-              : widget.profile.email[0].toUpperCase(),
-          style:
-              TextStyle(color: context.colorScheme.onSecondaryContainer),
-        ),
+    leading: CircleAvatar(
+      backgroundColor: context.colorScheme.secondaryContainer,
+      child: Text(
+        widget.profile.displayName.isNotEmpty
+            ? widget.profile.displayName[0].toUpperCase()
+            : widget.profile.email[0].toUpperCase(),
+        style: TextStyle(color: context.colorScheme.onSecondaryContainer),
       ),
-      title: Text(widget.profile.displayName.isNotEmpty
+    ),
+    title: Text(
+      widget.profile.displayName.isNotEmpty
           ? widget.profile.displayName
-          : widget.profile.email),
-      subtitle: widget.profile.displayName.isNotEmpty
-          ? Text(
-              widget.profile.email,
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            )
-          : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DropdownButton<GroupMemberRole>(
-            value: _role,
-            underline: const SizedBox.shrink(),
-            isDense: true,
-            items: const [
-              DropdownMenuItem(
-                value: GroupMemberRole.viewer,
-                child: Text('Viewer'),
-              ),
-              DropdownMenuItem(
-                value: GroupMemberRole.editor,
-                child: Text('Editor'),
-              ),
-            ],
-            onChanged: (v) {
-              if (v != null) {
-                setState(() => _role = v);
-              }
-            },
-          ),
-          const SizedBox(width: 8),
-          IconButton.filledTonal(
-            icon: const Icon(Icons.person_add_outlined, size: 18),
-            onPressed: () => widget.onAdd(_role),
-            tooltip: 'Add to trip',
-          ),
-        ],
-      ),
-    );
+          : widget.profile.email,
+    ),
+    subtitle: widget.profile.displayName.isNotEmpty
+        ? Text(
+            widget.profile.email,
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          )
+        : null,
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DropdownButton<GroupMemberRole>(
+          value: _role,
+          underline: const SizedBox.shrink(),
+          isDense: true,
+          items: const [
+            DropdownMenuItem(
+              value: GroupMemberRole.viewer,
+              child: Text('Viewer'),
+            ),
+            DropdownMenuItem(
+              value: GroupMemberRole.editor,
+              child: Text('Editor'),
+            ),
+          ],
+          onChanged: (v) {
+            if (v != null) {
+              setState(() => _role = v);
+            }
+          },
+        ),
+        const SizedBox(width: 8),
+        IconButton.filledTonal(
+          icon: const Icon(Icons.person_add_outlined, size: 18),
+          onPressed: () => widget.onAdd(_role),
+          tooltip: 'Add to trip',
+        ),
+      ],
+    ),
+  );
 }
 
 class _ProfileCard extends StatelessWidget {
@@ -605,44 +612,44 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: context.colorScheme.secondaryContainer,
-            child: Text(
-              profile.displayName.isNotEmpty
-                  ? profile.displayName[0].toUpperCase()
-                  : profile.email[0].toUpperCase(),
-              style: TextStyle(
-                fontSize: 16,
-                color: context.colorScheme.onSecondaryContainer,
+    children: [
+      CircleAvatar(
+        radius: 22,
+        backgroundColor: context.colorScheme.secondaryContainer,
+        child: Text(
+          profile.displayName.isNotEmpty
+              ? profile.displayName[0].toUpperCase()
+              : profile.email[0].toUpperCase(),
+          style: TextStyle(
+            fontSize: 16,
+            color: context.colorScheme.onSecondaryContainer,
+          ),
+        ),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (profile.displayName.isNotEmpty)
+              Text(
+                profile.displayName,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            Text(
+              profile.email,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (profile.displayName.isNotEmpty)
-                  Text(
-                    profile.displayName,
-                    style: context.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                Text(
-                  profile.email,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.check_circle,
-              color: context.colorScheme.primary, size: 20),
-        ],
-      );
+          ],
+        ),
+      ),
+      Icon(Icons.check_circle, color: context.colorScheme.primary, size: 20),
+    ],
+  );
 }
 
 class _PendingBanner extends StatelessWidget {
@@ -652,36 +659,40 @@ class _PendingBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: context.colorScheme.secondaryContainer.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: context.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      children: [
+        Icon(
+          Icons.hourglass_top_outlined,
+          size: 20,
+          color: context.colorScheme.secondary,
         ),
-        child: Row(
-          children: [
-            Icon(Icons.hourglass_top_outlined,
-                size: 20, color: context.colorScheme.secondary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'No account found for $email',
-                    style: context.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'They\'ll be added to this trip automatically when they create a Kumo account.',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'No account found for $email',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                'They\'ll be added to this trip automatically when they create a Kumo account.',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }

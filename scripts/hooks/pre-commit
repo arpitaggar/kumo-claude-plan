@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Kumo pre-commit hook.
+#
+# git never tracks anything under .git/hooks/, so this file lives here as
+# the source of truth and gets copied into place by
+# scripts/install-git-hooks.sh. Root CLAUDE.md's Development Workflow
+# section documents "Pre-commit hooks: dart format, flutter analyze" as
+# project policy — this is what actually enforces it, run it once per clone.
+set -euo pipefail
+
+echo "pre-commit: dart format --set-exit-if-changed lib/ test/"
+# Scoped to lib/ and test/, not "." — running against the repo root also
+# sweeps in build/ (gitignored, but still on disk once you've run a native
+# build), which holds CocoaPods-vendored copies of pub packages like
+# firebase_messaging that aren't this project's source to format.
+if ! dart format --output=none --set-exit-if-changed lib/ test/; then
+  echo
+  echo "pre-commit: dart format found unformatted files." >&2
+  echo "Run 'dart format lib/ test/' to fix, then re-stage and commit again." >&2
+  exit 1
+fi
+
+echo "pre-commit: flutter analyze"
+# --no-fatal-infos: flutter analyze exits non-zero for info-level issues too
+# by default, but this project knowingly tolerates a baseline of them (e.g.
+# the deliberate one_member_abstracts pattern on single-method services —
+# see docs/SOLID_AUDIT.md and CLAUDE.md's memory on this). Only warnings and
+# errors should block a commit.
+if ! flutter analyze --no-fatal-infos; then
+  echo
+  echo "pre-commit: flutter analyze found warnings/errors. Fix them before committing." >&2
+  exit 1
+fi
+
+echo "pre-commit: ok"

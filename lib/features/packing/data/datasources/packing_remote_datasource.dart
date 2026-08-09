@@ -58,10 +58,7 @@ class PackingRemoteDataSourceImpl implements PackingRemoteDataSource {
   @override
   Future<void> deleteItem(String id) async {
     try {
-      await KumoSupabaseClient.client
-          .from(_table)
-          .delete()
-          .eq('id', id);
+      await KumoSupabaseClient.client.from(_table).delete().eq('id', id);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

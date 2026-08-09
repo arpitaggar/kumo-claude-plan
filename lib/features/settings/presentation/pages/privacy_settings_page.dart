@@ -16,9 +16,9 @@ final _profileDataSourceProvider = Provider<ProfileRemoteDataSource>(
   (_) => const ProfileRemoteDataSourceImpl(),
 );
 
-final currentUserProfileProvider =
-    FutureProvider.autoDispose<ProfileResult?>((ref) async =>
-        ref.read(_profileDataSourceProvider).getCurrentUserProfile());
+final currentUserProfileProvider = FutureProvider.autoDispose<ProfileResult?>(
+  (ref) async => ref.read(_profileDataSourceProvider).getCurrentUserProfile(),
+);
 
 // ---------------------------------------------------------------------------
 // Page
@@ -101,7 +101,9 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
     String? contactVisibility,
   }) async {
     setState(() => _visibilitySaving = true);
-    final result = await ref.read(userProfileRepositoryProvider).updateProfile(
+    final result = await ref
+        .read(userProfileRepositoryProvider)
+        .updateProfile(
           profileVisibility: profileVisibility,
           contactVisibility: contactVisibility,
         );
@@ -142,15 +144,15 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
       return;
     }
 
-    final result =
-        await ref.read(authNotifierProvider.notifier).deleteAccount();
+    final result = await ref
+        .read(authNotifierProvider.notifier)
+        .deleteAccount();
     if (!mounted) {
       return;
     }
 
     result.fold(
-      (failure) =>
-          context.showSnackBar(failure.message, isError: true),
+      (failure) => context.showSnackBar(failure.message, isError: true),
       (_) => context.go('/login'),
     );
   }
@@ -165,166 +167,167 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
     final visibilityReady = userProfileAsync.hasValue;
 
     return ListView(
-        children: [
-          // ── Discoverability ─────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-            child: Text(
-              'Discoverability',
-              style: context.textTheme.titleSmall?.copyWith(
-                color: context.colorScheme.primary,
-              ),
+      children: [
+        // ── Discoverability ─────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+          child: Text(
+            'Discoverability',
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.primary,
             ),
           ),
-          SwitchListTile(
-            title: const Text('Allow others to find me'),
-            subtitle: Text(
-              _isSearchable
-                  ? 'Your name appears in trip invite searches.'
-                  : 'Your name is hidden from search. You can still be invited by exact email.',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            value: _isSearchable,
-            onChanged: _isSaving ? null : _toggle,
-            secondary: _isSaving
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(
-                    _isSearchable
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              'When discoverability is off, other users cannot find you by '
-              'name in the invite search. They can still invite you by typing '
-              'your exact email address.',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
+        ),
+        SwitchListTile(
+          title: const Text('Allow others to find me'),
+          subtitle: Text(
+            _isSearchable
+                ? 'Your name appears in trip invite searches.'
+                : 'Your name is hidden from search. You can still be invited by exact email.',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
             ),
           ),
+          value: _isSearchable,
+          onChanged: _isSaving ? null : _toggle,
+          secondary: _isSaving
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(
+                  _isSearchable
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+        ),
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Text(
+            'When discoverability is off, other users cannot find you by '
+            'name in the invite search. They can still invite you by typing '
+            'your exact email address.',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
 
-          // ── Profile visibility ───────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
-            child: Text(
-              'Profile visibility',
-              style: context.textTheme.titleSmall?.copyWith(
-                color: context.colorScheme.primary,
-              ),
+        // ── Profile visibility ───────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
+          child: Text(
+            'Profile visibility',
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.primary,
             ),
           ),
-          SwitchListTile(
-            title: const Text('Public profile'),
-            subtitle: Text(
-              profileVisibility == 'public'
-                  ? 'Your profile is visible on shared itineraries and the discovery feed.'
-                  : 'Your profile is hidden from the discovery feed and shared itineraries.',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
+        ),
+        SwitchListTile(
+          title: const Text('Public profile'),
+          subtitle: Text(
+            profileVisibility == 'public'
+                ? 'Your profile is visible on shared itineraries and the discovery feed.'
+                : 'Your profile is hidden from the discovery feed and shared itineraries.',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
             ),
-            value: profileVisibility == 'public',
-            onChanged: visibilityReady && !_visibilitySaving
-                ? (v) => _updateVisibility(
-                      profileVisibility: v ? 'public' : 'private',
-                    )
-                : null,
-            secondary: _visibilitySaving
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.public_outlined),
           ),
+          value: profileVisibility == 'public',
+          onChanged: visibilityReady && !_visibilitySaving
+              ? (v) => _updateVisibility(
+                  profileVisibility: v ? 'public' : 'private',
+                )
+              : null,
+          secondary: _visibilitySaving
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.public_outlined),
+        ),
 
-          // ── Contact visibility ────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
-            child: Text(
-              'Contact visibility',
-              style: context.textTheme.titleSmall?.copyWith(
-                color: context.colorScheme.primary,
-              ),
+        // ── Contact visibility ────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
+          child: Text(
+            'Contact visibility',
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.primary,
             ),
           ),
-          SwitchListTile(
-            title: const Text('Show contact details to collaborators'),
-            subtitle: Text(
-              contactVisibility == 'collaborators_only'
-                  ? 'Trip collaborators can see your email address.'
-                  : 'Your email is never shown to other users.',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
+        ),
+        SwitchListTile(
+          title: const Text('Show contact details to collaborators'),
+          subtitle: Text(
+            contactVisibility == 'collaborators_only'
+                ? 'Trip collaborators can see your email address.'
+                : 'Your email is never shown to other users.',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
             ),
-            value: contactVisibility == 'collaborators_only',
-            onChanged: visibilityReady && !_visibilitySaving
-                ? (v) => _updateVisibility(
-                      contactVisibility:
-                          v ? 'collaborators_only' : 'hidden',
-                    )
-                : null,
-            secondary: const Icon(Icons.contact_mail_outlined),
           ),
+          value: contactVisibility == 'collaborators_only',
+          onChanged: visibilityReady && !_visibilitySaving
+              ? (v) => _updateVisibility(
+                  contactVisibility: v ? 'collaborators_only' : 'hidden',
+                )
+              : null,
+          secondary: const Icon(Icons.contact_mail_outlined),
+        ),
 
-          // ── Legal ────────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
-            child: Text(
-              'Legal',
-              style: context.textTheme.titleSmall?.copyWith(
-                color: context.colorScheme.primary,
-              ),
+        // ── Legal ────────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
+          child: Text(
+            'Legal',
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.primary,
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text('Privacy Policy'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/legal/privacy-policy'),
-          ),
-          const Divider(height: 1, indent: 56),
-          ListTile(
-            leading: const Icon(Icons.article_outlined),
-            title: const Text('Terms of Service'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/legal/terms'),
-          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.privacy_tip_outlined),
+          title: const Text('Privacy Policy'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/legal/privacy-policy'),
+        ),
+        const Divider(height: 1, indent: 56),
+        ListTile(
+          leading: const Icon(Icons.article_outlined),
+          title: const Text('Terms of Service'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/legal/terms'),
+        ),
 
-          // ── Danger zone ──────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
-            child: Text(
-              'Danger zone',
-              style: context.textTheme.titleSmall?.copyWith(
-                color: context.colorScheme.error,
-              ),
+        // ── Danger zone ──────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
+          child: Text(
+            'Danger zone',
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.error,
             ),
           ),
-          ListTile(
-            leading: Icon(Icons.delete_forever_outlined,
-                color: context.colorScheme.error),
-            title: Text(
-              'Delete Account',
-              style: TextStyle(color: context.colorScheme.error),
-            ),
-            subtitle: const Text('Permanently removes all your data'),
-            onTap: _confirmDeleteAccount,
+        ),
+        ListTile(
+          leading: Icon(
+            Icons.delete_forever_outlined,
+            color: context.colorScheme.error,
           ),
-          const SizedBox(height: 32),
-        ],
-      );
+          title: Text(
+            'Delete Account',
+            style: TextStyle(color: context.colorScheme.error),
+          ),
+          subtitle: const Text('Permanently removes all your data'),
+          onTap: _confirmDeleteAccount,
+        ),
+        const SizedBox(height: 32),
+      ],
+    );
   }
 }

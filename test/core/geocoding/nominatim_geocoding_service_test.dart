@@ -32,29 +32,33 @@ void main() {
       verifyNever(() => client.get(any(), headers: any(named: 'headers')));
     });
 
-    test('trims the query and requests the Nominatim search endpoint',
-        () async {
-      when(() => client.get(any(), headers: any(named: 'headers')))
-          .thenAnswer((_) async => jsonResponse(const []));
+    test(
+      'trims the query and requests the Nominatim search endpoint',
+      () async {
+        when(
+          () => client.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => jsonResponse(const []));
 
-      await service.search('  Chiang Mai  ');
+        await service.search('  Chiang Mai  ');
 
-      final captured = verify(
-        () => client.get(captureAny(), headers: any(named: 'headers')),
-      ).captured;
-      final uri = captured.single as Uri;
+        final captured = verify(
+          () => client.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+        final uri = captured.single as Uri;
 
-      expect(uri.host, 'nominatim.openstreetmap.org');
-      expect(uri.path, '/search');
-      expect(uri.queryParameters['q'], 'Chiang Mai');
-      expect(uri.queryParameters['format'], 'jsonv2');
-      expect(uri.queryParameters['limit'], '8');
-    });
+        expect(uri.host, 'nominatim.openstreetmap.org');
+        expect(uri.path, '/search');
+        expect(uri.queryParameters['q'], 'Chiang Mai');
+        expect(uri.queryParameters['format'], 'jsonv2');
+        expect(uri.queryParameters['limit'], '8');
+      },
+    );
 
     test('sends a descriptive User-Agent and defaults Accept-Language to '
         '"en"', () async {
-      when(() => client.get(any(), headers: any(named: 'headers')))
-          .thenAnswer((_) async => jsonResponse(const []));
+      when(
+        () => client.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer((_) async => jsonResponse(const []));
 
       await service.search('Pai');
 
@@ -72,8 +76,9 @@ void main() {
         client: client,
         acceptLanguage: 'th',
       );
-      when(() => client.get(any(), headers: any(named: 'headers')))
-          .thenAnswer((_) async => jsonResponse(const []));
+      when(
+        () => client.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer((_) async => jsonResponse(const []));
 
       await customService.search('Bangkok');
 
@@ -85,10 +90,8 @@ void main() {
       expect(headers['Accept-Language'], 'th');
     });
 
-    test('parses display_name/lat/lon into GeocodingResult entries',
-        () async {
-      when(() => client.get(any(), headers: any(named: 'headers')))
-          .thenAnswer(
+    test('parses display_name/lat/lon into GeocodingResult entries', () async {
+      when(() => client.get(any(), headers: any(named: 'headers'))).thenAnswer(
         (_) async => jsonResponse([
           {
             'display_name': 'Chiang Mai, Thailand',
@@ -107,26 +110,27 @@ void main() {
     });
 
     test('throws when the response status is not 200', () async {
-      when(() => client.get(any(), headers: any(named: 'headers')))
-          .thenAnswer((_) async => http.Response('Server error', 500));
+      when(
+        () => client.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer((_) async => http.Response('Server error', 500));
 
       expect(() => service.search('Munich'), throwsException);
     });
 
-    test('throttles back-to-back requests to at least 1.1 seconds apart',
-        () async {
-      when(() => client.get(any(), headers: any(named: 'headers')))
-          .thenAnswer((_) async => jsonResponse(const []));
+    test(
+      'throttles back-to-back requests to at least 1.1 seconds apart',
+      () async {
+        when(
+          () => client.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => jsonResponse(const []));
 
-      final stopwatch = Stopwatch()..start();
-      await service.search('Munich');
-      await service.search('Bangkok');
-      stopwatch.stop();
+        final stopwatch = Stopwatch()..start();
+        await service.search('Munich');
+        await service.search('Bangkok');
+        stopwatch.stop();
 
-      expect(
-        stopwatch.elapsedMilliseconds,
-        greaterThanOrEqualTo(1100),
-      );
-    });
+        expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(1100));
+      },
+    );
   });
 }

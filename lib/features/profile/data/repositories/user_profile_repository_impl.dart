@@ -57,19 +57,19 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
   }) async {
     try {
       final result = await _remote.updateProfile(
-        displayName:          displayName,
-        username:             username,
-        bio:                  bio,
-        city:                 city,
-        country:              country,
-        timezone:             timezone,
-        preferredCurrency:    preferredCurrency,
-        preferredLanguage:    preferredLanguage,
-        unitsPreference:      unitsPreference,
+        displayName: displayName,
+        username: username,
+        bio: bio,
+        city: city,
+        country: country,
+        timezone: timezone,
+        preferredCurrency: preferredCurrency,
+        preferredLanguage: preferredLanguage,
+        unitsPreference: unitsPreference,
         travelPreferenceTags: travelPreferenceTags,
-        profileVisibility:    profileVisibility,
-        contactVisibility:    contactVisibility,
-        avatarUrl:            avatarUrl,
+        profileVisibility: profileVisibility,
+        contactVisibility: contactVisibility,
+        avatarUrl: avatarUrl,
         pushMessagePreviewEnabled: pushMessagePreviewEnabled,
       );
       return Right(result);
@@ -84,7 +84,7 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
 
   @override
   Future<Either<Failure, List<NotificationPreference>>>
-      getNotificationPreferences() async {
+  getNotificationPreferences() async {
     try {
       return Right(await _remote.getNotificationPreferences());
     } on AuthException catch (e) {
@@ -104,9 +104,9 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
   }) async {
     try {
       await _remote.upsertNotificationPreference(
-        channel:  channel,
+        channel: channel,
         category: category,
-        enabled:  enabled,
+        enabled: enabled,
       );
       return const Right(null);
     } on AuthException catch (e) {

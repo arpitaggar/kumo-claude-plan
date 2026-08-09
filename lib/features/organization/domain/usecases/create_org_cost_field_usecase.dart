@@ -15,12 +15,11 @@ class CreateOrgCostFieldUseCase {
     required CostFieldType fieldType,
     String separator = '-',
     List<String> sourceFieldIds = const [],
-  }) =>
-      _repository.createCostField(
-        orgId: orgId,
-        label: label,
-        fieldType: fieldType,
-        separator: separator,
-        sourceFieldIds: sourceFieldIds,
-      );
+  }) => _repository.createCostField(
+    orgId: orgId,
+    label: label,
+    fieldType: fieldType,
+    separator: separator,
+    sourceFieldIds: sourceFieldIds,
+  );
 }

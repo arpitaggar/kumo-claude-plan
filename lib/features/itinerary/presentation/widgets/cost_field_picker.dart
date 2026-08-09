@@ -44,10 +44,9 @@ class _CostFieldPickerState extends ConsumerState<CostFieldPicker> {
 
   Future<void> _refreshPreview() async {
     setState(() => _previewLoading = true);
-    final result = await ref.read(previewCostCenterCodeUseCaseProvider).call(
-          orgId: widget.orgId,
-          selections: widget.values,
-        );
+    final result = await ref
+        .read(previewCostCenterCodeUseCaseProvider)
+        .call(orgId: widget.orgId, selections: widget.values);
     if (!mounted) {
       return;
     }
@@ -65,10 +64,12 @@ class _CostFieldPickerState extends ConsumerState<CostFieldPicker> {
       return const SizedBox.shrink();
     }
 
-    final selectFields = fields.where((f) => f.fieldType == CostFieldType.select).toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    final hasGeneratedField =
-        fields.any((f) => f.fieldType == CostFieldType.generated);
+    final selectFields =
+        fields.where((f) => f.fieldType == CostFieldType.select).toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final hasGeneratedField = fields.any(
+      (f) => f.fieldType == CostFieldType.generated,
+    );
 
     // First build (or a fields refetch) with no preview fetched yet.
     if (hasGeneratedField && _previewCode == null && !_previewLoading) {
@@ -101,15 +102,22 @@ class _CostFieldPickerState extends ConsumerState<CostFieldPicker> {
             padding: const EdgeInsets.only(top: 4),
             child: Row(
               children: [
-                Icon(Icons.tag, size: 16, color: context.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.tag,
+                  size: 16,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   _previewLoading
                       ? 'Calculating…'
-                      : (_previewCode ?? 'Fill in all fields above to see the code'),
+                      : (_previewCode ??
+                            'Fill in all fields above to see the code'),
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: _previewCode != null ? FontWeight.w700 : FontWeight.normal,
+                    fontWeight: _previewCode != null
+                        ? FontWeight.w700
+                        : FontWeight.normal,
                     color: context.colorScheme.onSurfaceVariant,
                   ),
                 ),

@@ -30,10 +30,9 @@ class OfflineBanner extends ConsumerWidget {
               const SizedBox(width: 6),
               Text(
                 'You\'re offline — showing cached data',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: onInverse,
-                      fontSize: 12,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: onInverse, fontSize: 12),
               ),
             ],
           ),

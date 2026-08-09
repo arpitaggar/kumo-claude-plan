@@ -4,6 +4,8 @@
 **Last Updated:** June 2026  
 **Status:** Production-Ready Design (Stage 1 MVP)
 
+> **2026-08-09 note:** This document is the original v1.0 design and hasn't been kept in lockstep with what actually shipped — `docs/DEVELOPMENT_ROADMAP.md` is the authoritative "as-built" record (see its v1.0-vs-v2.0 divergence table) and `CLAUDE.md` tracks current stage numbering. Two concrete drifts worth knowing before reading further: the [Real-Time Group Sync](#real-time-group-sync--collaborative-editing) section below describes an event-sourcing + vector-clock design that was never built (collaboration ships as last-write-wins on JSONB instead — see the Roadmap's Stage 2 entry), and the [Future B2B Scalability Plan](#future-b2b-scalability-plan) below is now partially real — see the callout at the top of that section for what exists today. A `lib/core/routing/` service (OSRM + Google Directions, behind the same abstract-class+Impl+Provider convention as every other single-method service in `lib/core/`) also now supplies real routed road/walking geometry for trip segments, feeding `route_geometry` on `trip_segments` (`docs/supabase_migrations/stage24_trip_segment_route_geometry.sql`) — not described anywhere in this document's original design.
+
 ---
 
 ## Table of Contents
@@ -430,6 +432,8 @@ CREATE INDEX idx_audit_user_timestamp ON audit_log (user_id, timestamp DESC);
 ---
 
 ## Future B2B Scalability Plan
+
+> **2026-08-09 note:** A minimal real version of this plan shipped as "work mode" (`lib/features/organization/`, `docs/supabase_migrations/stage28_work_mode_orgs.sql` through `stage30_org_cost_fields.sql`, RLS-hardened by `stage31`/`stage32` — see `docs/SECURITY_AUDIT.md` SEC-026 through SEC-029). What's real: `organizations`/`org_members` with owner/admin/member roles, an `itineraries.org_id` tag, an expense submit/approve/reject workflow scoped narrowly to a traveler's own submitted expenses, and org-defined cost-tracking fields with an optional generated cost-center code snapshotted onto approved expenses. What's still just the plan below, not built: subscription tiers/billing, granular JSONB `permissions`, travel policies, an admin dashboard, and org-to-org data isolation beyond RLS row scoping. The schema below also predates the recursion bug documented in SEC-026 — anyone extending this design should route new org-membership checks through the `is_org_member`/`is_org_admin` SECURITY DEFINER helpers stage31 introduced, not a fresh inline `exists (select ... from org_members)`.
 
 ### Multi-Tenant Architecture
 

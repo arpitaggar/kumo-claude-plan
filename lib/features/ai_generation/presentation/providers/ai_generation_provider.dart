@@ -18,17 +18,14 @@ final aiGenerationDataSourceProvider = Provider<AiGenerationDataSource>(
   (_) => const AiGenerationDataSourceImpl(),
 );
 
-final aiGenerationRepositoryProvider =
-    Provider<AiGenerationRepositoryImpl>(
+final aiGenerationRepositoryProvider = Provider<AiGenerationRepositoryImpl>(
   (ref) => AiGenerationRepositoryImpl(
     dataSource: ref.watch(aiGenerationDataSourceProvider),
   ),
 );
 
 final generateItineraryUseCaseProvider = Provider<GenerateItineraryUseCase>(
-  (ref) => GenerateItineraryUseCase(
-    ref.watch(aiGenerationRepositoryProvider),
-  ),
+  (ref) => GenerateItineraryUseCase(ref.watch(aiGenerationRepositoryProvider)),
 );
 
 // ---------------------------------------------------------------------------
@@ -80,8 +77,9 @@ class AiGenerationNotifier extends StateNotifier<AiGenerationState> {
 
 final aiGenerationProvider =
     StateNotifierProvider.autoDispose<AiGenerationNotifier, AiGenerationState>(
-  (ref) => AiGenerationNotifier(ref.watch(generateItineraryUseCaseProvider)),
-);
+      (ref) =>
+          AiGenerationNotifier(ref.watch(generateItineraryUseCaseProvider)),
+    );
 
 // ---------------------------------------------------------------------------
 // Resolving AI-generated segments (city names) into real TripSegments
@@ -93,7 +91,9 @@ final aiGenerationProvider =
 // wiring in chat/expense/packing/ratings providers directly).
 // ---------------------------------------------------------------------------
 
-final resolveAiSegmentsProvider = Provider<ResolveAiSegments>(ResolveAiSegments.new);
+final resolveAiSegmentsProvider = Provider<ResolveAiSegments>(
+  ResolveAiSegments.new,
+);
 
 class ResolveAiSegments {
   const ResolveAiSegments(this._ref);
@@ -104,7 +104,10 @@ class ResolveAiSegments {
   /// first search hit) and inserts the resolved segment in order. A leg whose
   /// origin or destination can't be geocoded is skipped rather than failing
   /// the whole batch — the rest of the trip's segments still get created.
-  Future<void> call(String itineraryId, List<AiGeneratedSegment> segments) async {
+  Future<void> call(
+    String itineraryId,
+    List<AiGeneratedSegment> segments,
+  ) async {
     final geocoder = _ref.read(geocodingServiceProvider);
     final addSegment = _ref.read(addTripSegmentUseCaseProvider);
 

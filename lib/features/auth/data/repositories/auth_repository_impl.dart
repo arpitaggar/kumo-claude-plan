@@ -37,11 +37,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(NetworkFailure(e.message));
     } on LocalStorageException {
       // Cache failure is non-fatal; user still signed up
-      final user = await remoteDataSource.getCurrentUser();
-      if (user != null) {
-        return Right(user);
-      }
-      return Left(UnexpectedFailure.unknown());
+      return _userAfterCacheFailure();
     } catch (e) {
       return Left(UnexpectedFailure(e.toString()));
     }
@@ -59,6 +55,31 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       await localDataSource.cacheUser(user);
       return Right(user);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on LocalStorageException {
+      // Cache failure is non-fatal; user is still logged in
+      return _userAfterCacheFailure();
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  /// Recovers the [Either] result after a [LocalStorageException] during
+  /// sign-up/login — the remote auth call already succeeded, only caching
+  /// failed, so this re-fetches the user instead of failing the whole
+  /// operation. Wrapped in its own try/catch because this call can itself
+  /// throw, and a throw from inside a catch block isn't caught by that same
+  /// try's other `on`/`catch` clauses.
+  Future<Either<Failure, User>> _userAfterCacheFailure() async {
+    try {
+      final user = await remoteDataSource.getCurrentUser();
+      if (user != null) {
+        return Right(user);
+      }
+      return Left(UnexpectedFailure.unknown());
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message));
     } on NetworkException catch (e) {
@@ -109,7 +130,9 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, void>> resetPassword({required String newPassword}) async {
+  Future<Either<Failure, void>> resetPassword({
+    required String newPassword,
+  }) async {
     try {
       await remoteDataSource.resetPassword(newPassword: newPassword);
       return const Right(null);
@@ -151,17 +174,19 @@ class AuthRepositoryImpl implements AuthRepository {
         displayName: displayName,
         avatarUrl: avatarUrl,
       );
-      await localDataSource.cacheUser(UserModel.fromJson({
-        'id': user.id,
-        'email': user.email,
-        'display_name': user.displayName,
-        'avatar_url': user.avatarUrl,
-        'created_at': user.createdAt.toIso8601String(),
-        'last_sign_in_at': user.lastSignInAt?.toIso8601String(),
-        'email_verified': user.emailVerified,
-        'phone_number': user.phoneNumber,
-        'mfa_enabled': user.mfaEnabled,
-      }));
+      await localDataSource.cacheUser(
+        UserModel.fromJson({
+          'id': user.id,
+          'email': user.email,
+          'display_name': user.displayName,
+          'avatar_url': user.avatarUrl,
+          'created_at': user.createdAt.toIso8601String(),
+          'last_sign_in_at': user.lastSignInAt?.toIso8601String(),
+          'email_verified': user.emailVerified,
+          'phone_number': user.phoneNumber,
+          'mfa_enabled': user.mfaEnabled,
+        }),
+      );
       return Right(user);
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message));

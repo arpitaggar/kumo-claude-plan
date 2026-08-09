@@ -12,9 +12,8 @@ final packingDataSourceProvider = Provider<PackingRemoteDataSource>(
 );
 
 final packingRepositoryProvider = Provider<PackingRepositoryImpl>(
-  (ref) => PackingRepositoryImpl(
-    dataSource: ref.watch(packingDataSourceProvider),
-  ),
+  (ref) =>
+      PackingRepositoryImpl(dataSource: ref.watch(packingDataSourceProvider)),
 );
 
 final addPackingItemUseCaseProvider = Provider<AddPackingItemUseCase>(
@@ -29,11 +28,12 @@ final deletePackingItemUseCaseProvider = Provider<DeletePackingItemUseCase>(
   (ref) => DeletePackingItemUseCase(ref.watch(packingRepositoryProvider)),
 );
 
-final packingStreamProvider =
-    StreamProvider.family<List<PackingItem>, String>((ref, itineraryId) => ref
-        .watch(packingRepositoryProvider)
-        .watchItems(itineraryId)
-        .map((either) => either.fold(
-              (f) => throw Exception(f.message),
-              (list) => list,
-            )));
+final packingStreamProvider = StreamProvider.family<List<PackingItem>, String>(
+  (ref, itineraryId) => ref
+      .watch(packingRepositoryProvider)
+      .watchItems(itineraryId)
+      .map(
+        (either) =>
+            either.fold((f) => throw Exception(f.message), (list) => list),
+      ),
+);

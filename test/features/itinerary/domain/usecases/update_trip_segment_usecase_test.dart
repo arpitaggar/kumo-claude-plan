@@ -20,8 +20,11 @@ void main() {
     orderIndex: 0,
     mode: TransportMode.flight,
     origin: Waypoint(name: 'Munich', latitude: 48.1351, longitude: 11.5820),
-    destination:
-        Waypoint(name: 'Bangkok', latitude: 13.7563, longitude: 100.5018),
+    destination: Waypoint(
+      name: 'Bangkok',
+      latitude: 13.7563,
+      longitude: 100.5018,
+    ),
   );
 
   setUp(() {
@@ -29,19 +32,23 @@ void main() {
     useCase = UpdateTripSegmentUseCase(mockRepo);
   });
 
-  test('delegates to repository.updateSegment with the given segment',
-      () async {
-    when(() => mockRepo.updateSegment(tSegment))
-        .thenAnswer((_) async => const Right(tSegment));
+  test(
+    'delegates to repository.updateSegment with the given segment',
+    () async {
+      when(
+        () => mockRepo.updateSegment(tSegment),
+      ).thenAnswer((_) async => const Right(tSegment));
 
-    await useCase(tSegment);
+      await useCase(tSegment);
 
-    verify(() => mockRepo.updateSegment(tSegment)).called(1);
-  });
+      verify(() => mockRepo.updateSegment(tSegment)).called(1);
+    },
+  );
 
   test('returns Right(segment) on success', () async {
-    when(() => mockRepo.updateSegment(tSegment))
-        .thenAnswer((_) async => const Right(tSegment));
+    when(
+      () => mockRepo.updateSegment(tSegment),
+    ).thenAnswer((_) async => const Right(tSegment));
 
     final result = await useCase(tSegment);
 
@@ -49,8 +56,9 @@ void main() {
   });
 
   test('propagates ServerFailure from repository', () async {
-    when(() => mockRepo.updateSegment(tSegment))
-        .thenAnswer((_) async => const Left(ServerFailure('DB error')));
+    when(
+      () => mockRepo.updateSegment(tSegment),
+    ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
     final result = await useCase(tSegment);
 

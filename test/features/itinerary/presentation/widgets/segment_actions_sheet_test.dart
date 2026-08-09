@@ -16,31 +16,35 @@ class _Host extends StatefulWidget {
 class _HostState extends State<_Host> {
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () async {
-              final action = await showSegmentActionsSheet(
-                context,
-                destinationName: 'Pai',
-              );
-              widget.onResult(action);
-            },
-            child: const Text('Open'),
-          ),
-        ),
-      );
+    body: Center(
+      child: ElevatedButton(
+        onPressed: () async {
+          final action = await showSegmentActionsSheet(
+            context,
+            destinationName: 'Pai',
+          );
+          widget.onResult(action);
+        },
+        child: const Text('Open'),
+      ),
+    ),
+  );
 }
 
 void main() {
   Future<SegmentAction?> openSheet(WidgetTester tester) async {
     SegmentAction? result;
     var settled = false;
-    await tester.pumpWidget(MaterialApp(
-      home: _Host(onResult: (a) {
-        result = a;
-        settled = true;
-      }),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: _Host(
+          onResult: (a) {
+            result = a;
+            settled = true;
+          },
+        ),
+      ),
+    );
 
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
@@ -51,8 +55,7 @@ void main() {
     return result;
   }
 
-  testWidgets('shows the destination name as the sheet title',
-      (tester) async {
+  testWidgets('shows the destination name as the sheet title', (tester) async {
     await openSheet(tester);
     expect(find.text('Pai'), findsOneWidget);
   });
@@ -64,12 +67,13 @@ void main() {
     expect(find.text('Delete segment'), findsOneWidget);
   });
 
-  testWidgets('tapping "Continue trip from here" resolves continueFrom',
-      (tester) async {
+  testWidgets('tapping "Continue trip from here" resolves continueFrom', (
+    tester,
+  ) async {
     SegmentAction? result;
-    await tester.pumpWidget(MaterialApp(
-      home: _Host(onResult: (a) => result = a),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(home: _Host(onResult: (a) => result = a)),
+    );
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
@@ -81,9 +85,9 @@ void main() {
 
   testWidgets('tapping "Edit segment" resolves edit', (tester) async {
     SegmentAction? result;
-    await tester.pumpWidget(MaterialApp(
-      home: _Host(onResult: (a) => result = a),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(home: _Host(onResult: (a) => result = a)),
+    );
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
@@ -95,9 +99,9 @@ void main() {
 
   testWidgets('tapping "Delete segment" resolves delete', (tester) async {
     SegmentAction? result;
-    await tester.pumpWidget(MaterialApp(
-      home: _Host(onResult: (a) => result = a),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(home: _Host(onResult: (a) => result = a)),
+    );
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 

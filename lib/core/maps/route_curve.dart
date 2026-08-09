@@ -20,10 +20,12 @@ bool sameWaypoint(Waypoint a, Waypoint b) =>
 /// ones that do are curved (see [curvedPath]) so the two overlapping
 /// directions stay visually distinct.
 bool hasReverseLeg(List<TripSegment> segments, TripSegment segment) =>
-    segments.any((other) =>
-        other.id != segment.id &&
-        sameWaypoint(other.origin, segment.destination) &&
-        sameWaypoint(other.destination, segment.origin));
+    segments.any(
+      (other) =>
+          other.id != segment.id &&
+          sameWaypoint(other.origin, segment.destination) &&
+          sameWaypoint(other.destination, segment.origin),
+    );
 
 /// Points tracing a path from (startLat, startLng) to (endLat, endLng) — a
 /// straight 2-point line if [curved] is false, otherwise a quadratic Bezier

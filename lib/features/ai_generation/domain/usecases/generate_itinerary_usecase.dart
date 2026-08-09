@@ -12,6 +12,5 @@ class GenerateItineraryUseCase {
 
   Future<Either<Failure, AiGenerationResult>> call(
     AiGenerationRequest request,
-  ) =>
-      _repository.generateItinerary(request);
+  ) => _repository.generateItinerary(request);
 }

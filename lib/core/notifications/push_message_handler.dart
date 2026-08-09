@@ -43,7 +43,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // own `NotificationService.initialize()` has ever run in the foreground).
   await plugin
       .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+        AndroidFlutterLocalNotificationsPlugin
+      >()
       ?.createNotificationChannel(
         const AndroidNotificationChannel(
           _channelId,

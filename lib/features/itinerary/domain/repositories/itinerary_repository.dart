@@ -5,7 +5,9 @@ import '../entities/travel_itinerary.dart';
 
 abstract class ItineraryRepository {
   /// Fetches all itineraries owned by or shared with [userId].
-  Future<Either<Failure, List<TravelItinerary>>> fetchItineraries(String userId);
+  Future<Either<Failure, List<TravelItinerary>>> fetchItineraries(
+    String userId,
+  );
 
   /// Fetches a single itinerary by [id].
   Future<Either<Failure, TravelItinerary>> fetchItinerary(String id);

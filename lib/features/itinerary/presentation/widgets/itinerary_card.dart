@@ -154,25 +154,25 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, bg, fg) = switch (status) {
       ItineraryStatusEnum.draft => (
-          'Draft',
-          context.colorScheme.outlineVariant,
-          context.colorScheme.onSurfaceVariant,
-        ),
+        'Draft',
+        context.colorScheme.outlineVariant,
+        context.colorScheme.onSurfaceVariant,
+      ),
       ItineraryStatusEnum.active => (
-          'Active',
-          const Color(0xFFD1F0DC),
-          const Color(0xFF2E7D52),
-        ),
+        'Active',
+        const Color(0xFFD1F0DC),
+        const Color(0xFF2E7D52),
+      ),
       ItineraryStatusEnum.completed => (
-          'Done',
-          const Color(0xFFD1E4FF),
-          const Color(0xFF2B5BA8),
-        ),
+        'Done',
+        const Color(0xFFD1E4FF),
+        const Color(0xFF2B5BA8),
+      ),
       ItineraryStatusEnum.archived => (
-          'Archived',
-          const Color(0xFFF2E0C8),
-          const Color(0xFF8C5A1E),
-        ),
+        'Archived',
+        const Color(0xFFF2E0C8),
+        const Color(0xFF8C5A1E),
+      ),
     };
 
     return Container(
@@ -183,11 +183,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: fg,
-        ),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
       ),
     );
   }

@@ -54,8 +54,7 @@ void main() {
     });
 
     test('falls back to USD when currency_code missing', () {
-      final json = Map<String, dynamic>.from(fullJson)
-        ..remove('currency_code');
+      final json = Map<String, dynamic>.from(fullJson)..remove('currency_code');
       final model = ExpenseModel.fromJson(json);
       expect(model.currencyCode, 'USD');
     });

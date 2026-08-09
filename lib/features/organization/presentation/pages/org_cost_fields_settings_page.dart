@@ -17,12 +17,20 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
 
   final String orgId;
 
-  Future<void> _addField(BuildContext context, WidgetRef ref, List<OrgCostField> existing) async {
+  Future<void> _addField(
+    BuildContext context,
+    WidgetRef ref,
+    List<OrgCostField> existing,
+  ) async {
     final labelController = TextEditingController();
     final separatorController = TextEditingController(text: '-');
     var fieldType = CostFieldType.select;
-    final selectFields = existing.where((f) => f.fieldType == CostFieldType.select).toList();
-    final hasGenerated = existing.any((f) => f.fieldType == CostFieldType.generated);
+    final selectFields = existing
+        .where((f) => f.fieldType == CostFieldType.select)
+        .toList();
+    final hasGenerated = existing.any(
+      (f) => f.fieldType == CostFieldType.generated,
+    );
     final selectedSources = {for (final f in selectFields) f.id: true};
 
     final created = await showDialog<bool>(
@@ -84,8 +92,14 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => ctx.pop(true), child: const Text('Add')),
+            TextButton(
+              onPressed: () => ctx.pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => ctx.pop(true),
+              child: const Text('Add'),
+            ),
           ],
         ),
       ),
@@ -98,7 +112,9 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
       return;
     }
 
-    final result = await ref.read(createOrgCostFieldUseCaseProvider).call(
+    final result = await ref
+        .read(createOrgCostFieldUseCaseProvider)
+        .call(
           orgId: orgId,
           label: labelController.text.trim(),
           fieldType: fieldType,
@@ -122,16 +138,25 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _deleteField(BuildContext context, WidgetRef ref, OrgCostField field) async {
+  Future<void> _deleteField(
+    BuildContext context,
+    WidgetRef ref,
+    OrgCostField field,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete field?'),
         content: Text('Remove "${field.label}"?'),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: context.colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colorScheme.error,
+            ),
             onPressed: () => ctx.pop(true),
             child: const Text('Delete'),
           ),
@@ -142,7 +167,9 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
       return;
     }
 
-    final result = await ref.read(deleteOrgCostFieldUseCaseProvider).call(field.id);
+    final result = await ref
+        .read(deleteOrgCostFieldUseCaseProvider)
+        .call(field.id);
     if (!context.mounted) {
       return;
     }
@@ -152,7 +179,11 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _addOption(BuildContext context, WidgetRef ref, OrgCostField field) async {
+  Future<void> _addOption(
+    BuildContext context,
+    WidgetRef ref,
+    OrgCostField field,
+  ) async {
     final valueController = TextEditingController();
     final codeController = TextEditingController();
 
@@ -165,19 +196,31 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
           children: [
             TextField(
               controller: valueController,
-              decoration: const InputDecoration(labelText: 'Value', hintText: 'e.g. Sales'),
+              decoration: const InputDecoration(
+                labelText: 'Value',
+                hintText: 'e.g. Sales',
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: codeController,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'Code', hintText: 'e.g. SAL'),
+              decoration: const InputDecoration(
+                labelText: 'Code',
+                hintText: 'e.g. SAL',
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => ctx.pop(true), child: const Text('Add')),
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => ctx.pop(true),
+            child: const Text('Add'),
+          ),
         ],
       ),
     );
@@ -191,7 +234,9 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
       return;
     }
 
-    final result = await ref.read(addOrgCostFieldOptionUseCaseProvider).call(
+    final result = await ref
+        .read(addOrgCostFieldOptionUseCaseProvider)
+        .call(
           fieldId: field.id,
           value: valueController.text.trim(),
           code: codeController.text.trim(),
@@ -210,7 +255,9 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
     WidgetRef ref,
     OrgCostFieldOption option,
   ) async {
-    final result = await ref.read(deleteOrgCostFieldOptionUseCaseProvider).call(option.id);
+    final result = await ref
+        .read(deleteOrgCostFieldOptionUseCaseProvider)
+        .call(option.id);
     if (!context.mounted) {
       return;
     }
@@ -287,11 +334,15 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
                           subtitle: Text(option.code),
                           trailing: IconButton(
                             icon: const Icon(Icons.close, size: 18),
-                            onPressed: () => _deleteOption(context, ref, option),
+                            onPressed: () =>
+                                _deleteOption(context, ref, option),
                           ),
                         ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: TextButton.icon(
                           onPressed: () => _addOption(context, ref, field),
                           icon: const Icon(Icons.add, size: 16),

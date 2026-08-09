@@ -14,9 +14,12 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   Stream<Either<Failure, List<Message>>> watchMessages(String itineraryId) =>
-      remoteDataSource.watchMessages(itineraryId).map<Either<Failure, List<Message>>>(
+      remoteDataSource
+          .watchMessages(itineraryId)
+          .map<Either<Failure, List<Message>>>(
             Right<Failure, List<Message>>.new,
-          ).handleError(
+          )
+          .handleError(
             (Object e) => Left(
               e is ServerException
                   ? ServerFailure(e.message)
