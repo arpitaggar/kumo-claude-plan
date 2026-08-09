@@ -6,6 +6,8 @@
 
 **2026-08-09 remediation pass:** every finding classified as an "easy fix" (code/query/config change, no new infrastructure) is now fixed — SCALE-001, 003, 004, 005, 008, 009. See each entry's **Status** line below and `docs/supabase_migrations/stage33_social_feed_scale.sql`. SCALE-002, 006, 007, 010 remain open by design (real infrastructure additions, not justified until the traffic that would need them actually shows up — see the Verdict). SCALE-011 is a Supabase dashboard toggle on the live project, outside what a code change can do; SCALE-012 is a provider swap/self-host decision, not made here.
 
+**2026-08-09 second pass:** re-audited with the benefit of having just built the stage33 fixes and separately read the whole organization/work-mode schema in depth (during an unrelated test-coverage pass) — checking whether the fixes themselves introduced anything, and whether that schema (not in the original audit's primary scope) holds up. Found and fixed one real issue the first pass missed (SCALE-013); found and documented one real issue in the *new* pagination code itself (SCALE-014); otherwise confirmed clean. See both entries below, plus a `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql` migration — **not yet run against the live database.**
+
 **Short answer up front:** No — not without three specific subsystem rewrites, and that's expected, not a failure. Instagram itself ran on a single Postgres primary for its first ~2 years and 30M+ users before it needed to shard. This app is a single-Postgres-instance design (via Supabase) with no background job/queue layer — the right shape for its actual current scale (trip-planning groups, not a public global feed), and the wrong shape for hundreds of millions of DAU and viral fan-out. The findings below separate "will break embarrassingly early" from "correct today, would need a rewrite only at real Instagram-tier volume."
 
 ---
@@ -87,6 +89,22 @@
 
 - `NominatimGeocodingService`'s self-imposed 1 req/sec throttle and `OsrmRoutingService`'s public OSRM demo server (confirmed in the 2026-08-09 route-geometry audit, `lib/core/maps/CLAUDE.md`) are free/evaluation-tier services with no production SLA. Not re-derived here — carried forward as still true.
 
+### [SCALE-013] `itinerary_posts` ended up with two overlapping rate-limit triggers
+
+- **Status:** ✅ Fixed (2026-08-09, second pass) — `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql`. **Not yet run against the live database.**
+- **Found by:** re-checking the SCALE-003 fix itself, not a fresh area.
+- **Cause:** The first pass's SCALE-003 write-up said "no rate limiting on likes/follows/posts" and added `itinerary_posts_rate_limit` (a 20/hour cap) via stage33 — without noticing `itinerary_posts` already had `guard_publish_rate_limit` (a 30-second cooldown) from stage23. Neither was wrong on its own — both are `BEFORE INSERT` triggers doing an index-backed `SELECT ... WHERE author_id = ... AND created_at > ...` against `itinerary_posts_author_id_idx` — but every publish paid for two near-identical index range scans instead of one, and the schema was left with two separate rate-limit mechanisms on the same table for a future reader to reconcile. Low severity (both checks are cheap), but a real, avoidable redundancy, and worth correcting the original finding's claim that no protection existed at all for posts.
+- **Fix applied:** Folded the hourly cap into `guard_publish_rate_limit` (the function stage23's trigger already calls) and dropped stage33's separate trigger/function. One trigger, one function, both checks.
+
+### [SCALE-014] `PostFeedNotifier`'s "Load more" accumulates every loaded page in memory forever
+
+- **Status:** 📋 Documented, not fixed — a product/UX trade-off, not something to decide unilaterally.
+- **Found by:** re-reading the SCALE-009 pagination fix itself, since it's new code the first pass never had a chance to scrutinize.
+- **Location:** `PostFeedNotifier.loadMore()`, `lib/features/social/presentation/providers/social_provider.dart`.
+- **Cause:** `state = PostFeedLoaded([...current.posts, ...nextPage], ...)` — every "Load more" tap concatenates onto the existing list, and nothing ever evicts earlier pages. `DiscoverPage`'s `ListView.separated` still renders lazily (only on-screen `PostCard`s get built), so this isn't a UI-jank problem — it's Dart-heap memory for every `ItineraryPost` (each carrying its full snapshotted `items`/`segments`) staying resident for as long as the provider lives.
+- **Breaks at:** a user would need to page through hundreds of "Load more" taps in one session before this meaningfully mattered — a real but distant threshold, not urgent at any scale this app is actually at.
+- **Standard fix pattern, if it ever becomes real:** cap the in-memory window (drop the oldest page once N pages are loaded) or move to a proper virtualized/windowed list controller. Not done here because it trades away simple, correct "everything you've scrolled past stays visible if you scroll back up" behavior for a problem that doesn't exist yet — exactly the kind of premature infrastructure investment the rest of this audit argues against building too early.
+
 ---
 
 ## Verdict
@@ -101,6 +119,18 @@ It would **not** reach real Instagram-tier scale (hundreds of millions of users,
 
 Everything else in this audit (SCALE-003 through SCALE-009, SCALE-011, SCALE-012) is either a known, already-flagged, low-effort fix — SCALE-001, 003, 004, 008, 009 are now fixed, and SCALE-005 is code-complete pending an ops toggle — or simply not a live problem at this app's actual data shapes (trip-sized groups, not public-broadcast-sized audiences). Building for Instagram-scale load today, before there's Instagram-scale traffic, would itself be a mistake — the standard advice (add read replicas/connection pooling first, then queue infrastructure, then counter/fan-out redesigns, roughly in that order of need) holds here.
 
+## Second-pass confirmations (2026-08-09) — checked, not just assumed
+
+A few things worth confirming explicitly rather than re-deriving from scratch each audit, since they held up under closer inspection:
+
+- **The RLS helper functions from stage31** (`is_org_member`, `is_org_admin`, and siblings) **are correctly marked `stable`**, letting Postgres's planner treat them efficiently within a single query rather than as opaque volatile calls.
+- **The organization/work-mode schema (stage28-30) is thoroughly indexed** — every FK lookup pattern the app actually queries (`org_members` by `org_id`, `org_cost_fields` by `org_id`, `org_cost_field_options` by `field_id`) is backed by an index, almost entirely *implicitly* via `unique (org_id, ...)`-style constraints rather than a hand-added `create index`. This is exactly the "real join table with proper indexes" pattern SCALE-006 already credited it for — confirmed correct on a second, closer look, not just asserted.
+- **`sync_post_like_count` (SCALE-001) was the only synchronous shared-counter hot-row pattern anywhere in the schema** — checked all 34 migrations for the same shape (`for each row execute function` triggers doing an `UPDATE ... SET x = x ± 1` against a row other than the one being written) and found nothing else like it. Chat's read-receipt tracking, for comparison, uses per-row appends (an array column + a `message_reads` table), not a shared counter — no equivalent risk there.
+
 ## Verification (2026-08-09 remediation pass)
 
 `flutter analyze --no-fatal-infos` — 144 issues, all info-level, zero warnings/errors. `flutter test` — 577/577 passing (35 new tests: pagination/rate-limit-adjacent repository and provider coverage, plus `resizedImageUrl`/`transformObjectUrl`). New migration `docs/supabase_migrations/stage33_social_feed_scale.sql` — ✅ run against the live database (2026-08-09). SCALE-001/003/004/008/009's fixes are now live in production; SCALE-005 (image resizing) is still gated off client-side behind `kImageResizingEnabled = false` regardless of the migration, per that finding's own note.
+
+## Verification (2026-08-09 second pass)
+
+New migration `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql` (SCALE-013) — SQL-only change, no Dart touched, so no analyze/test delta to report; **not yet run against the live database.**
