@@ -2,12 +2,12 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kumo_claude/core/error/exception.dart';
 import 'package:kumo_claude/core/error/failure.dart';
+import 'package:kumo_claude/features/itinerary/data/models/itinerary_model.dart';
+import 'package:kumo_claude/features/itinerary/domain/entities/travel_itinerary.dart';
 import 'package:kumo_claude/features/social/data/datasources/social_remote_datasource.dart';
+import 'package:kumo_claude/features/social/data/models/itinerary_post_model.dart';
 import 'package:kumo_claude/features/social/data/repositories/social_repository_impl.dart';
 import 'package:kumo_claude/features/social/domain/entities/follow_stats.dart';
-import 'package:kumo_claude/features/itinerary/domain/entities/travel_itinerary.dart';
-import 'package:kumo_claude/features/social/data/models/itinerary_post_model.dart';
-import 'package:kumo_claude/features/itinerary/data/models/itinerary_model.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSocialRemoteDataSource extends Mock
