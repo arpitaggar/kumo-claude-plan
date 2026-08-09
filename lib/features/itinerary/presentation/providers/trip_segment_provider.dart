@@ -84,9 +84,35 @@ class FetchTripSegmentRouteGeometry {
 
   /// Fetches [segment]'s real road/footpath geometry via whichever routing
   /// backend matches the active map engine, and caches it on the segment
-  /// row. A no-op if the mode isn't routable or no route could be found —
-  /// see `isRoutableMode`/`RoutingService`'s null-on-failure contract.
+  /// row. A no-op (after the clear below) if the mode isn't routable or no
+  /// route could be found — see `isRoutableMode`/`RoutingService`'s
+  /// null-on-failure contract.
   Future<void> call(TripSegment segment) async {
+    // [segment] may already carry a cached [TripSegment.routeGeometry] from
+    // *before* whatever just changed (an edited origin/destination/mode) —
+    // `TripSegment.copyWith` can't null it out (its `??` pattern always
+    // falls back to the old value), and `updateSegment` writes the full row
+    // back including that stale field, so the caller's save path can't have
+    // cleared it either. Left alone, the Route tab would keep drawing a
+    // routed path for the *previous* origin/destination — not just briefly
+    // while this fetch is in flight, but permanently if the fetch below
+    // fails or the mode is no longer routable. Clearing first makes
+    // `_geoPath`'s straight/curved fallback the visible state in the
+    // meantime, which is always at least geometrically consistent with the
+    // segment's current origin/destination, unlike a stale routed path.
+    if (segment.routeGeometry != null) {
+      final clearResult = await _ref
+          .read(tripSegmentRepositoryProvider)
+          .clearRouteGeometry(segment.id);
+      clearResult.fold(
+        (failure) => AppLogger.warning(
+          'Failed to clear stale route geometry for segment ${segment.id}: '
+          '${failure.message}',
+        ),
+        (_) {},
+      );
+    }
+
     if (!isRoutableMode(segment.mode)) {
       return;
     }

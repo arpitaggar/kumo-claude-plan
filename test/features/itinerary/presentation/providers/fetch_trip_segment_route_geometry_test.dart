@@ -67,6 +67,68 @@ void main() {
       verifyNever(() => repository.updateRouteGeometry(any(), any()));
     });
 
+    test('clears a stale cached geometry before refetching, so an edit that '
+        'changes origin/destination/mode never leaves the previous route '
+        'looking valid for the new one', () async {
+      when(
+        () => repository.clearRouteGeometry(any()),
+      ).thenAnswer((_) async => const Right(null));
+      when(
+        () => routingService.route(
+          origin: any(named: 'origin'),
+          destination: any(named: 'destination'),
+          mode: any(named: 'mode'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final withStaleGeometry = segment.copyWith(
+        routeGeometry: const [(18.7883, 98.9853), (19.3583, 98.4400)],
+      );
+      final fetch = container.read(fetchTripSegmentRouteGeometryProvider);
+      await fetch(withStaleGeometry);
+
+      verify(() => repository.clearRouteGeometry('seg-1')).called(1);
+    });
+
+    test('clears a stale cached geometry even when the new mode is not '
+        'routable, instead of leaving the old road path behind', () async {
+      when(
+        () => repository.clearRouteGeometry(any()),
+      ).thenAnswer((_) async => const Right(null));
+
+      final staleThenFlight = segment.copyWith(
+        mode: TransportMode.flight,
+        routeGeometry: const [(18.7883, 98.9853), (19.3583, 98.4400)],
+      );
+      final fetch = container.read(fetchTripSegmentRouteGeometryProvider);
+      await fetch(staleThenFlight);
+
+      verify(() => repository.clearRouteGeometry('seg-1')).called(1);
+      verifyNever(
+        () => routingService.route(
+          origin: any(named: 'origin'),
+          destination: any(named: 'destination'),
+          mode: any(named: 'mode'),
+        ),
+      );
+    });
+
+    test('does not call clearRouteGeometry when there is nothing cached '
+        'yet (fresh add / first-time backfill)', () async {
+      when(
+        () => routingService.route(
+          origin: any(named: 'origin'),
+          destination: any(named: 'destination'),
+          mode: any(named: 'mode'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final fetch = container.read(fetchTripSegmentRouteGeometryProvider);
+      await fetch(segment);
+
+      verifyNever(() => repository.clearRouteGeometry(any()));
+    });
+
     test('does not write to the repository when the routing service finds '
         'no route', () async {
       when(

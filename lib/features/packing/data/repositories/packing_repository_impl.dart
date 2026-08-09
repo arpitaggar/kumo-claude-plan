@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/exception.dart';
@@ -16,10 +18,16 @@ class PackingRepositoryImpl implements PackingRepository {
   Stream<Either<Failure, List<PackingItem>>> watchItems(String itineraryId) =>
       dataSource
           .watchItems(itineraryId)
-          .map<Either<Failure, List<PackingItem>>>(Right.new)
-          .handleError(
-            (Object e) =>
-                Left<Failure, List<PackingItem>>(ServerFailure(e.toString())),
+          .transform(
+            // `Stream.handleError`'s callback return value is silently
+            // discarded — it only suppresses the error, it can't inject a
+            // replacement event. A `StreamTransformer` sink is the only way to
+            // turn an upstream stream error into a `Left(...)` value.
+            StreamTransformer.fromHandlers(
+              handleData: (data, sink) => sink.add(Right(data)),
+              handleError: (error, stackTrace, sink) =>
+                  sink.add(Left(ServerFailure(error.toString()))),
+            ),
           );
 
   @override

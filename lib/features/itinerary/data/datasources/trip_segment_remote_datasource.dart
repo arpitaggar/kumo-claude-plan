@@ -19,6 +19,13 @@ abstract class TripSegmentRemoteDataSource {
     List<(double, double)> geometry,
   );
 
+  /// Patches only `route_geometry` back to null — used when a segment's
+  /// mode/origin/destination changes, so a stale routed path (fetched for
+  /// the *previous* origin/destination/profile) doesn't keep being drawn
+  /// until the new fetch completes or fails. Same narrow-patch rationale as
+  /// [updateRouteGeometry].
+  Future<void> clearRouteGeometry(String segmentId);
+
   /// Patches only `is_visible` — same rationale as [updateRouteGeometry]:
   /// a plain map-display toggle shouldn't risk clobbering a concurrent edit
   /// to the rest of the segment.
@@ -107,6 +114,20 @@ class TripSegmentRemoteDataSourceImpl implements TripSegmentRemoteDataSource {
               for (final (lat, lng) in geometry) [lat, lng],
             ],
           })
+          .eq('id', segmentId);
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> clearRouteGeometry(String segmentId) async {
+    try {
+      await KumoSupabaseClient.client
+          .from(_table)
+          .update({'route_geometry': null})
           .eq('id', segmentId);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);

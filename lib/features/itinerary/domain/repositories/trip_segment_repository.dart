@@ -26,6 +26,10 @@ abstract class TripSegmentRepository {
     List<(double, double)> geometry,
   );
 
+  /// Clears the segment's cached routed geometry back to null — see
+  /// `TripSegmentRemoteDataSource.clearRouteGeometry`.
+  Future<Either<Failure, void>> clearRouteGeometry(String segmentId);
+
   /// Patches only the segment's `isVisible` map-display flag — see
   /// `TripSegmentRemoteDataSource.setVisibility`.
   Future<Either<Failure, void>> setSegmentVisibility(

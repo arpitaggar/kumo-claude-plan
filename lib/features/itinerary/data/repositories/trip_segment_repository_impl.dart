@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/exception.dart';
@@ -17,12 +19,21 @@ class TripSegmentRepositoryImpl implements TripSegmentRepository {
     String itineraryId,
   ) => dataSource
       .watchSegments(itineraryId)
-      .map<Either<Failure, List<TripSegment>>>(Right.new)
-      .handleError(
-        (Object e) => Left(
-          e is ServerException
-              ? ServerFailure(e.message)
-              : UnexpectedFailure(e.toString()),
+      .transform(
+        // `Stream.handleError`'s callback return value is silently discarded —
+        // it only suppresses the error, it can't inject a replacement event.
+        // A `StreamTransformer` sink is the only way to turn an upstream stream
+        // error into a `Left(...)` value the rest of the app can actually see
+        // (e.g. `tripSegmentsStreamProvider`'s `.fold` downstream).
+        StreamTransformer.fromHandlers(
+          handleData: (data, sink) => sink.add(Right(data)),
+          handleError: (error, stackTrace, sink) => sink.add(
+            Left(
+              error is ServerException
+                  ? ServerFailure(error.message)
+                  : UnexpectedFailure(error.toString()),
+            ),
+          ),
         ),
       );
 
@@ -92,6 +103,18 @@ class TripSegmentRepositoryImpl implements TripSegmentRepository {
   ) async {
     try {
       await dataSource.updateRouteGeometry(segmentId, geometry);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> clearRouteGeometry(String segmentId) async {
+    try {
+      await dataSource.clearRouteGeometry(segmentId);
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
