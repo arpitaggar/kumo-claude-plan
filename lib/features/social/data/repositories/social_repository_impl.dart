@@ -44,12 +44,16 @@ class SocialRepositoryImpl implements SocialRepository {
   @override
   Future<Either<Failure, List<ItineraryPost>>> fetchExplore({
     String? query,
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
   }) async {
     try {
       final currentUserId = _remoteDataSource.currentUserId;
       final result = await _remoteDataSource.fetchExplore(
         currentUserId: currentUserId,
         query: query,
+        before: before,
+        limit: limit,
       );
       return Right(result);
     } on ServerException catch (e) {
@@ -64,10 +68,14 @@ class SocialRepositoryImpl implements SocialRepository {
   @override
   Future<Either<Failure, List<ItineraryPost>>> fetchFeed({
     required String currentUserId,
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
   }) async {
     try {
       final result = await _remoteDataSource.fetchFeed(
         currentUserId: currentUserId,
+        before: before,
+        limit: limit,
       );
       return Right(result);
     } on ServerException catch (e) {

@@ -11,5 +11,11 @@ class FetchFollowingFeedUseCase {
 
   Future<Either<Failure, List<ItineraryPost>>> call({
     required String currentUserId,
-  }) => _repository.fetchFeed(currentUserId: currentUserId);
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
+  }) => _repository.fetchFeed(
+    currentUserId: currentUserId,
+    before: before,
+    limit: limit,
+  );
 }

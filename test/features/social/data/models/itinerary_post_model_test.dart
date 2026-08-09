@@ -39,7 +39,12 @@ void main() {
     'end_date': '2026-06-07T00:00:00.000Z',
     'theme_key': 'sakura',
     'currency_code': 'JPY',
-    'like_count': 4,
+    // PostgREST's embedded-resource count syntax (`post_likes(count)`, see
+    // stage33's migration and SocialRemoteDataSourceImpl._postSelect) —
+    // like_count is no longer a stored column.
+    'post_likes': [
+      {'count': 4},
+    ],
     'created_at': '2026-06-10T00:00:00.000Z',
     'snapshot': {
       'items': [
@@ -116,6 +121,23 @@ void main() {
 
       expect(post.forkedFromPostId, isNull);
       expect(post.authorAvatarUrl, isNull);
+    });
+
+    test('defaults likeCount to 0 when post_likes wasn\'t embedded (e.g. '
+        'the insert-and-return row from publishItinerary)', () {
+      final json = Map<String, dynamic>.from(fullJson)..remove('post_likes');
+      final post = ItineraryPostModel.fromJson(json);
+
+      expect(post.likeCount, 0);
+    });
+
+    test('defaults likeCount to 0 when post_likes is an empty list (no '
+        'likes yet)', () {
+      final json = Map<String, dynamic>.from(fullJson)
+        ..['post_likes'] = <Map<String, dynamic>>[];
+      final post = ItineraryPostModel.fromJson(json);
+
+      expect(post.likeCount, 0);
     });
 
     test('handles an empty snapshot (no items/segments)', () {

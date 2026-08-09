@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/network/supabase_image_url.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../itinerary/domain/entities/trip_theme.dart';
@@ -49,7 +50,12 @@ class PostCard extends StatelessWidget {
                       CircleAvatar(
                         radius: 14,
                         backgroundImage: post.authorAvatarUrl != null
-                            ? NetworkImage(post.authorAvatarUrl!)
+                            ? NetworkImage(
+                                resizedImageUrl(
+                                  post.authorAvatarUrl,
+                                  width: 48,
+                                ),
+                              )
                             : null,
                         child: post.authorAvatarUrl == null
                             ? Text(

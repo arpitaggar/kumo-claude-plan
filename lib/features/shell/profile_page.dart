@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../config/theme_provider.dart';
 import '../../core/maps/kumo_map_provider.dart';
+import '../../core/network/supabase_image_url.dart';
 import '../../core/premium/premium_feature.dart';
 import '../../core/premium/premium_providers.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
@@ -110,7 +111,9 @@ class ProfilePage extends ConsumerWidget {
                   radius: 44,
                   backgroundColor: context.colorScheme.primaryContainer,
                   backgroundImage: user?.avatarUrl != null
-                      ? NetworkImage(user!.avatarUrl!)
+                      ? NetworkImage(
+                          resizedImageUrl(user!.avatarUrl, width: 120),
+                        )
                       : null,
                   child: user?.avatarUrl == null
                       ? Text(

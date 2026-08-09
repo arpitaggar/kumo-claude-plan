@@ -116,9 +116,11 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
     await ref
         .read(toggleLikeUseCaseProvider)
         .call(postId: post.id, userId: auth.user.id, like: !post.likedByMe);
-    ref
-      ..invalidate(explorePostsProvider(_query))
-      ..invalidate(followingFeedProvider);
+    // .refresh() re-fetches the first page in place rather than dropping
+    // back to a full-screen loading state (which .invalidate() would do,
+    // and would also throw away any pages loaded via "Load more").
+    await ref.read(explorePostsProvider(_query).notifier).refresh();
+    await ref.read(followingFeedProvider.notifier).refresh();
   }
 
   @override
@@ -175,29 +177,39 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
               Expanded(
                 child: Consumer(
                   builder: (context, ref, _) {
-                    final postsAsync = ref.watch(explorePostsProvider(_query));
-                    return postsAsync.when(
-                      loading: () => Center(
+                    final feedState = ref.watch(explorePostsProvider(_query));
+                    return switch (feedState) {
+                      PostFeedLoading() => Center(
                         child: CircularProgressIndicator(
                           color: context.colorScheme.primary,
                         ),
                       ),
-                      error: (e, _) => _ErrorView(
-                        message: e.toString(),
+                      PostFeedError(:final message) => _ErrorView(
+                        message: message,
                         onRetry: () =>
                             ref.invalidate(explorePostsProvider(_query)),
                       ),
-                      data: (posts) => posts.isEmpty
-                          ? _EmptyState(
-                              hasQuery: _query != null,
-                              followingTab: false,
-                            )
-                          : _PostList(
-                              posts: posts,
-                              onLike: (p) => _toggleLike(ref, p),
-                              onFork: (p) => _fork(context, ref, p),
-                            ),
-                    );
+                      PostFeedLoaded(:final posts) when posts.isEmpty =>
+                        _EmptyState(
+                          hasQuery: _query != null,
+                          followingTab: false,
+                        ),
+                      PostFeedLoaded(
+                        :final posts,
+                        :final hasMore,
+                        :final isLoadingMore,
+                      ) =>
+                        _PostList(
+                          posts: posts,
+                          hasMore: hasMore,
+                          isLoadingMore: isLoadingMore,
+                          onLike: (p) => _toggleLike(ref, p),
+                          onFork: (p) => _fork(context, ref, p),
+                          onLoadMore: () => ref
+                              .read(explorePostsProvider(_query).notifier)
+                              .loadMore(),
+                        ),
+                    };
                   },
                 ),
               ),
@@ -205,25 +217,34 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
           ),
           Consumer(
             builder: (context, ref, _) {
-              final postsAsync = ref.watch(followingFeedProvider);
-              return postsAsync.when(
-                loading: () => Center(
+              final feedState = ref.watch(followingFeedProvider);
+              return switch (feedState) {
+                PostFeedLoading() => Center(
                   child: CircularProgressIndicator(
                     color: context.colorScheme.primary,
                   ),
                 ),
-                error: (e, _) => _ErrorView(
-                  message: e.toString(),
+                PostFeedError(:final message) => _ErrorView(
+                  message: message,
                   onRetry: () => ref.invalidate(followingFeedProvider),
                 ),
-                data: (posts) => posts.isEmpty
-                    ? const _EmptyState(hasQuery: false, followingTab: true)
-                    : _PostList(
-                        posts: posts,
-                        onLike: (p) => _toggleLike(ref, p),
-                        onFork: (p) => _fork(context, ref, p),
-                      ),
-              );
+                PostFeedLoaded(:final posts) when posts.isEmpty =>
+                  const _EmptyState(hasQuery: false, followingTab: true),
+                PostFeedLoaded(
+                  :final posts,
+                  :final hasMore,
+                  :final isLoadingMore,
+                ) =>
+                  _PostList(
+                    posts: posts,
+                    hasMore: hasMore,
+                    isLoadingMore: isLoadingMore,
+                    onLike: (p) => _toggleLike(ref, p),
+                    onFork: (p) => _fork(context, ref, p),
+                    onLoadMore: () =>
+                        ref.read(followingFeedProvider.notifier).loadMore(),
+                  ),
+              };
             },
           ),
         ],
@@ -237,20 +258,31 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
 class _PostList extends StatelessWidget {
   const _PostList({
     required this.posts,
+    required this.hasMore,
+    required this.isLoadingMore,
     required this.onLike,
     required this.onFork,
+    required this.onLoadMore,
   });
 
   final List<ItineraryPost> posts;
+  final bool hasMore;
+  final bool isLoadingMore;
   final void Function(ItineraryPost post) onLike;
   final void Function(ItineraryPost post) onFork;
+  final VoidCallback onLoadMore;
 
   @override
   Widget build(BuildContext context) => ListView.separated(
     padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
-    itemCount: posts.length,
+    // +1 for the trailing "Load more" footer row, shown whenever there's a
+    // next page to fetch (or it's already in flight).
+    itemCount: posts.length + (hasMore ? 1 : 0),
     separatorBuilder: (_, _) => const SizedBox(height: 12),
     itemBuilder: (context, i) {
+      if (i == posts.length) {
+        return _LoadMoreFooter(isLoading: isLoadingMore, onPressed: onLoadMore);
+      }
       final post = posts[i];
       return PostCard(
         post: post,
@@ -259,6 +291,30 @@ class _PostList extends StatelessWidget {
         onFork: () => onFork(post),
       );
     },
+  );
+}
+
+class _LoadMoreFooter extends StatelessWidget {
+  const _LoadMoreFooter({required this.isLoading, required this.onPressed});
+
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: isLoading
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: context.colorScheme.primary,
+              ),
+            )
+          : TextButton(onPressed: onPressed, child: const Text('Load more')),
+    ),
   );
 }
 

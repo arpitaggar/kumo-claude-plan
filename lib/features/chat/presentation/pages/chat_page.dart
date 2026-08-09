@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/network/supabase_client.dart';
+import '../../../../core/network/supabase_image_url.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -923,7 +924,9 @@ class _ImageAttachmentBubble extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 220, minWidth: 160),
         child: Image.network(
-          attachment.url,
+          // Bubble thumbnail only — tapping opens _FullScreenImageViewer at
+          // full resolution below, unresized.
+          resizedImageUrl(attachment.url, width: 360),
           fit: BoxFit.cover,
           loadingBuilder: (context, child, progress) {
             if (progress == null) {
@@ -1209,7 +1212,7 @@ class _ReadReceiptRow extends StatelessWidget {
     leading: CircleAvatar(
       radius: 18,
       backgroundImage: receipt.avatarUrl != null
-          ? NetworkImage(receipt.avatarUrl!)
+          ? NetworkImage(resizedImageUrl(receipt.avatarUrl, width: 64))
           : null,
       child: receipt.avatarUrl == null
           ? Text(

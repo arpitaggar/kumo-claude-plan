@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/network/supabase_image_url.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/domain/entities/user_profile.dart';
@@ -140,7 +141,9 @@ class _ProfileBody extends ConsumerWidget {
                 radius: 44,
                 backgroundColor: context.colorScheme.primaryContainer,
                 backgroundImage: profile.avatarUrl != null
-                    ? NetworkImage(profile.avatarUrl!)
+                    ? NetworkImage(
+                        resizedImageUrl(profile.avatarUrl, width: 120),
+                      )
                     : null,
                 child: profile.avatarUrl == null
                     ? Text(

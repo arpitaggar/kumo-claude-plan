@@ -6,6 +6,8 @@ import '../../../../core/network/supabase_client.dart';
 import '../../../itinerary/data/models/itinerary_model.dart';
 import '../../../itinerary/data/models/trip_segment_model.dart';
 import '../../domain/entities/follow_stats.dart';
+import '../../domain/repositories/social_repository.dart'
+    show kSocialFeedPageSize;
 import '../models/itinerary_post_model.dart';
 
 abstract class SocialRemoteDataSource {
@@ -14,12 +16,22 @@ abstract class SocialRemoteDataSource {
 
   Future<ItineraryPostModel> publishItinerary(Map<String, dynamic> insertJson);
 
+  /// [before] fetches the page starting just before that timestamp (i.e.
+  /// `created_at < before`), for keyset pagination — pass the last returned
+  /// post's `createdAt` to fetch the next page. Null fetches the first page.
   Future<List<ItineraryPostModel>> fetchExplore({
     required String currentUserId,
     String? query,
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
   });
 
-  Future<List<ItineraryPostModel>> fetchFeed({required String currentUserId});
+  /// See [fetchExplore]'s [before]/[limit] doc — same keyset pagination.
+  Future<List<ItineraryPostModel>> fetchFeed({
+    required String currentUserId,
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
+  });
 
   Future<List<ItineraryPostModel>> fetchPostsByAuthor({
     required String authorId,
@@ -58,6 +70,16 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
   static const _followsTable = 'follows';
   static const _itinerariesTable = 'itineraries';
   static const _segmentsTable = 'trip_segments';
+
+  /// `like_count` is no longer a stored column (see stage33's migration) —
+  /// counted at read time via PostgREST's embedded-resource count syntax
+  /// instead, so every post-fetching select asks for this.
+  static const _postSelect = '*, post_likes(count)';
+
+  /// A user following more than this many accounts still gets a feed, just
+  /// capped to their most-recently-followed accounts, rather than sending an
+  /// unbounded `IN (...)` list to Postgres on every feed load.
+  static const _maxFolloweesPerFeed = 1000;
 
   @override
   String get currentUserId => KumoSupabaseClient.auth.currentUser?.id ?? '';
@@ -114,29 +136,34 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
   Future<List<ItineraryPostModel>> fetchExplore({
     required String currentUserId,
     String? query,
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
   }) async {
     try {
-      final data = await KumoSupabaseClient.client
+      // Fetch all filters before .order()/.limit() to stay on
+      // PostgrestFilterBuilder (see profile_remote_datasource.dart's
+      // searchByName for the same constraint).
+      var builder = KumoSupabaseClient.client
           .from(_postsTable)
-          .select()
-          .order('created_at', ascending: false)
-          .limit(50);
+          .select(_postSelect);
 
-      var rows = data as List<dynamic>;
       if (query != null && query.isNotEmpty) {
-        final q = query.toLowerCase();
-        rows = rows.where((r) {
-          final row = r as Map<String, dynamic>;
-          final title = (row['title'] as String? ?? '').toLowerCase();
-          final description = (row['description'] as String? ?? '')
-              .toLowerCase();
-          return title.contains(q) || description.contains(q);
-        }).toList();
+        // pg_trgm-backed ILIKE (stage33) searches the whole table, not just
+        // whatever page happens to be fetched — unlike the old client-side
+        // substring filter over a fixed 50-row page.
+        final q = query.trim();
+        builder = builder.or('title.ilike.%$q%,description.ilike.%$q%');
+      }
+      if (before != null) {
+        builder = builder.lt('created_at', before.toIso8601String());
       }
 
-      final ids = rows
-          .map((r) => (r as Map<String, dynamic>)['id'] as String)
-          .toList();
+      final data = await builder
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      final rows = (data as List<dynamic>).cast<Map<String, dynamic>>();
+      final ids = rows.map((r) => r['id'] as String).toList();
       final liked = await _likedPostIds(currentUserId, ids);
       return _mapWithLikes(rows, liked);
     } on sb.PostgrestException catch (e) {
@@ -149,12 +176,16 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
   @override
   Future<List<ItineraryPostModel>> fetchFeed({
     required String currentUserId,
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
   }) async {
     try {
       final followRows = await KumoSupabaseClient.client
           .from(_followsTable)
           .select('followee_id')
-          .eq('follower_id', currentUserId);
+          .eq('follower_id', currentUserId)
+          .order('created_at', ascending: false)
+          .limit(_maxFolloweesPerFeed);
       final followeeIds = (followRows as List<dynamic>)
           .map((r) => (r as Map<String, dynamic>)['followee_id'] as String)
           .toList();
@@ -163,17 +194,20 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
         return [];
       }
 
-      final data = await KumoSupabaseClient.client
+      var builder = KumoSupabaseClient.client
           .from(_postsTable)
-          .select()
-          .inFilter('author_id', followeeIds)
-          .order('created_at', ascending: false)
-          .limit(100);
+          .select(_postSelect)
+          .inFilter('author_id', followeeIds);
+      if (before != null) {
+        builder = builder.lt('created_at', before.toIso8601String());
+      }
 
-      final rows = data as List<dynamic>;
-      final ids = rows
-          .map((r) => (r as Map<String, dynamic>)['id'] as String)
-          .toList();
+      final data = await builder
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      final rows = (data as List<dynamic>).cast<Map<String, dynamic>>();
+      final ids = rows.map((r) => r['id'] as String).toList();
       final liked = await _likedPostIds(currentUserId, ids);
       return _mapWithLikes(rows, liked);
     } on sb.PostgrestException catch (e) {
@@ -191,7 +225,7 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
     try {
       final data = await KumoSupabaseClient.client
           .from(_postsTable)
-          .select()
+          .select(_postSelect)
           .eq('author_id', authorId)
           .order('created_at', ascending: false);
 
@@ -217,7 +251,7 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
     try {
       final postRow = await KumoSupabaseClient.client
           .from(_postsTable)
-          .select()
+          .select(_postSelect)
           .eq('id', postId)
           .single();
       final post = ItineraryPostModel.fromJson(postRow);

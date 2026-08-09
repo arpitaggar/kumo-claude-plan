@@ -54,10 +54,27 @@ class ItineraryPostModel extends ItineraryPost {
       segments: (snapshot['segments'] as List<dynamic>? ?? [])
           .map((s) => TripSegmentModel.fromJson(s as Map<String, dynamic>))
           .toList(),
-      likeCount: (json['like_count'] as num?)?.toInt() ?? 0,
+      likeCount: _likeCountFromJson(json),
       likedByMe: likedByMe,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
+  }
+
+  /// `like_count` is no longer a stored column (stage33's migration dropped
+  /// it to fix a hot-row write-contention problem on popular posts) — it's
+  /// counted at read time instead via PostgREST's embedded-resource count
+  /// syntax, `post_likes(count)`, which comes back as `post_likes:
+  /// [{count: N}]` alongside the row. Falls back to 0 when that embed wasn't
+  /// requested (e.g. `publishItinerary`'s insert-and-return, where the count
+  /// is always 0 for a just-created post anyway).
+  static int _likeCountFromJson(Map<String, dynamic> json) {
+    final embedded = json['post_likes'] as List<dynamic>?;
+    if (embedded == null || embedded.isEmpty) {
+      return 0;
+    }
+    return ((embedded.first as Map<String, dynamic>)['count'] as num?)
+            ?.toInt() ??
+        0;
   }
 
   /// Builds the row to insert when publishing [itinerary] + [segments].

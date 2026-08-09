@@ -6,6 +6,11 @@ import '../../../itinerary/domain/entities/trip_segment.dart';
 import '../entities/follow_stats.dart';
 import '../entities/itinerary_post.dart';
 
+/// Default page size for [SocialRepository.fetchExplore]/[SocialRepository.fetchFeed] —
+/// defined here (domain) rather than in the data layer's datasource, since
+/// the data layer is allowed to depend on domain but never the reverse.
+const kSocialFeedPageSize = 20;
+
 abstract class SocialRepository {
   /// Snapshots [itinerary] + [segments] into a new, immutable [ItineraryPost].
   /// If `itinerary.originPostId` is set, the new post's `forkedFromPostId`
@@ -18,12 +23,22 @@ abstract class SocialRepository {
   });
 
   /// All public posts, newest first, optionally filtered by [query] against
-  /// title/description.
-  Future<Either<Failure, List<ItineraryPost>>> fetchExplore({String? query});
+  /// title/description (server-side search, not limited to whatever page is
+  /// fetched). [before] fetches the page just older than that timestamp —
+  /// pass the last returned post's `createdAt` to load the next page; a
+  /// result shorter than [limit] means there's no next page.
+  Future<Either<Failure, List<ItineraryPost>>> fetchExplore({
+    String? query,
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
+  });
 
-  /// Posts authored by anyone [currentUserId] follows, newest first.
+  /// Posts authored by anyone [currentUserId] follows, newest first. See
+  /// [fetchExplore]'s [before]/[limit] doc for pagination.
   Future<Either<Failure, List<ItineraryPost>>> fetchFeed({
     required String currentUserId,
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
   });
 
   /// All posts authored by [authorId], newest first.

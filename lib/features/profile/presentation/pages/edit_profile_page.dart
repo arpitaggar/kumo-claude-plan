@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/network/supabase_image_url.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -713,7 +714,7 @@ class _AvatarHeader extends StatelessWidget {
             radius: 56,
             backgroundColor: colorScheme.primaryContainer,
             backgroundImage: avatarUrl != null && !uploading
-                ? NetworkImage(avatarUrl!)
+                ? NetworkImage(resizedImageUrl(avatarUrl, width: 150))
                 : null,
             child: uploading
                 ? CircularProgressIndicator(

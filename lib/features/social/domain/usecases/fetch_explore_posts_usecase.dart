@@ -9,6 +9,9 @@ class FetchExplorePostsUseCase {
 
   final SocialRepository _repository;
 
-  Future<Either<Failure, List<ItineraryPost>>> call({String? query}) =>
-      _repository.fetchExplore(query: query);
+  Future<Either<Failure, List<ItineraryPost>>> call({
+    String? query,
+    DateTime? before,
+    int limit = kSocialFeedPageSize,
+  }) => _repository.fetchExplore(query: query, before: before, limit: limit);
 }
