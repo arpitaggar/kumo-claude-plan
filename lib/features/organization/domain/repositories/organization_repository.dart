@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/error/failure.dart';
 import '../entities/org_cost_field.dart';
 import '../entities/org_cost_field_option.dart';
+import '../entities/org_join_code.dart';
 import '../entities/org_member.dart';
 import '../entities/organization.dart';
 import '../entities/pending_expense_approval.dart';
@@ -83,4 +84,38 @@ abstract class OrganizationRepository {
     required String orgId,
     required Map<String, String> selections,
   });
+
+  /// All join codes for [orgId] — active, expired, exhausted, and revoked
+  /// alike (the admin list screen distinguishes them via
+  /// [OrgJoinCode.isActive]). Admin-only server-side (stage35's
+  /// `org_join_codes_admin_select` RLS policy).
+  Future<Either<Failure, List<OrgJoinCode>>> fetchJoinCodes(String orgId);
+
+  /// Generates a new join code scoped to [orgId] and, optionally,
+  /// [costFieldOptionId] (a department). Admin-only — enforced inside the
+  /// `generate_org_join_code` RPC itself (SECURITY DEFINER bypasses RLS,
+  /// so the RPC's own check is the authorization). [role] is restricted to
+  /// [OrgMemberRole.admin]/[OrgMemberRole.member] server-side; a join code
+  /// can never mint an [OrgMemberRole.owner].
+  Future<Either<Failure, OrgJoinCode>> generateJoinCode({
+    required String orgId,
+    required OrgMemberRole role,
+    String? costFieldOptionId,
+    DateTime? expiresAt,
+    int? maxUses,
+  });
+
+  /// Revokes a join code early. Admin-only, enforced inside the RPC.
+  Future<Either<Failure, void>> revokeJoinCode(String codeId);
+
+  /// Redeems [code], adding the *currently authenticated* user to whichever
+  /// organization the code is scoped to — never a client-supplied org or
+  /// user id, both are resolved entirely server-side inside
+  /// `redeem_org_join_code`. Unlike every other method on this interface,
+  /// the caller does not need to already be a member (or even know) of the
+  /// target organization; the code's own validity is the only credential.
+  /// Returns a [ServerFailure] carrying the RPC's own message for every
+  /// rejection reason (invalid/expired/revoked/exhausted/already-a-member),
+  /// since that message is exactly what should be shown to the user.
+  Future<Either<Failure, Organization>> redeemJoinCode(String code);
 }

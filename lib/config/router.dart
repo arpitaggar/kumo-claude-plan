@@ -21,7 +21,9 @@ import '../features/legal/presentation/pages/terms_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../features/organization/presentation/pages/create_organization_page.dart';
+import '../features/organization/presentation/pages/join_organization_page.dart';
 import '../features/organization/presentation/pages/org_cost_fields_settings_page.dart';
+import '../features/organization/presentation/pages/org_join_codes_page.dart';
 import '../features/organization/presentation/pages/org_pending_approvals_page.dart';
 import '../features/organization/presentation/pages/organization_members_page.dart';
 import '../features/organization/presentation/pages/organizations_list_page.dart';
@@ -185,6 +187,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             _slidePage(const CreateOrganizationPage(), state),
       ),
       GoRoute(
+        path: '/organizations/join',
+        pageBuilder: (context, state) =>
+            _slidePage(const JoinOrganizationPage(), state),
+      ),
+      GoRoute(
         path: '/organizations/:id/members',
         pageBuilder: (context, state) => _slidePage(
           OrganizationMembersPage(orgId: state.pathParameters['id']!),
@@ -202,6 +209,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/organizations/:id/cost-fields',
         pageBuilder: (context, state) => _slidePage(
           OrgCostFieldsSettingsPage(orgId: state.pathParameters['id']!),
+          state,
+        ),
+      ),
+      GoRoute(
+        path: '/organizations/:id/join-codes',
+        pageBuilder: (context, state) => _slidePage(
+          OrgJoinCodesPage(orgId: state.pathParameters['id']!),
           state,
         ),
       ),

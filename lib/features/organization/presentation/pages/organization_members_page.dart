@@ -174,6 +174,11 @@ class OrganizationMembersPage extends ConsumerWidget {
             tooltip: 'Cost tracking',
             onPressed: () => context.push('/organizations/$orgId/cost-fields'),
           ),
+          IconButton(
+            icon: const Icon(Icons.qr_code_outlined),
+            tooltip: 'Join codes',
+            onPressed: () => context.push('/organizations/$orgId/join-codes'),
+          ),
         ],
       ),
       body: membersAsync.when(

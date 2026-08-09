@@ -22,6 +22,11 @@ class OrganizationsListPage extends ConsumerWidget {
         title: const Text('Organizations'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.qr_code_scanner_outlined),
+            tooltip: 'Join with code',
+            onPressed: () => context.push('/organizations/join'),
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'New organization',
             onPressed: () => context.push('/organizations/new'),
@@ -56,6 +61,11 @@ class OrganizationsListPage extends ConsumerWidget {
                     FilledButton(
                       onPressed: () => context.push('/organizations/new'),
                       child: const Text('Create one'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => context.push('/organizations/join'),
+                      child: const Text('Have a join code?'),
                     ),
                   ],
                 ),

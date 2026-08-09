@@ -5,6 +5,7 @@ import 'package:kumo_claude/core/error/failure.dart';
 import 'package:kumo_claude/features/organization/data/datasources/organization_remote_datasource.dart';
 import 'package:kumo_claude/features/organization/data/models/org_cost_field_model.dart';
 import 'package:kumo_claude/features/organization/data/models/org_cost_field_option_model.dart';
+import 'package:kumo_claude/features/organization/data/models/org_join_code_model.dart';
 import 'package:kumo_claude/features/organization/data/models/org_member_model.dart';
 import 'package:kumo_claude/features/organization/data/models/organization_model.dart';
 import 'package:kumo_claude/features/organization/data/models/pending_expense_approval_model.dart';
@@ -66,6 +67,16 @@ void main() {
     value: 'Sales',
     code: 'SAL',
     sortOrder: 0,
+  );
+
+  final tJoinCode = OrgJoinCodeModel(
+    id: 'code-1',
+    orgId: 'org-1',
+    role: OrgMemberRole.member,
+    code: 'ABC123XYZ0',
+    usesCount: 0,
+    createdBy: 'user-1',
+    createdAt: DateTime.utc(2026, 1, 1),
   );
 
   setUpAll(() {
@@ -612,5 +623,139 @@ void main() {
         (_) => fail('expected Left'),
       );
     });
+  });
+
+  group('fetchJoinCodes', () {
+    test('returns Right(codes) on success', () async {
+      when(
+        () => dataSource.fetchJoinCodes(any()),
+      ).thenAnswer((_) async => [tJoinCode]);
+
+      final result = await repository.fetchJoinCodes('org-1');
+
+      result.fold(
+        (_) => fail('expected Right'),
+        (codes) => expect(codes, [tJoinCode]),
+      );
+    });
+
+    test('maps ServerException to ServerFailure', () async {
+      when(
+        () => dataSource.fetchJoinCodes(any()),
+      ).thenThrow(ServerException(message: 'DB error'));
+
+      final result = await repository.fetchJoinCodes('org-1');
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('generateJoinCode', () {
+    test('returns Right(code) on success', () async {
+      when(
+        () => dataSource.generateJoinCode(
+          orgId: any(named: 'orgId'),
+          role: any(named: 'role'),
+          costFieldOptionId: any(named: 'costFieldOptionId'),
+          expiresAt: any(named: 'expiresAt'),
+          maxUses: any(named: 'maxUses'),
+        ),
+      ).thenAnswer((_) async => tJoinCode);
+
+      final result = await repository.generateJoinCode(
+        orgId: 'org-1',
+        role: OrgMemberRole.member,
+      );
+
+      result.fold(
+        (_) => fail('expected Right'),
+        (code) => expect(code, tJoinCode),
+      );
+    });
+
+    test(
+      'maps ServerException to ServerFailure (e.g. caller is not an admin)',
+      () async {
+        when(
+          () => dataSource.generateJoinCode(
+            orgId: any(named: 'orgId'),
+            role: any(named: 'role'),
+            costFieldOptionId: any(named: 'costFieldOptionId'),
+            expiresAt: any(named: 'expiresAt'),
+            maxUses: any(named: 'maxUses'),
+          ),
+        ).thenThrow(ServerException(message: 'Only org admins can do this'));
+
+        final result = await repository.generateJoinCode(
+          orgId: 'org-1',
+          role: OrgMemberRole.member,
+        );
+
+        result.fold(
+          (f) => expect(f, isA<ServerFailure>()),
+          (_) => fail('expected Left'),
+        );
+      },
+    );
+  });
+
+  group('revokeJoinCode', () {
+    test('returns Right(null) on success', () async {
+      when(() => dataSource.revokeJoinCode(any())).thenAnswer((_) async {});
+
+      final result = await repository.revokeJoinCode('code-1');
+
+      expect(result, const Right<Failure, void>(null));
+    });
+
+    test('maps ServerException to ServerFailure', () async {
+      when(
+        () => dataSource.revokeJoinCode(any()),
+      ).thenThrow(ServerException(message: 'Only org admins can do this'));
+
+      final result = await repository.revokeJoinCode('code-1');
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('redeemJoinCode', () {
+    test('returns Right(org) on success', () async {
+      when(
+        () => dataSource.redeemJoinCode(any()),
+      ).thenAnswer((_) async => tOrg);
+
+      final result = await repository.redeemJoinCode('ABC123XYZ0');
+
+      result.fold((_) => fail('expected Right'), (org) => expect(org, tOrg));
+    });
+
+    for (final message in [
+      'This code is invalid',
+      'This code has been revoked',
+      'This code has expired',
+      'This code has already been used the maximum number of times',
+      'You are already a member of this organization',
+    ]) {
+      test('passes the RPC-raised message "$message" through unchanged as a '
+          'ServerFailure', () async {
+        when(
+          () => dataSource.redeemJoinCode(any()),
+        ).thenThrow(ServerException(message: message));
+
+        final result = await repository.redeemJoinCode('ABC123XYZ0');
+
+        result.fold(
+          (f) => expect(f.message, message),
+          (_) => fail('expected Left'),
+        );
+      });
+    }
   });
 }

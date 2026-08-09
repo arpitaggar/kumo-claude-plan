@@ -27,23 +27,19 @@ void main() {
     verify(() => mockRepo.deleteCostFieldOption('opt-1')).called(1);
   });
 
-  test(
-    'propagates a friendly ServerFailure when the option is still in use',
-    () async {
-      when(() => mockRepo.deleteCostFieldOption(any())).thenAnswer(
-        (_) async => const Left(
-          ServerFailure(
-            "This value is used by an existing trip and can't be deleted",
-          ),
-        ),
-      );
+  test('propagates a friendly ServerFailure when the option is still in use — '
+      'by a trip assignment or an active join code (stage35)', () async {
+    when(() => mockRepo.deleteCostFieldOption(any())).thenAnswer(
+      (_) async => const Left(
+        ServerFailure("This value is in use and can't be deleted"),
+      ),
+    );
 
-      final result = await useCase('opt-1');
+    final result = await useCase('opt-1');
 
-      result.fold(
-        (f) => expect(f.message, contains('existing trip')),
-        (_) => fail('expected Left'),
-      );
-    },
-  );
+    result.fold(
+      (f) => expect(f.message, contains('in use')),
+      (_) => fail('expected Left'),
+    );
+  });
 }

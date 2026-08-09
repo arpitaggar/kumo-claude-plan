@@ -4,6 +4,7 @@ import '../../../../core/error/exception.dart';
 import '../../../../core/error/failure.dart';
 import '../../domain/entities/org_cost_field.dart';
 import '../../domain/entities/org_cost_field_option.dart';
+import '../../domain/entities/org_join_code.dart';
 import '../../domain/entities/org_member.dart';
 import '../../domain/entities/organization.dart';
 import '../../domain/entities/pending_expense_approval.dart';
@@ -237,6 +238,68 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
         selections: selections,
       );
       return Right(code);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<OrgJoinCode>>> fetchJoinCodes(
+    String orgId,
+  ) async {
+    try {
+      final codes = await dataSource.fetchJoinCodes(orgId);
+      return Right(codes);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, OrgJoinCode>> generateJoinCode({
+    required String orgId,
+    required OrgMemberRole role,
+    String? costFieldOptionId,
+    DateTime? expiresAt,
+    int? maxUses,
+  }) async {
+    try {
+      final code = await dataSource.generateJoinCode(
+        orgId: orgId,
+        role: role,
+        costFieldOptionId: costFieldOptionId,
+        expiresAt: expiresAt,
+        maxUses: maxUses,
+      );
+      return Right(code);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> revokeJoinCode(String codeId) async {
+    try {
+      await dataSource.revokeJoinCode(codeId);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Organization>> redeemJoinCode(String code) async {
+    try {
+      final org = await dataSource.redeemJoinCode(code);
+      return Right(org);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {

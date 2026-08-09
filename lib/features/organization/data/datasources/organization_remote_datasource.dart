@@ -6,6 +6,7 @@ import '../../domain/entities/org_cost_field.dart';
 import '../../domain/entities/org_member.dart';
 import '../models/org_cost_field_model.dart';
 import '../models/org_cost_field_option_model.dart';
+import '../models/org_join_code_model.dart';
 import '../models/org_member_model.dart';
 import '../models/organization_model.dart';
 import '../models/pending_expense_approval_model.dart';
@@ -70,6 +71,24 @@ abstract class OrganizationRemoteDataSource {
     required String orgId,
     required Map<String, String> selections,
   });
+
+  Future<List<OrgJoinCodeModel>> fetchJoinCodes(String orgId);
+
+  Future<OrgJoinCodeModel> generateJoinCode({
+    required String orgId,
+    required OrgMemberRole role,
+    String? costFieldOptionId,
+    DateTime? expiresAt,
+    int? maxUses,
+  });
+
+  Future<void> revokeJoinCode(String codeId);
+
+  /// Returns the joined [OrganizationModel]. Throws [ServerException]
+  /// carrying `redeem_org_join_code`'s own raised message for every
+  /// rejection reason (invalid/expired/revoked/exhausted/already-a-member)
+  /// — that message is exactly what should reach the user.
+  Future<OrganizationModel> redeemJoinCode(String code);
 }
 
 class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
@@ -83,6 +102,7 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
   static const _costFieldSourcesTable = 'org_cost_field_sources';
   static const _costFieldsEmbedSelect =
       '*, org_cost_field_options(*), org_cost_field_sources(source_field_id, position)';
+  static const _joinCodesTable = 'org_join_codes';
 
   @override
   Future<OrganizationModel> createOrganization({
@@ -378,9 +398,12 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
           .eq('id', optionId);
     } on sb.PostgrestException catch (e) {
       if (e.code == '23503') {
+        // Was worded for the trip-assignment case only; stage35's
+        // org_join_codes.cost_field_option_id (ON DELETE RESTRICT) can now
+        // also be what's blocking this delete, so the message stays
+        // generic rather than claiming it must be a trip.
         throw ServerException(
-          message:
-              "This value is used by an existing trip and can't be deleted",
+          message: "This value is in use and can't be deleted",
         );
       }
       throw ServerException(message: e.message);
@@ -401,6 +424,86 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
       );
       return result as String?;
     } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<List<OrgJoinCodeModel>> fetchJoinCodes(String orgId) async {
+    try {
+      // A plain table select, not an RPC — org_join_codes_admin_select
+      // (stage35) already scopes this correctly to org admins, and every
+      // column here is something this list screen legitimately needs (see
+      // that RLS policy's own comment on why this doesn't need the
+      // fetch_org_pending_approvals-style RPC wrapper).
+      final rows = await KumoSupabaseClient.client
+          .from(_joinCodesTable)
+          .select()
+          .eq('org_id', orgId)
+          .order('created_at', ascending: false);
+      return rows.map(OrgJoinCodeModel.fromJson).toList();
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<OrgJoinCodeModel> generateJoinCode({
+    required String orgId,
+    required OrgMemberRole role,
+    String? costFieldOptionId,
+    DateTime? expiresAt,
+    int? maxUses,
+  }) async {
+    try {
+      final row = await KumoSupabaseClient.client.rpc(
+        'generate_org_join_code',
+        params: {
+          'p_org_id': orgId,
+          'p_cost_field_option_id': costFieldOptionId,
+          'p_role': role.name,
+          'p_expires_at': expiresAt?.toIso8601String(),
+          'p_max_uses': maxUses,
+        },
+      );
+      return OrgJoinCodeModel.fromJson(row as Map<String, dynamic>);
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> revokeJoinCode(String codeId) async {
+    try {
+      await KumoSupabaseClient.client.rpc(
+        'revoke_org_join_code',
+        params: {'p_code_id': codeId},
+      );
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<OrganizationModel> redeemJoinCode(String code) async {
+    try {
+      final row = await KumoSupabaseClient.client.rpc(
+        'redeem_org_join_code',
+        params: {'p_code': code},
+      );
+      return OrganizationModel.fromJson(row as Map<String, dynamic>);
+    } on sb.PostgrestException catch (e) {
+      // The RPC's raised message (invalid/expired/revoked/exhausted/
+      // already-a-member/rate-limited) IS the display string — passed
+      // through unchanged, same as every other guarded RPC in this app.
       throw ServerException(message: e.message);
     } catch (e) {
       throw UnexpectedException(message: e.toString());

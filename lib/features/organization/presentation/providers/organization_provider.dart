@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/organization_remote_datasource.dart';
 import '../../data/repositories/organization_repository_impl.dart';
 import '../../domain/entities/org_cost_field.dart';
+import '../../domain/entities/org_join_code.dart';
 import '../../domain/entities/org_member.dart';
 import '../../domain/entities/organization.dart';
 import '../../domain/entities/pending_expense_approval.dart';
@@ -13,12 +14,16 @@ import '../../domain/usecases/delete_org_cost_field_option_usecase.dart';
 import '../../domain/usecases/delete_org_cost_field_usecase.dart';
 import '../../domain/usecases/fetch_my_organizations_usecase.dart';
 import '../../domain/usecases/fetch_org_cost_fields_usecase.dart';
+import '../../domain/usecases/fetch_org_join_codes_usecase.dart';
 import '../../domain/usecases/fetch_org_members_usecase.dart';
 import '../../domain/usecases/fetch_pending_expense_approvals_usecase.dart';
+import '../../domain/usecases/generate_org_join_code_usecase.dart';
 import '../../domain/usecases/invite_org_member_usecase.dart';
 import '../../domain/usecases/preview_cost_center_code_usecase.dart';
+import '../../domain/usecases/redeem_org_join_code_usecase.dart';
 import '../../domain/usecases/remove_org_member_usecase.dart';
 import '../../domain/usecases/review_expense_usecase.dart';
+import '../../domain/usecases/revoke_org_join_code_usecase.dart';
 import '../../domain/usecases/update_org_member_role_usecase.dart';
 
 // ---------------------------------------------------------------------------
@@ -111,6 +116,23 @@ final previewCostCenterCodeUseCaseProvider =
       ),
     );
 
+final fetchOrgJoinCodesUseCaseProvider = Provider<FetchOrgJoinCodesUseCase>(
+  (ref) => FetchOrgJoinCodesUseCase(ref.watch(organizationRepositoryProvider)),
+);
+
+final generateOrgJoinCodeUseCaseProvider = Provider<GenerateOrgJoinCodeUseCase>(
+  (ref) =>
+      GenerateOrgJoinCodeUseCase(ref.watch(organizationRepositoryProvider)),
+);
+
+final revokeOrgJoinCodeUseCaseProvider = Provider<RevokeOrgJoinCodeUseCase>(
+  (ref) => RevokeOrgJoinCodeUseCase(ref.watch(organizationRepositoryProvider)),
+);
+
+final redeemOrgJoinCodeUseCaseProvider = Provider<RedeemOrgJoinCodeUseCase>(
+  (ref) => RedeemOrgJoinCodeUseCase(ref.watch(organizationRepositoryProvider)),
+);
+
 // ---------------------------------------------------------------------------
 // Read providers
 // ---------------------------------------------------------------------------
@@ -155,3 +177,15 @@ final orgCostFieldsProvider = FutureProvider.family<List<OrgCostField>, String>(
     return result.fold((f) => throw Exception(f.message), (fields) => fields);
   },
 );
+
+/// An org's join codes (active, expired, exhausted, and revoked alike). No
+/// realtime — an admin-only management screen, refreshed via
+/// `ref.invalidate` after generate/revoke actions, same reasoning as
+/// [orgCostFieldsProvider].
+final orgJoinCodesProvider = FutureProvider.family<List<OrgJoinCode>, String>((
+  ref,
+  orgId,
+) async {
+  final result = await ref.watch(fetchOrgJoinCodesUseCaseProvider).call(orgId);
+  return result.fold((f) => throw Exception(f.message), (codes) => codes);
+});
