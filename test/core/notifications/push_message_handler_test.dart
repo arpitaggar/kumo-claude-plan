@@ -31,5 +31,28 @@ void main() {
         returnsNormally,
       );
     });
+
+    test('does nothing for a social payload with no actorId', () {
+      // Same early-return shape as the tripId case above, but on the
+      // kind: 'social' branch.
+      expect(
+        () => handleIosPushTap(
+          const RemoteMessage(data: {'kind': 'social', 'title': 'hi'}),
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('does not fall through to the chat branch for a social payload', () {
+      // No navigator mounted, so this still can't observe navigation — it
+      // exercises that a social-kind payload short-circuits before ever
+      // reaching the tripId-based chat logic below it.
+      expect(
+        () => handleIosPushTap(
+          const RemoteMessage(data: {'kind': 'social', 'actorId': 'actor-1'}),
+        ),
+        returnsNormally,
+      );
+    });
   });
 }

@@ -18,6 +18,7 @@ import '../features/itinerary/presentation/pages/invite_member_page.dart';
 import '../features/itinerary/presentation/pages/itinerary_detail_page.dart';
 import '../features/legal/presentation/pages/privacy_policy_page.dart';
 import '../features/legal/presentation/pages/terms_page.dart';
+import '../features/notifications/presentation/pages/notifications_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../features/organization/presentation/pages/create_organization_page.dart';
@@ -170,6 +171,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           PublicProfilePage(userId: state.pathParameters['userId']!),
           state,
         ),
+      ),
+      GoRoute(
+        path: '/notifications',
+        pageBuilder: (context, state) =>
+            _slidePage(const NotificationsPage(), state),
       ),
       GoRoute(
         path: '/settings/privacy',

@@ -1,34 +1,30 @@
-// Supabase Edge Function: send-message-push
+// Supabase Edge Function: send-social-push
 //
-// Sends a push notification (FCM HTTP v1 API) to every other member of a
-// trip when a chat message is sent. Invoked directly by the client right
-// after a successful `messages` insert (see
-// ChatRemoteDataSourceImpl.sendMessage) — best-effort, the message itself
-// has already landed regardless of whether this succeeds.
+// Sends a push notification (FCM HTTP v1 API) for a social-feed event —
+// someone liked your post, someone followed you, or someone you follow
+// published a new trip. Invoked directly by the client right after the
+// underlying insert succeeds (SocialRemoteDataSourceImpl.toggleLike /
+// toggleFollow / publishItinerary) — best-effort, the like/follow/post
+// itself has already landed regardless of whether this succeeds. Mirrors
+// send-message-push's structure; see that function for the fuller
+// Android-data-only-vs-iOS-alert rationale, unrepeated here.
 //
-// Android tokens get a data-only payload (no top-level FCM "notification"
-// field) so the Flutter app has full, consistent control over how the
-// notification is displayed via flutter_local_notifications — see
-// lib/core/notifications/push_message_handler.dart.
+// The data payload's `kind: 'social'` + `actorId` fields let the shared
+// client-side handler (lib/core/notifications/push_message_handler.dart)
+// tell this apart from send-message-push's chat payloads and route a tap to
+// `/u/:actorId` instead of a trip's chat.
 //
-// iOS tokens get a real `apns.payload.aps.alert` block instead. Apple gives
-// silent/data-only background pushes no delivery guarantee — in particular
-// they are not delivered once the user force-quits the app — so relying on
-// the app to render its own notification the way Android does would mean
-// iOS chat pushes silently stop working after a force-quit. An alert
-// payload is displayed by the OS directly and doesn't have that problem.
-// Tap handling for it lives in lib/core/notifications/push_message_handler.dart
-// (handleIosPushTap) since flutter_local_notifications is never involved.
+// This function does NOT read from `public.notifications` — it re-derives
+// the recipient(s) itself from the same source tables the DB triggers in
+// stage37_social_notifications.sql read (itinerary_posts/post_likes/
+// follows), the same "never trust the client, re-derive server-side"
+// posture send-message-push already uses for its recipient list.
 //
-// The data payload's `kind: 'chat'` field lets the shared client-side
-// background handler tell this apart from `send-social-push`'s payloads —
-// see that function for the social-activity equivalent.
-//
-// Required secret (set once):
+// Required secret (set once, shared with send-message-push):
 //   supabase secrets set FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}'
 //
 // Deploy:
-//   supabase functions deploy send-message-push
+//   supabase functions deploy send-social-push
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -42,6 +38,12 @@ interface ServiceAccount {
   project_id: string
   client_email: string
   private_key: string
+}
+
+interface Recipient {
+  id: string
+  title: string
+  body: string
 }
 
 serve(async (req) => {
@@ -68,106 +70,133 @@ serve(async (req) => {
       return json({ error: 'Unauthorized' }, 401)
     }
 
-    // ── Parse request & load the message ─────────────────────────────────────
-    const { message_id } = await req.json() as { message_id: string }
-    if (!message_id) {
-      return json({ error: 'message_id is required' }, 400)
+    // ── Parse request ─────────────────────────────────────────────────────
+    const body = await req.json() as {
+      type?: 'like' | 'follow' | 'new_post'
+      post_id?: string
+      followee_id?: string
+    }
+    if (body.type !== 'like' && body.type !== 'follow' && body.type !== 'new_post') {
+      return json({ error: 'type must be like, follow, or new_post' }, 400)
     }
 
-    const { data: message, error: msgErr } = await supabase
-      .from('messages')
-      .select('id, itinerary_id, sender_id, sender_name, content')
-      .eq('id', message_id)
+    const { data: actorProfile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
       .single()
-    if (msgErr || !message) {
-      return json({ error: 'Message not found' }, 404)
+    const actorName = actorProfile?.display_name || 'Someone'
+
+    // ── Resolve recipient(s), re-deriving everything server-side ───────────
+    let recipients: Recipient[] = []
+
+    if (body.type === 'like') {
+      if (!body.post_id) {
+        return json({ error: 'post_id is required' }, 400)
+      }
+      // Confirms the caller actually liked this post (not just claiming to)
+      // — same "caller must be the real actor" check send-message-push does
+      // against message.sender_id.
+      const { data: like } = await supabase
+        .from('post_likes')
+        .select('post_id')
+        .eq('post_id', body.post_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!like) {
+        return json({ error: 'Forbidden' }, 403)
+      }
+      const { data: post } = await supabase
+        .from('itinerary_posts')
+        .select('author_id, title')
+        .eq('id', body.post_id)
+        .single()
+      if (post && post.author_id !== user.id) {
+        recipients = [{
+          id: post.author_id,
+          title: `${actorName} liked your trip`,
+          body: post.title ?? '',
+        }]
+      }
+    } else if (body.type === 'follow') {
+      if (!body.followee_id) {
+        return json({ error: 'followee_id is required' }, 400)
+      }
+      const { data: follow } = await supabase
+        .from('follows')
+        .select('followee_id')
+        .eq('follower_id', user.id)
+        .eq('followee_id', body.followee_id)
+        .maybeSingle()
+      if (!follow) {
+        return json({ error: 'Forbidden' }, 403)
+      }
+      recipients = [{
+        id: body.followee_id,
+        title: `${actorName} started following you`,
+        body: 'Tap to view their profile.',
+      }]
+    } else {
+      // new_post
+      if (!body.post_id) {
+        return json({ error: 'post_id is required' }, 400)
+      }
+      const { data: post } = await supabase
+        .from('itinerary_posts')
+        .select('author_id, title')
+        .eq('id', body.post_id)
+        .single()
+      if (!post || post.author_id !== user.id) {
+        return json({ error: 'Forbidden' }, 403)
+      }
+      // Capped at 1000 most-recently-followed, same bound the DB trigger
+      // (notify_on_new_post) and fetchFeed's follower-list read both use —
+      // see stage37_social_notifications.sql's comment for why.
+      const { data: followers } = await supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('followee_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1000)
+      recipients = (followers ?? []).map((f) => ({
+        id: f.follower_id as string,
+        title: `${actorName} published a new trip`,
+        body: post.title ?? '',
+      }))
     }
-    // The caller must be the message's own sender — prevents spoofing a push
-    // on someone else's behalf.
-    if (message.sender_id !== user.id) {
-      return json({ error: 'Forbidden' }, 403)
-    }
 
-    const { data: itinerary, error: itinErr } = await supabase
-      .from('itineraries')
-      .select('title, owner_id, members')
-      .eq('id', message.itinerary_id)
-      .single()
-    if (itinErr || !itinerary) {
-      return json({ error: 'Itinerary not found' }, 404)
-    }
-
-    const { data: attachments } = await supabase
-      .from('message_attachments')
-      .select('kind')
-      .eq('message_id', message_id)
-
-    // ── Recipients: itinerary owner + members, excluding the sender ─────────
-    // The members JSONB array mixes key casing depending on how the entry was
-    // written: the `handle_new_user` trigger uses `userId`, the Flutter
-    // client's invite flow uses `user_id` (see stage11/stage13 migrations) —
-    // both must be checked or client-invited members silently get no push.
-    const memberIds: string[] = (itinerary.members ?? [])
-      .map((m: { userId?: string; user_id?: string }) => m.userId ?? m.user_id)
-      .filter((id: string | undefined): id is string => !!id)
-    const recipientIds = [...new Set([itinerary.owner_id, ...memberIds])]
-      .filter((id) => id !== message.sender_id)
-
-    if (recipientIds.length === 0) {
+    if (recipients.length === 0) {
       return json({ sent: 0, recipients: 0 })
     }
 
-    // ── Filter by the chat_messages push preference (default enabled) ───────
+    // ── Filter by the social_activity push preference (default enabled) ────
+    const recipientIds = recipients.map((r) => r.id)
     const { data: prefs } = await supabase
       .from('notification_preferences')
       .select('user_id, enabled')
       .in('user_id', recipientIds)
       .eq('channel', 'push')
-      .eq('category', 'chat_messages')
+      .eq('category', 'social_activity')
     const disabled = new Set(
       (prefs ?? []).filter((p) => !p.enabled).map((p) => p.user_id),
     )
-    const enabledRecipients = recipientIds.filter((id) => !disabled.has(id))
+    const enabledRecipients = recipients.filter((r) => !disabled.has(r.id))
     if (enabledRecipients.length === 0) {
       return json({ sent: 0, recipients: 0 })
     }
 
-    // ── Per-recipient preview preference (default shown) ─────────────────────
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, push_message_preview_enabled')
-      .in('id', enabledRecipients)
-    const previewByUser = new Map(
-      (profiles ?? []).map((p) => [
-        p.id,
-        (p.push_message_preview_enabled as boolean | null) ?? true,
-      ]),
-    )
-
-    // ── Device tokens (Android + iOS) ─────────────────────────────────────────
+    // ── Device tokens (Android + iOS) ─────────────────────────────────────
     const { data: tokenRows } = await supabase
       .from('push_tokens')
       .select('user_id, token, platform')
-      .in('user_id', enabledRecipients)
+      .in('user_id', enabledRecipients.map((r) => r.id))
       .in('platform', ['android', 'ios'])
     if (!tokenRows || tokenRows.length === 0) {
       return json({ sent: 0, recipients: enabledRecipients.length })
     }
+    const recipientById = new Map(enabledRecipients.map((r) => [r.id, r]))
 
-    // ── Build the notification body once per preview setting ────────────────
-    const hasImage = (attachments ?? []).some((a) => a.kind === 'image')
-    const hasFile = (attachments ?? []).some((a) => a.kind === 'file')
-    const previewBody = message.content?.trim()
-      ? message.content
-      : hasImage
-        ? '📷 Photo'
-        : hasFile
-          ? '📎 Attachment'
-          : 'New message';
-    const bodyFor = (userId: string) =>
-      (previewByUser.get(userId) ?? true) ? previewBody : 'New message'
-
-    // ── FCM send ──────────────────────────────────────────────────────────────
+    // ── FCM send ──────────────────────────────────────────────────────────
     const serviceAccount = JSON.parse(
       Deno.env.get('FIREBASE_SERVICE_ACCOUNT_KEY') ?? '{}',
     ) as ServiceAccount
@@ -180,12 +209,15 @@ serve(async (req) => {
     let sent = 0
 
     await Promise.all(tokenRows.map(async (row) => {
+      const recipient = recipientById.get(row.user_id)
+      if (!recipient) {
+        return
+      }
       const data = {
-        kind: 'chat',
-        tripId: message.itinerary_id,
-        tripTitle: itinerary.title ?? '',
-        senderName: message.sender_name ?? '',
-        body: bodyFor(row.user_id),
+        kind: 'social',
+        actorId: user.id,
+        title: recipient.title,
+        body: recipient.body,
       }
       const fcmMessage = row.platform === 'ios'
         ? {
@@ -195,7 +227,7 @@ serve(async (req) => {
             headers: { 'apns-priority': '10' },
             payload: {
               aps: {
-                alert: { title: data.tripTitle ? `${data.senderName} · ${data.tripTitle}` : data.senderName, body: data.body },
+                alert: { title: recipient.title, body: recipient.body },
                 sound: 'default',
               },
             },
@@ -248,8 +280,9 @@ function json(body: unknown, status = 200): Response {
 }
 
 // ── Google service-account OAuth2 (RS256-signed JWT bearer assertion) ───────
-// Standard server-to-server auth flow, implemented with Deno's native Web
-// Crypto so no third-party JWT dependency is needed.
+// Identical to send-message-push's copy — kept duplicated rather than
+// shared, matching how this repo's other Edge Functions are each
+// self-contained with no shared-code directory between them.
 
 async function getGoogleAccessToken(account: ServiceAccount): Promise<string> {
   const header = { alg: 'RS256', typ: 'JWT' }

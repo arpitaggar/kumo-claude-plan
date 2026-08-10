@@ -17,6 +17,7 @@ class NotifCategory {
   static const collabUpdates = 'collab_updates';
   static const marketingEngagement = 'marketing_engagement';
   static const chatMessages = 'chat_messages';
+  static const socialActivity = 'social_activity';
 
   static const all = [
     tripInvites,
@@ -24,6 +25,7 @@ class NotifCategory {
     flightAlerts,
     collabUpdates,
     chatMessages,
+    socialActivity,
     marketingEngagement,
   ];
 
@@ -33,6 +35,7 @@ class NotifCategory {
     flightAlerts => 'Flight Alerts',
     collabUpdates => 'Trip Updates',
     chatMessages => 'Chat Messages',
+    socialActivity => 'Likes, Follows & Posts',
     marketingEngagement => 'News & Offers',
     _ => category,
   };

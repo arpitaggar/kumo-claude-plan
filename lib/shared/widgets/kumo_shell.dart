@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/notifications/notification_providers.dart';
 import '../../features/chat/presentation/providers/chat_provider.dart';
+import '../../features/notifications/presentation/providers/notifications_provider.dart';
 import '../extensions/context_extensions.dart';
 import 'offline_banner.dart';
 
@@ -40,6 +41,7 @@ class KumoShell extends ConsumerWidget {
     // it's ready.
     ref
       ..watch(chatMessageWatcherProvider)
+      ..watch(socialNotificationWatcherProvider)
       ..watch(fcmTokenSyncProvider)
       ..listen(notificationServiceProvider, (_, next) {
         next.value?.requestPermissionOnce();

@@ -33,7 +33,7 @@ Must be run in Supabase SQL editor before deploying the corresponding app build.
 - `public.notification_preferences` — `(user_id, channel, category)` PK; owner-all RLS
 
 **Notification channels:** `push`, `email`, `sms`  
-**Notification categories:** `trip_invites`, `expense_activity`, `flight_alerts`, `collab_updates`, `marketing_engagement`  
+**Notification categories:** `trip_invites`, `expense_activity`, `flight_alerts`, `collab_updates`, `marketing_engagement`, plus `chat_messages` (stage19) and `social_activity` (stage37, see `lib/features/notifications/CLAUDE.md`)  
 All default `enabled = true` except `marketing_engagement` (GDPR opt-in → defaults `false`).
 
 #### RPCs

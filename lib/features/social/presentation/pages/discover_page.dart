@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../domain/entities/itinerary_post.dart';
 import '../providers/social_provider.dart';
 import '../widgets/post_card.dart';
@@ -169,6 +170,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
 
   @override
   Widget build(BuildContext context) {
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -181,6 +184,18 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
             color: context.colorScheme.onSurface,
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: () => context.push('/notifications'),
+            icon: unreadCount > 0
+                ? Badge(
+                    label: Text(unreadCount > 9 ? '9+' : '$unreadCount'),
+                    child: const Icon(Icons.notifications_outlined),
+                  )
+                : const Icon(Icons.notifications_outlined),
+            tooltip: 'Activity',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

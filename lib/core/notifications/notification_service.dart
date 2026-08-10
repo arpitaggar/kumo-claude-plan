@@ -4,10 +4,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/router.dart';
 
-/// Wraps [FlutterLocalNotificationsPlugin] for the single notification kind
-/// this app currently shows: a new chat message. Delivery only happens while
-/// the app process is alive (foreground, or briefly backgrounded) — it is
-/// not OS-level push and will not reach a fully-killed app.
+/// Wraps [FlutterLocalNotificationsPlugin] for the two notification kinds
+/// this app shows: a new chat message, and social activity (likes, follows,
+/// new posts from people you follow). Delivery only happens while the app
+/// process is alive (foreground, or briefly backgrounded) — it is not
+/// OS-level push and will not reach a fully-killed app.
+///
+/// Every notification's `payload` is `'<kind>:<id>'` (`'chat:<tripId>'` or
+/// `'social:<actorId>'`) so [_onTap] can route a tap to the right place
+/// without needing separate tap callbacks per kind.
 class NotificationService {
   NotificationService(this._prefs)
     : _plugin = FlutterLocalNotificationsPlugin();
@@ -15,6 +20,10 @@ class NotificationService {
   static const _channelId = 'chat_messages';
   static const _channelName = 'Chat Messages';
   static const _channelDescription = 'New messages in your trip chats';
+  static const _socialChannelId = 'social_activity';
+  static const _socialChannelName = 'Activity';
+  static const _socialChannelDescription =
+      'Likes, follows, and new posts from people you follow';
   static const _permissionRequestedKey = 'notif_permission_requested';
 
   final FlutterLocalNotificationsPlugin _plugin;
@@ -41,18 +50,26 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onTap,
     );
 
-    await _plugin
+    final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(
-          const AndroidNotificationChannel(
-            _channelId,
-            _channelName,
-            description: _channelDescription,
-            importance: Importance.high,
-          ),
-        );
+        >();
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDescription,
+        importance: Importance.high,
+      ),
+    );
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _socialChannelId,
+        _socialChannelName,
+        description: _socialChannelDescription,
+        importance: Importance.high,
+      ),
+    );
 
     // `onDidReceiveNotificationResponse` above only covers the app already
     // being alive (backgrounded) when the notification is tapped. If the app
@@ -106,18 +123,50 @@ class NotificationService {
       ),
       iOS: DarwinNotificationDetails(),
     ),
-    payload: tripId,
+    payload: 'chat:$tripId',
+  );
+
+  Future<void> showSocialActivityNotification({
+    required String actorId,
+    required String title,
+    required String body,
+  }) => _plugin.show(
+    id: _nextId++,
+    title: title,
+    body: body,
+    notificationDetails: const NotificationDetails(
+      android: AndroidNotificationDetails(
+        _socialChannelId,
+        _socialChannelName,
+        channelDescription: _socialChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    ),
+    payload: 'social:$actorId',
   );
 
   void _onTap(NotificationResponse response) {
-    final tripId = response.payload;
-    if (tripId == null) {
+    final payload = response.payload;
+    if (payload == null) {
       return;
     }
+    final sepIndex = payload.indexOf(':');
+    if (sepIndex == -1) {
+      return;
+    }
+    final kind = payload.substring(0, sepIndex);
+    final id = payload.substring(sepIndex + 1);
     final context = rootNavigatorKey.currentContext;
     if (context == null) {
       return;
     }
-    GoRouter.of(context).go('/trip/$tripId/chat');
+    switch (kind) {
+      case 'chat':
+        GoRouter.of(context).go('/trip/$id/chat');
+      case 'social':
+        GoRouter.of(context).go('/u/$id');
+    }
   }
 }

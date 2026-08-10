@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/error/exception.dart';
 import '../../../../core/network/supabase_client.dart';
+import '../../../../core/utils/logger.dart';
 import '../../../itinerary/data/models/itinerary_model.dart';
 import '../../../itinerary/data/models/trip_segment_model.dart';
 import '../../domain/entities/follow_stats.dart';
@@ -126,11 +127,28 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
           .insert(insertJson)
           .select()
           .single();
-      return ItineraryPostModel.fromJson(inserted);
+      final post = ItineraryPostModel.fromJson(inserted);
+      await _invokeSocialPush({'type': 'new_post', 'post_id': post.id});
+      return post;
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {
       throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  /// Best-effort — the like/follow/post itself has already landed via the
+  /// insert above regardless of whether this succeeds. Mirrors
+  /// ChatRemoteDataSourceImpl.sendMessage's invocation of send-message-push.
+  Future<void> _invokeSocialPush(Map<String, dynamic> body) async {
+    try {
+      final res = await KumoSupabaseClient.client.functions.invoke(
+        'send-social-push',
+        body: body,
+      );
+      AppLogger.info('send-social-push: status=${res.status} data=${res.data}');
+    } catch (e, st) {
+      AppLogger.warning('send-social-push invoke failed: $e\n$st');
     }
   }
 
@@ -332,6 +350,7 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
           'post_id': postId,
           'user_id': userId,
         });
+        await _invokeSocialPush({'type': 'like', 'post_id': postId});
       } else {
         await KumoSupabaseClient.client
             .from(_likesTable)
@@ -358,6 +377,7 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
           'follower_id': followerId,
           'followee_id': followeeId,
         });
+        await _invokeSocialPush({'type': 'follow', 'followee_id': followeeId});
       } else {
         await KumoSupabaseClient.client
             .from(_followsTable)
