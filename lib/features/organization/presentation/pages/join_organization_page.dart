@@ -12,7 +12,12 @@ import '../providers/organization_provider.dart';
 /// server (`redeem_org_join_code`) is the sole authority on which org/user
 /// the code actually grants, never anything read from the QR/text locally.
 class JoinOrganizationPage extends ConsumerStatefulWidget {
-  const JoinOrganizationPage({super.key});
+  const JoinOrganizationPage({this.initialCode, super.key});
+
+  /// Pre-fills the manual-entry field — set when arriving via a
+  /// `kumo://join?code=XYZ` deep link (see `lib/config/router.dart`'s
+  /// redirect()) rather than the in-app "Join with code" action.
+  final String? initialCode;
 
   @override
   ConsumerState<JoinOrganizationPage> createState() =>
@@ -21,9 +26,11 @@ class JoinOrganizationPage extends ConsumerStatefulWidget {
 
 class _JoinOrganizationPageState extends ConsumerState<JoinOrganizationPage> {
   final _controller = MobileScannerController();
-  final _codeController = TextEditingController();
+  late final _codeController = TextEditingController(text: widget.initialCode);
 
-  bool _scanning = true;
+  // A deep-linked code arrives pre-filled and ready to confirm — showing
+  // the camera first would just make the user switch views manually.
+  late bool _scanning = widget.initialCode == null;
   bool _redeeming = false;
 
   @override

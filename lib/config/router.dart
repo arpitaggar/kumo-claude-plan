@@ -194,8 +194,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/organizations/join',
-        pageBuilder: (context, state) =>
-            _slidePage(const JoinOrganizationPage(), state),
+        pageBuilder: (context, state) => _slidePage(
+          JoinOrganizationPage(initialCode: state.uri.queryParameters['code']),
+          state,
+        ),
       ),
       GoRoute(
         path: '/organizations/:id/members',
@@ -322,6 +324,29 @@ class _RouterNotifier extends ChangeNotifier {
     // Splash handles its own navigation — never redirect away from it.
     if (loc == '/splash') {
       return null;
+    }
+
+    // kumo://join?code=XYZ — org self-serve join-code deep link (stage35's
+    // QR/manual-entry flow is the primary UX; this is a scan-free
+    // alternative for a link shared by email/Slack). Not a plain GoRoute
+    // path pattern: a custom-scheme URI's authority (`join`) surfaces as
+    // `state.uri.host`, not `.path`, on at least one platform, so both are
+    // checked defensively rather than assuming one shape.
+    //
+    // Only handled here when already signed in. An unauthenticated tap
+    // falls through to the normal /login gate below and the code is lost —
+    // the user re-enters/re-scans it after logging in. Deliberately not
+    // preserved across the auth gate: doing that cleanly needs either a
+    // provider write from inside redirect() or threading a query param
+    // through every intermediate redirect hop (onboarding, etc.), and this
+    // whole deep-link path has no device/simulator available to verify
+    // against in this environment — see Checklist.md.
+    if (isAuthenticated &&
+        (state.uri.host == 'join' || state.uri.path == '/join')) {
+      final code = state.uri.queryParameters['code'];
+      return code != null && code.isNotEmpty
+          ? '/organizations/join?code=${Uri.encodeQueryComponent(code)}'
+          : '/organizations/join';
     }
 
     final isOnAuthRoute =

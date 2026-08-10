@@ -28,6 +28,23 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- kumo://join?code=XYZ — org self-serve join-code deep link, same
+	     scheme registered on Android in AndroidManifest.xml. Handled in
+	     lib/config/router.dart's top-level redirect(). FlutterAppDelegate
+	     forwards openURL calls to the Flutter navigation channel by
+	     default (FlutterDeepLinkingEnabled defaults to true) — no
+	     AppDelegate.swift changes needed beyond this registration. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kumo</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		</dict>
+	</array>
 	<key>GMSApiKey</key>
 	<string>$(GOOGLE_MAPS_API_KEY)</string>
 	<key>LSRequiresIPhoneOS</key>

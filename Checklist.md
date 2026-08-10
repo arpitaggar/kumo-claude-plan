@@ -166,3 +166,16 @@ All three explicitly-deferred Stage 22 social-feed items (unpublish/delete, noti
 - Marked ✅ Fixed in `docs/SCALABILITY_AUDIT.md`'s SCALE-014 entry and the Verdict summary line.
 
 **Verification:** `flutter analyze` — 222 issues, all info-level. `flutter test` — **760/760 passing**. `dart format lib/ test/` — clean.
+
+## Join-code deep link: kumo://join?code=XYZ (2026-08-10)
+
+One of two follow-ups explicitly flagged as deferred in the stage35 join-code work (the other, per-department feature-flag/approval-routing overrides, is separate). Scan-free alternative for a code shared by email/Slack — the QR/manual-entry flow (`JoinOrganizationPage`) remains the primary UX.
+
+- [x] Registered the `kumo://` custom URL scheme on both platforms — Android `AndroidManifest.xml` intent-filter (`scheme="kumo" host="join"`), iOS `Info.plist` `CFBundleURLTypes` (no `AppDelegate.swift` change needed; `FlutterDeepLinkingEnabled` defaults to true).
+- [x] Handled in `lib/config/router.dart`'s top-level `redirect()`, not a plain `GoRoute` path pattern — a custom-scheme URI's authority ends up as `state.uri.host`, not `.path`, so a path-pattern route can't match it directly; both are checked defensively since which shape the platform actually delivers isn't something this environment can verify (no device/simulator here).
+- [x] `JoinOrganizationPage` gained an `initialCode` param — pre-fills the manual-entry field and defaults to that view instead of the camera (skips an unnecessary camera-permission prompt too, since the scanner widget is never built when a code already arrived via link).
+- **Deliberate scope trim:** only handled when already signed in. An unauthenticated tap falls through to the normal `/login` gate and the code is lost — re-entering/re-scanning after login is the fallback. Preserving it across the auth gate cleanly needs either a provider write from inside `redirect()` (untested — same reasoning as above) or threading a query param through every intermediate redirect hop (onboarding, etc.); not attempted this pass.
+- **Explicit, acknowledged gap:** this whole path — the native manifest/plist registration and the redirect's `state.uri.host`-vs-`.path` handling — has had no real-device or simulator smoke test, since none is available in this environment. Recommend one manual QA pass (tap a `kumo://join?code=XXX` link on both a real Android and iOS build) before relying on this in production.
+- **Tests** — `test/features/organization/presentation/pages/join_organization_page_test.dart` (new — first widget-test coverage for this feature's presentation layer): `initialCode` prefill + default view, and that the code reaches `redeemOrgJoinCodeUseCaseProvider`. The router's `redirect()` itself isn't covered — `_RouterNotifier` is private/unexported and this app has no router tests at all yet, not just for this feature.
+
+**Verification:** `flutter analyze` — 222 issues, all info-level. `flutter test` — **763/763 passing**. `dart format lib/ test/` — clean. Not yet committed.
