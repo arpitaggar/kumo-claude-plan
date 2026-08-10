@@ -71,4 +71,10 @@ abstract class SocialRepository {
     required String userId,
     required String currentUserId,
   });
+
+  /// Deletes [postId]. RLS restricts this to the post's own author — see
+  /// `stage36_post_delete.sql`. Forks and likes referencing this post are
+  /// not deleted themselves; they just lose the pointer (`on delete set
+  /// null`/`cascade`, handled entirely by the migration).
+  Future<Either<Failure, void>> deletePost(String postId);
 }

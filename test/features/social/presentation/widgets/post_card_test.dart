@@ -26,6 +26,7 @@ void main() {
     VoidCallback? onAuthorTap,
     VoidCallback? onLike,
     VoidCallback? onFork,
+    VoidCallback? onDelete,
   }) => MaterialApp(
     home: Scaffold(
       body: PostCard(
@@ -33,6 +34,7 @@ void main() {
         onAuthorTap: onAuthorTap ?? () {},
         onLike: onLike ?? () {},
         onFork: onFork ?? () {},
+        onDelete: onDelete,
       ),
     ),
   );
@@ -132,6 +134,24 @@ void main() {
     await tester.pumpWidget(buildCard(onFork: () => tapped = true));
 
     await tester.tap(find.text('Use this itinerary'));
+    await tester.pump();
+
+    expect(tapped, isTrue);
+  });
+
+  testWidgets('does not show a delete affordance when onDelete is null', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildCard());
+    expect(find.byIcon(Icons.delete_outline), findsNothing);
+  });
+
+  testWidgets('fires onDelete when the delete icon is tapped', (tester) async {
+    var tapped = false;
+    await tester.pumpWidget(buildCard(onDelete: () => tapped = true));
+
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.delete_outline));
     await tester.pump();
 
     expect(tapped, isTrue);

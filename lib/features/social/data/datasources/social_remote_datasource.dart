@@ -60,6 +60,8 @@ abstract class SocialRemoteDataSource {
     required String userId,
     required String currentUserId,
   });
+
+  Future<void> deletePost(String postId);
 }
 
 class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
@@ -394,6 +396,20 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
         followingCount: (following as List<dynamic>).length,
         isFollowedByMe: isFollowedByMe,
       );
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> deletePost(String postId) async {
+    try {
+      await KumoSupabaseClient.client
+          .from(_postsTable)
+          .delete()
+          .eq('id', postId);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

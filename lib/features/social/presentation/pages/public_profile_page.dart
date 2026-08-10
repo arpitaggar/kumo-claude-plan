@@ -63,6 +63,47 @@ class PublicProfilePage extends ConsumerWidget {
     ref.invalidate(authorPostsProvider(userId));
   }
 
+  Future<void> _delete(
+    BuildContext context,
+    WidgetRef ref,
+    ItineraryPost post,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete this post?'),
+        content: Text(
+          '"${post.title}" will be removed from the public feed. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => ctx.pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final result = await ref.read(deletePostUseCaseProvider).call(post.id);
+    if (!context.mounted) {
+      return;
+    }
+    result.fold(
+      (f) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(f.message), backgroundColor: Colors.redAccent),
+      ),
+      (_) => ref.invalidate(authorPostsProvider(userId)),
+    );
+  }
+
   Future<void> _toggleFollow(WidgetRef ref, FollowStats stats) async {
     final auth = ref.read(authNotifierProvider);
     if (auth is! AuthAuthenticated) {
@@ -102,6 +143,7 @@ class PublicProfilePage extends ConsumerWidget {
             onFollowToggle: (stats) => _toggleFollow(ref, stats),
             onLike: (post) => _toggleLike(ref, post),
             onFork: (post) => _fork(context, ref, post),
+            onDelete: (post) => _delete(context, ref, post),
           );
         },
       ),
@@ -116,6 +158,7 @@ class _ProfileBody extends ConsumerWidget {
     required this.onFollowToggle,
     required this.onLike,
     required this.onFork,
+    required this.onDelete,
   });
 
   final UserProfile profile;
@@ -123,6 +166,7 @@ class _ProfileBody extends ConsumerWidget {
   final void Function(FollowStats stats) onFollowToggle;
   final void Function(ItineraryPost post) onLike;
   final void Function(ItineraryPost post) onFork;
+  final void Function(ItineraryPost post) onDelete;
 
   bool get _isPrivate =>
       !isOwnProfile && profile.profileVisibility == 'private';
@@ -264,7 +308,13 @@ class _ProfileBody extends ConsumerWidget {
             ),
           )
         else
-          _AuthorPosts(authorId: profile.id, onLike: onLike, onFork: onFork),
+          _AuthorPosts(
+            authorId: profile.id,
+            isOwnProfile: isOwnProfile,
+            onLike: onLike,
+            onFork: onFork,
+            onDelete: onDelete,
+          ),
       ],
     );
   }
@@ -301,13 +351,17 @@ class _StatCount extends StatelessWidget {
 class _AuthorPosts extends ConsumerWidget {
   const _AuthorPosts({
     required this.authorId,
+    required this.isOwnProfile,
     required this.onLike,
     required this.onFork,
+    required this.onDelete,
   });
 
   final String authorId;
+  final bool isOwnProfile;
   final void Function(ItineraryPost post) onLike;
   final void Function(ItineraryPost post) onFork;
+  final void Function(ItineraryPost post) onDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -341,6 +395,7 @@ class _AuthorPosts extends ConsumerWidget {
                 onAuthorTap: () {},
                 onLike: () => onLike(post),
                 onFork: () => onFork(post),
+                onDelete: isOwnProfile ? () => onDelete(post) : null,
               ),
               const SizedBox(height: 12),
             ],

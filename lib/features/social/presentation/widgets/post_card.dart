@@ -15,6 +15,7 @@ class PostCard extends StatelessWidget {
     required this.onAuthorTap,
     required this.onLike,
     required this.onFork,
+    this.onDelete,
     super.key,
   });
 
@@ -22,6 +23,10 @@ class PostCard extends StatelessWidget {
   final VoidCallback onAuthorTap;
   final VoidCallback onLike;
   final VoidCallback onFork;
+
+  /// Shows a delete affordance on the card when non-null — the caller
+  /// decides ownership (only the post's own author should ever pass this).
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -42,41 +47,55 @@ class PostCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                InkWell(
-                  onTap: onAuthorTap,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundImage: post.authorAvatarUrl != null
-                            ? NetworkImage(
-                                resizedImageUrl(
-                                  post.authorAvatarUrl,
-                                  width: 48,
-                                ),
-                              )
-                            : null,
-                        child: post.authorAvatarUrl == null
-                            ? Text(
-                                post.authorName.isNotEmpty
-                                    ? post.authorName[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(fontSize: 12),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        post.authorName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: context.colorScheme.onSurface,
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: onAuthorTap,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundImage: post.authorAvatarUrl != null
+                                  ? NetworkImage(
+                                      resizedImageUrl(
+                                        post.authorAvatarUrl,
+                                        width: 48,
+                                      ),
+                                    )
+                                  : null,
+                              child: post.authorAvatarUrl == null
+                                  ? Text(
+                                      post.authorName.isNotEmpty
+                                          ? post.authorName[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(fontSize: 12),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              post.authorName,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: context.colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    if (onDelete != null)
+                      IconButton(
+                        onPressed: onDelete,
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        color: context.colorScheme.onSurfaceVariant,
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Delete post',
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 Text(

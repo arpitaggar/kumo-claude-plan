@@ -8,6 +8,7 @@ import '../../data/repositories/social_repository_impl.dart';
 import '../../domain/entities/follow_stats.dart';
 import '../../domain/entities/itinerary_post.dart';
 import '../../domain/repositories/social_repository.dart';
+import '../../domain/usecases/delete_post_usecase.dart';
 import '../../domain/usecases/fetch_explore_posts_usecase.dart';
 import '../../domain/usecases/fetch_follow_stats_usecase.dart';
 import '../../domain/usecases/fetch_following_feed_usecase.dart';
@@ -59,6 +60,10 @@ final toggleFollowUseCaseProvider = Provider<ToggleFollowUseCase>(
 
 final fetchFollowStatsUseCaseProvider = Provider<FetchFollowStatsUseCase>(
   (ref) => FetchFollowStatsUseCase(ref.watch(socialRepositoryProvider)),
+);
+
+final deletePostUseCaseProvider = Provider<DeletePostUseCase>(
+  (ref) => DeletePostUseCase(ref.watch(socialRepositoryProvider)),
 );
 
 // ── Reads ────────────────────────────────────────────────────────────────────

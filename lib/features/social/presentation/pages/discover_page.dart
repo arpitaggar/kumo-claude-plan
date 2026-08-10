@@ -108,6 +108,50 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
     );
   }
 
+  Future<void> _delete(
+    BuildContext context,
+    WidgetRef ref,
+    ItineraryPost post,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete this post?'),
+        content: Text(
+          '"${post.title}" will be removed from the public feed. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => ctx.pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final result = await ref.read(deletePostUseCaseProvider).call(post.id);
+    if (!context.mounted) {
+      return;
+    }
+    result.fold(
+      (f) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(f.message), backgroundColor: Colors.redAccent),
+      ),
+      (_) async {
+        await ref.read(explorePostsProvider(_query).notifier).refresh();
+        await ref.read(followingFeedProvider.notifier).refresh();
+      },
+    );
+  }
+
   Future<void> _toggleLike(WidgetRef ref, ItineraryPost post) async {
     final auth = ref.read(authNotifierProvider);
     if (auth is! AuthAuthenticated) {
@@ -178,6 +222,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
                 child: Consumer(
                   builder: (context, ref, _) {
                     final feedState = ref.watch(explorePostsProvider(_query));
+                    final auth = ref.watch(authNotifierProvider);
+                    final currentUserId = auth is AuthAuthenticated
+                        ? auth.user.id
+                        : null;
                     return switch (feedState) {
                       PostFeedLoading() => Center(
                         child: CircularProgressIndicator(
@@ -203,8 +251,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
                           posts: posts,
                           hasMore: hasMore,
                           isLoadingMore: isLoadingMore,
+                          currentUserId: currentUserId,
                           onLike: (p) => _toggleLike(ref, p),
                           onFork: (p) => _fork(context, ref, p),
+                          onDelete: (p) => _delete(context, ref, p),
                           onLoadMore: () => ref
                               .read(explorePostsProvider(_query).notifier)
                               .loadMore(),
@@ -218,6 +268,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
           Consumer(
             builder: (context, ref, _) {
               final feedState = ref.watch(followingFeedProvider);
+              final auth = ref.watch(authNotifierProvider);
+              final currentUserId = auth is AuthAuthenticated
+                  ? auth.user.id
+                  : null;
               return switch (feedState) {
                 PostFeedLoading() => Center(
                   child: CircularProgressIndicator(
@@ -239,8 +293,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
                     posts: posts,
                     hasMore: hasMore,
                     isLoadingMore: isLoadingMore,
+                    currentUserId: currentUserId,
                     onLike: (p) => _toggleLike(ref, p),
                     onFork: (p) => _fork(context, ref, p),
+                    onDelete: (p) => _delete(context, ref, p),
                     onLoadMore: () =>
                         ref.read(followingFeedProvider.notifier).loadMore(),
                   ),
@@ -260,16 +316,20 @@ class _PostList extends StatelessWidget {
     required this.posts,
     required this.hasMore,
     required this.isLoadingMore,
+    required this.currentUserId,
     required this.onLike,
     required this.onFork,
+    required this.onDelete,
     required this.onLoadMore,
   });
 
   final List<ItineraryPost> posts;
   final bool hasMore;
   final bool isLoadingMore;
+  final String? currentUserId;
   final void Function(ItineraryPost post) onLike;
   final void Function(ItineraryPost post) onFork;
+  final void Function(ItineraryPost post) onDelete;
   final VoidCallback onLoadMore;
 
   @override
@@ -289,6 +349,7 @@ class _PostList extends StatelessWidget {
         onAuthorTap: () => context.push('/u/${post.authorId}'),
         onLike: () => onLike(post),
         onFork: () => onFork(post),
+        onDelete: post.authorId == currentUserId ? () => onDelete(post) : null,
       );
     },
   );

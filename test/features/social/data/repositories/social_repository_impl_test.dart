@@ -338,4 +338,28 @@ void main() {
       result.fold((_) => fail('expected Right'), (s) => expect(s, stats));
     });
   });
+
+  group('deletePost', () {
+    test('returns Right(null) on success', () async {
+      when(() => dataSource.deletePost(any())).thenAnswer((_) async {});
+
+      final result = await repository.deletePost('post-1');
+
+      expect(result, const Right<Failure, void>(null));
+      verify(() => dataSource.deletePost('post-1')).called(1);
+    });
+
+    test('maps ServerException to ServerFailure', () async {
+      when(
+        () => dataSource.deletePost(any()),
+      ).thenThrow(ServerException(message: 'DB error'));
+
+      final result = await repository.deletePost('post-1');
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
 }
