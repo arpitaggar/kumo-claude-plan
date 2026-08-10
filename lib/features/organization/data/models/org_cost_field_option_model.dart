@@ -7,6 +7,7 @@ class OrgCostFieldOptionModel extends OrgCostFieldOption {
     required super.value,
     required super.code,
     required super.sortOrder,
+    super.approvalThreshold,
   });
 
   factory OrgCostFieldOptionModel.fromJson(Map<String, dynamic> json) =>
@@ -16,5 +17,6 @@ class OrgCostFieldOptionModel extends OrgCostFieldOption {
         value: json['value'] as String,
         code: json['code'] as String,
         sortOrder: json['sort_order'] as int? ?? 0,
+        approvalThreshold: (json['approval_threshold'] as num?)?.toDouble(),
       );
 }

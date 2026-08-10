@@ -36,16 +36,31 @@ final isPremiumUserProvider = Provider<bool>((ref) {
   return status?.isCurrentlyPremium ?? false;
 });
 
+/// Whether any org department the signed-in user belongs to has an
+/// override granting [featureKey] — see
+/// `PremiumFeatureDataSource.hasDepartmentOverride`.
+final departmentFeatureOverrideProvider = FutureProvider.family<bool, String>(
+  (ref, featureKey) => ref
+      .watch(premiumFeatureDataSourceProvider)
+      .hasDepartmentOverride(featureKey),
+);
+
 /// Whether the current user can use the feature named by the family's
 /// `featureKey` argument right now.
 ///
 /// A feature with no matching row (not yet seeded, or flags still loading)
 /// defaults to allowed — missing data should never lock users out of a
-/// feature that's meant to ship free.
+/// feature that's meant to ship free. A gated feature is allowed either by
+/// the user's own premium status or by a department-level override
+/// (stage39) — either is sufficient, neither can revoke what the other grants.
 final canUseFeatureProvider = Provider.family<bool, String>((ref, featureKey) {
   final feature = ref.watch(featureFlagsProvider).valueOrNull?[featureKey];
   if (feature == null || !feature.isGated) {
     return true;
   }
-  return ref.watch(isPremiumUserProvider);
+  if (ref.watch(isPremiumUserProvider)) {
+    return true;
+  }
+  return ref.watch(departmentFeatureOverrideProvider(featureKey)).valueOrNull ??
+      false;
 });

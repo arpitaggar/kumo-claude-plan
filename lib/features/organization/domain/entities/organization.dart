@@ -10,6 +10,7 @@ class Organization extends Equatable {
     required this.ownerId,
     required this.createdAt,
     required this.updatedAt,
+    this.defaultApprovalThreshold,
   });
 
   final String id;
@@ -19,6 +20,22 @@ class Organization extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Org-wide default expense auto-approval threshold — an expense strictly
+  /// under this amount auto-approves on submit instead of needing manual
+  /// admin review. Null means no org-wide default (still overridable per
+  /// department, see `OrgCostFieldOption.approvalThreshold`; if that's also
+  /// null, everything needs manual review). See
+  /// `stage39_department_overrides.sql`.
+  final double? defaultApprovalThreshold;
+
   @override
-  List<Object?> get props => [id, name, slug, ownerId, createdAt, updatedAt];
+  List<Object?> get props => [
+    id,
+    name,
+    slug,
+    ownerId,
+    createdAt,
+    updatedAt,
+    defaultApprovalThreshold,
+  ];
 }

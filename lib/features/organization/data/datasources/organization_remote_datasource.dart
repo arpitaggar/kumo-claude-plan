@@ -6,6 +6,7 @@ import '../../domain/entities/org_cost_field.dart';
 import '../../domain/entities/org_member.dart';
 import '../models/org_cost_field_model.dart';
 import '../models/org_cost_field_option_model.dart';
+import '../models/org_feature_override_model.dart';
 import '../models/org_join_code_model.dart';
 import '../models/org_member_model.dart';
 import '../models/organization_model.dart';
@@ -89,6 +90,24 @@ abstract class OrganizationRemoteDataSource {
   /// rejection reason (invalid/expired/revoked/exhausted/already-a-member)
   /// — that message is exactly what should reach the user.
   Future<OrganizationModel> redeemJoinCode(String code);
+
+  Future<void> setOrgDefaultApprovalThreshold({
+    required String orgId,
+    double? threshold,
+  });
+
+  Future<void> setCostFieldOptionApprovalThreshold({
+    required String optionId,
+    double? threshold,
+  });
+
+  Future<List<OrgFeatureOverrideModel>> fetchFeatureOverrides(String optionId);
+
+  Future<void> setFeatureOverride({
+    required String optionId,
+    required String featureKey,
+    required bool enabled,
+  });
 }
 
 class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
@@ -103,6 +122,7 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
   static const _costFieldsEmbedSelect =
       '*, org_cost_field_options(*), org_cost_field_sources(source_field_id, position)';
   static const _joinCodesTable = 'org_join_codes';
+  static const _featureOverridesTable = 'org_feature_overrides';
 
   @override
   Future<OrganizationModel> createOrganization({
@@ -504,6 +524,76 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
       // The RPC's raised message (invalid/expired/revoked/exhausted/
       // already-a-member/rate-limited) IS the display string — passed
       // through unchanged, same as every other guarded RPC in this app.
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> setOrgDefaultApprovalThreshold({
+    required String orgId,
+    double? threshold,
+  }) async {
+    try {
+      await KumoSupabaseClient.client.rpc(
+        'set_org_default_approval_threshold',
+        params: {'p_org_id': orgId, 'p_threshold': threshold},
+      );
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> setCostFieldOptionApprovalThreshold({
+    required String optionId,
+    double? threshold,
+  }) async {
+    try {
+      await KumoSupabaseClient.client
+          .from(_costFieldOptionsTable)
+          .update({'approval_threshold': threshold})
+          .eq('id', optionId);
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<List<OrgFeatureOverrideModel>> fetchFeatureOverrides(
+    String optionId,
+  ) async {
+    try {
+      final rows = await KumoSupabaseClient.client
+          .from(_featureOverridesTable)
+          .select()
+          .eq('cost_field_option_id', optionId);
+      return rows.map(OrgFeatureOverrideModel.fromJson).toList();
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> setFeatureOverride({
+    required String optionId,
+    required String featureKey,
+    required bool enabled,
+  }) async {
+    try {
+      await KumoSupabaseClient.client.from(_featureOverridesTable).upsert({
+        'cost_field_option_id': optionId,
+        'feature_key': featureKey,
+        'enabled': enabled,
+      }, onConflict: 'cost_field_option_id,feature_key');
+    } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {
       throw UnexpectedException(message: e.toString());

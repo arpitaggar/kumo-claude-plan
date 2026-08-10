@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/error/failure.dart';
 import '../entities/org_cost_field.dart';
 import '../entities/org_cost_field_option.dart';
+import '../entities/org_feature_override.dart';
 import '../entities/org_join_code.dart';
 import '../entities/org_member.dart';
 import '../entities/organization.dart';
@@ -118,4 +119,40 @@ abstract class OrganizationRepository {
   /// rejection reason (invalid/expired/revoked/exhausted/already-a-member),
   /// since that message is exactly what should be shown to the user.
   Future<Either<Failure, Organization>> redeemJoinCode(String code);
+
+  /// Sets (or, passing null, clears) the org-wide default expense
+  /// auto-approval threshold. Admin-only, enforced inside the
+  /// `set_org_default_approval_threshold` RPC — `organizations` has no
+  /// admin-scoped update RLS policy (owner-only), so this is an RPC rather
+  /// than a plain client update. See `stage39_department_overrides.sql`.
+  Future<Either<Failure, void>> setOrgDefaultApprovalThreshold({
+    required String orgId,
+    double? threshold,
+  });
+
+  /// Sets (or, passing null, clears) [optionId]'s department-specific
+  /// approval threshold, overriding the org default for members in that
+  /// department. A plain client update — `org_cost_field_options_admin_write`
+  /// already grants admins full row control.
+  Future<Either<Failure, void>> setCostFieldOptionApprovalThreshold({
+    required String optionId,
+    double? threshold,
+  });
+
+  /// Every feature-flag override configured for [optionId]'s department.
+  /// Admin-only server-side (`org_feature_overrides_admin_all` RLS).
+  Future<Either<Failure, List<OrgFeatureOverride>>> fetchFeatureOverrides(
+    String optionId,
+  );
+
+  /// Grants or revokes [optionId]'s department access to [featureKey]
+  /// (upserts on `(cost_field_option_id, feature_key)` — toggling back and
+  /// forth reuses the same row rather than deleting/recreating it, an
+  /// audit-friendly soft toggle matching this schema's other status-log
+  /// tables). Admin-only server-side.
+  Future<Either<Failure, void>> setFeatureOverride({
+    required String optionId,
+    required String featureKey,
+    required bool enabled,
+  });
 }

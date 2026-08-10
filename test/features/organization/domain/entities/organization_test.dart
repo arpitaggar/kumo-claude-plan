@@ -45,4 +45,29 @@ void main() {
 
     expect(a, isNot(b));
   });
+
+  test('organizations differing only in defaultApprovalThreshold are not '
+      'equal', () {
+    final createdAt = DateTime.utc(2026, 1, 1);
+    final a = Organization(
+      id: 'org-1',
+      name: 'Acme Corp',
+      slug: 'acme-corp',
+      ownerId: 'user-1',
+      createdAt: createdAt,
+      updatedAt: createdAt,
+      defaultApprovalThreshold: 50,
+    );
+    final b = Organization(
+      id: 'org-1',
+      name: 'Acme Corp',
+      slug: 'acme-corp',
+      ownerId: 'user-1',
+      createdAt: createdAt,
+      updatedAt: createdAt,
+    );
+
+    expect(a, isNot(b));
+    expect(b.defaultApprovalThreshold, isNull);
+  });
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/organization_remote_datasource.dart';
 import '../../data/repositories/organization_repository_impl.dart';
 import '../../domain/entities/org_cost_field.dart';
+import '../../domain/entities/org_feature_override.dart';
 import '../../domain/entities/org_join_code.dart';
 import '../../domain/entities/org_member.dart';
 import '../../domain/entities/organization.dart';
@@ -12,6 +13,7 @@ import '../../domain/usecases/create_org_cost_field_usecase.dart';
 import '../../domain/usecases/create_organization_usecase.dart';
 import '../../domain/usecases/delete_org_cost_field_option_usecase.dart';
 import '../../domain/usecases/delete_org_cost_field_usecase.dart';
+import '../../domain/usecases/fetch_feature_overrides_usecase.dart';
 import '../../domain/usecases/fetch_my_organizations_usecase.dart';
 import '../../domain/usecases/fetch_org_cost_fields_usecase.dart';
 import '../../domain/usecases/fetch_org_join_codes_usecase.dart';
@@ -24,6 +26,9 @@ import '../../domain/usecases/redeem_org_join_code_usecase.dart';
 import '../../domain/usecases/remove_org_member_usecase.dart';
 import '../../domain/usecases/review_expense_usecase.dart';
 import '../../domain/usecases/revoke_org_join_code_usecase.dart';
+import '../../domain/usecases/set_cost_field_option_approval_threshold_usecase.dart';
+import '../../domain/usecases/set_feature_override_usecase.dart';
+import '../../domain/usecases/set_org_default_approval_threshold_usecase.dart';
 import '../../domain/usecases/update_org_member_role_usecase.dart';
 
 // ---------------------------------------------------------------------------
@@ -133,6 +138,31 @@ final redeemOrgJoinCodeUseCaseProvider = Provider<RedeemOrgJoinCodeUseCase>(
   (ref) => RedeemOrgJoinCodeUseCase(ref.watch(organizationRepositoryProvider)),
 );
 
+final setOrgDefaultApprovalThresholdUseCaseProvider =
+    Provider<SetOrgDefaultApprovalThresholdUseCase>(
+      (ref) => SetOrgDefaultApprovalThresholdUseCase(
+        ref.watch(organizationRepositoryProvider),
+      ),
+    );
+
+final setCostFieldOptionApprovalThresholdUseCaseProvider =
+    Provider<SetCostFieldOptionApprovalThresholdUseCase>(
+      (ref) => SetCostFieldOptionApprovalThresholdUseCase(
+        ref.watch(organizationRepositoryProvider),
+      ),
+    );
+
+final fetchFeatureOverridesUseCaseProvider =
+    Provider<FetchFeatureOverridesUseCase>(
+      (ref) => FetchFeatureOverridesUseCase(
+        ref.watch(organizationRepositoryProvider),
+      ),
+    );
+
+final setFeatureOverrideUseCaseProvider = Provider<SetFeatureOverrideUseCase>(
+  (ref) => SetFeatureOverrideUseCase(ref.watch(organizationRepositoryProvider)),
+);
+
 // ---------------------------------------------------------------------------
 // Read providers
 // ---------------------------------------------------------------------------
@@ -189,3 +219,21 @@ final orgJoinCodesProvider = FutureProvider.family<List<OrgJoinCode>, String>((
   final result = await ref.watch(fetchOrgJoinCodesUseCaseProvider).call(orgId);
   return result.fold((f) => throw Exception(f.message), (codes) => codes);
 });
+
+/// Feature-flag overrides configured for one department (cost field
+/// option). No realtime, same reasoning as [orgCostFieldsProvider] —
+/// admin-configured occasionally, refreshed via `ref.invalidate` after a
+/// toggle.
+final featureOverridesProvider =
+    FutureProvider.family<List<OrgFeatureOverride>, String>((
+      ref,
+      optionId,
+    ) async {
+      final result = await ref
+          .watch(fetchFeatureOverridesUseCaseProvider)
+          .call(optionId);
+      return result.fold(
+        (f) => throw Exception(f.message),
+        (overrides) => overrides,
+      );
+    });

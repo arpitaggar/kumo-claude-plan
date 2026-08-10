@@ -11,6 +11,7 @@ class OrgCostFieldOption extends Equatable {
     required this.value,
     required this.code,
     required this.sortOrder,
+    this.approvalThreshold,
   });
 
   final String id;
@@ -19,6 +20,19 @@ class OrgCostFieldOption extends Equatable {
   final String code;
   final int sortOrder;
 
+  /// Department-specific expense auto-approval threshold, overriding the
+  /// org-wide `Organization.defaultApprovalThreshold` for members with this
+  /// option as their `cost_field_option_id`. Null defers to the org
+  /// default. See `stage39_department_overrides.sql`.
+  final double? approvalThreshold;
+
   @override
-  List<Object?> get props => [id, fieldId, value, code, sortOrder];
+  List<Object?> get props => [
+    id,
+    fieldId,
+    value,
+    code,
+    sortOrder,
+    approvalThreshold,
+  ];
 }

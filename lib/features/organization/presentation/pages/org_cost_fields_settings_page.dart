@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/premium/premium_providers.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../domain/entities/org_cost_field.dart';
 import '../../domain/entities/org_cost_field_option.dart';
+import '../../domain/entities/organization.dart';
 import '../providers/organization_provider.dart';
 
 /// Org admin builder for the org's cost-tracking structure — see stage30's
@@ -267,6 +269,134 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
     );
   }
 
+  Future<void> _editOptionThreshold(
+    BuildContext context,
+    WidgetRef ref,
+    OrgCostFieldOption option,
+  ) async {
+    final result = await _showThresholdDialog(
+      context,
+      title: '"${option.value}" approval threshold',
+      subtitle:
+          'Overrides the org default for members in this department. '
+          'Leave blank to defer to the org default.',
+      current: option.approvalThreshold,
+    );
+    if (result == null || !context.mounted) {
+      return;
+    }
+
+    final threshold = result.isEmpty ? null : double.tryParse(result);
+    final usecaseResult = await ref
+        .read(setCostFieldOptionApprovalThresholdUseCaseProvider)
+        .call(optionId: option.id, threshold: threshold);
+    if (!context.mounted) {
+      return;
+    }
+    usecaseResult.fold(
+      (f) => context.showSnackBar(f.message, isError: true),
+      (_) => ref.invalidate(orgCostFieldsProvider(orgId)),
+    );
+  }
+
+  Future<void> _openDepartmentSettings(
+    BuildContext context,
+    WidgetRef ref,
+    OrgCostFieldOption option,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _DepartmentSettingsSheet(
+        option: option,
+        onEditThreshold: () => _editOptionThreshold(context, ref, option),
+      ),
+    );
+  }
+
+  Future<void> _editDefaultThreshold(
+    BuildContext context,
+    WidgetRef ref,
+    Organization? org,
+  ) async {
+    final result = await _showThresholdDialog(
+      context,
+      title: 'Default approval threshold',
+      subtitle:
+          'Expenses under this amount auto-approve on submit instead of '
+          'needing admin review. Applies org-wide unless a department has '
+          'its own threshold set.',
+      current: org?.defaultApprovalThreshold,
+    );
+    if (result == null || !context.mounted) {
+      return;
+    }
+
+    final threshold = result.isEmpty ? null : double.tryParse(result);
+    final usecaseResult = await ref
+        .read(setOrgDefaultApprovalThresholdUseCaseProvider)
+        .call(orgId: orgId, threshold: threshold);
+    if (!context.mounted) {
+      return;
+    }
+    usecaseResult.fold(
+      (f) => context.showSnackBar(f.message, isError: true),
+      (_) => ref.invalidate(myOrganizationsProvider),
+    );
+  }
+
+  /// Returns the entered amount as text (empty string clears the
+  /// threshold), or null if cancelled. Shared by both the org-wide and
+  /// per-department threshold editors.
+  Future<String?> _showThresholdDialog(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    double? current,
+  }) {
+    final controller = TextEditingController(
+      text: current == null ? '' : current.toString(),
+    );
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: ctx.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Threshold amount',
+                hintText: 'Leave blank for no threshold',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => ctx.pop(), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => ctx.pop(controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fieldsAsync = ref.watch(orgCostFieldsProvider(orgId));
@@ -306,12 +436,31 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
           final byId = {for (final f in fields) f.id: f};
           final sorted = [...fields]
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+          final myOrgs = ref.watch(myOrganizationsProvider).value;
+          final org = myOrgs?.where((o) => o.id == orgId).firstOrNull;
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: sorted.length,
+            // +1 for the leading org-wide threshold card.
+            itemCount: sorted.length + 1,
             itemBuilder: (context, i) {
-              final field = sorted[i];
+              if (i == 0) {
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: const Icon(Icons.rule_outlined),
+                    title: const Text('Default approval threshold'),
+                    subtitle: Text(
+                      org?.defaultApprovalThreshold != null
+                          ? 'Auto-approves expenses under ${org!.defaultApprovalThreshold}'
+                          : 'No threshold — every submission needs review',
+                    ),
+                    trailing: const Icon(Icons.edit_outlined, size: 18),
+                    onTap: () => _editDefaultThreshold(context, ref, org),
+                  ),
+                );
+              }
+              final field = sorted[i - 1];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ExpansionTile(
@@ -331,11 +480,29 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
                         ListTile(
                           dense: true,
                           title: Text(option.value),
-                          subtitle: Text(option.code),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.close, size: 18),
-                            onPressed: () =>
-                                _deleteOption(context, ref, option),
+                          subtitle: Text(
+                            option.approvalThreshold != null
+                                ? '${option.code} · auto-approves under ${option.approvalThreshold}'
+                                : option.code,
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.tune, size: 18),
+                                tooltip: 'Department settings',
+                                onPressed: () => _openDepartmentSettings(
+                                  context,
+                                  ref,
+                                  option,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () =>
+                                    _deleteOption(context, ref, option),
+                              ),
+                            ],
                           ),
                         ),
                       Padding(
@@ -367,6 +534,125 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// Bottom sheet for one department's (`OrgCostFieldOption`) settings: its
+/// approval threshold (edited via a dialog above the sheet, see
+/// `OrgCostFieldsSettingsPage._editOptionThreshold`) and which premium
+/// features it's been granted regardless of individual members' own
+/// premium status — see `stage39_department_overrides.sql`.
+class _DepartmentSettingsSheet extends ConsumerWidget {
+  const _DepartmentSettingsSheet({
+    required this.option,
+    required this.onEditThreshold,
+  });
+
+  final OrgCostFieldOption option;
+  final VoidCallback onEditThreshold;
+
+  Future<void> _toggleFeature(
+    BuildContext context,
+    WidgetRef ref, {
+    required String featureKey,
+    required bool enabled,
+  }) async {
+    final result = await ref
+        .read(setFeatureOverrideUseCaseProvider)
+        .call(optionId: option.id, featureKey: featureKey, enabled: enabled);
+    if (!context.mounted) {
+      return;
+    }
+    result.fold(
+      (f) => context.showSnackBar(f.message, isError: true),
+      (_) => ref.invalidate(featureOverridesProvider(option.id)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final featuresAsync = ref.watch(featureFlagsProvider);
+    final overridesAsync = ref.watch(featureOverridesProvider(option.id));
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              option.value,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.rule_outlined),
+              title: const Text('Approval threshold'),
+              subtitle: Text(
+                option.approvalThreshold != null
+                    ? 'Auto-approves under ${option.approvalThreshold}'
+                    : 'Defers to the org default',
+              ),
+              trailing: const Icon(Icons.edit_outlined, size: 18),
+              onTap: onEditThreshold,
+            ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Feature access',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+            // A feature granted here is on top of, never a replacement for,
+            // each member's own premium status (canUseFeatureProvider) —
+            // grant-only, so there's nothing to show for a feature that
+            // isn't gated in the first place.
+            featuresAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Could not load features: $e'),
+              data: (features) {
+                final gated = features.values.where((f) => f.requiresPremium);
+                if (gated.isEmpty) {
+                  return Text(
+                    'No premium features to grant yet.',
+                    style: TextStyle(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  );
+                }
+                final overridesByKey = {
+                  for (final o in overridesAsync.value ?? const [])
+                    o.featureKey: o,
+                };
+                return Column(
+                  children: [
+                    for (final feature in gated)
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(feature.featureKey),
+                        value:
+                            overridesByKey[feature.featureKey]?.enabled ??
+                            false,
+                        onChanged: overridesAsync.isLoading
+                            ? null
+                            : (v) => _toggleFeature(
+                                context,
+                                ref,
+                                featureKey: feature.featureKey,
+                                enabled: v,
+                              ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

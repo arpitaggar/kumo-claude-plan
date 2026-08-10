@@ -4,6 +4,7 @@ import '../../../../core/error/exception.dart';
 import '../../../../core/error/failure.dart';
 import '../../domain/entities/org_cost_field.dart';
 import '../../domain/entities/org_cost_field_option.dart';
+import '../../domain/entities/org_feature_override.dart';
 import '../../domain/entities/org_join_code.dart';
 import '../../domain/entities/org_member.dart';
 import '../../domain/entities/organization.dart';
@@ -300,6 +301,76 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
     try {
       final org = await dataSource.redeemJoinCode(code);
       return Right(org);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> setOrgDefaultApprovalThreshold({
+    required String orgId,
+    double? threshold,
+  }) async {
+    try {
+      await dataSource.setOrgDefaultApprovalThreshold(
+        orgId: orgId,
+        threshold: threshold,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> setCostFieldOptionApprovalThreshold({
+    required String optionId,
+    double? threshold,
+  }) async {
+    try {
+      await dataSource.setCostFieldOptionApprovalThreshold(
+        optionId: optionId,
+        threshold: threshold,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<OrgFeatureOverride>>> fetchFeatureOverrides(
+    String optionId,
+  ) async {
+    try {
+      final overrides = await dataSource.fetchFeatureOverrides(optionId);
+      return Right(overrides);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> setFeatureOverride({
+    required String optionId,
+    required String featureKey,
+    required bool enabled,
+  }) async {
+    try {
+      await dataSource.setFeatureOverride(
+        optionId: optionId,
+        featureKey: featureKey,
+        enabled: enabled,
+      );
+      return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {

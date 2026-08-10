@@ -39,4 +39,25 @@ void main() {
 
     expect(a, isNot(b));
   });
+
+  test('options differing only in approvalThreshold are not equal', () {
+    const a = OrgCostFieldOption(
+      id: 'opt-1',
+      fieldId: 'field-1',
+      value: 'Sales',
+      code: 'SAL',
+      sortOrder: 0,
+      approvalThreshold: 100,
+    );
+    const b = OrgCostFieldOption(
+      id: 'opt-1',
+      fieldId: 'field-1',
+      value: 'Sales',
+      code: 'SAL',
+      sortOrder: 0,
+    );
+
+    expect(a, isNot(b));
+    expect(b.approvalThreshold, isNull);
+  });
 }

@@ -5,6 +5,7 @@ import 'package:kumo_claude/core/error/failure.dart';
 import 'package:kumo_claude/features/organization/data/datasources/organization_remote_datasource.dart';
 import 'package:kumo_claude/features/organization/data/models/org_cost_field_model.dart';
 import 'package:kumo_claude/features/organization/data/models/org_cost_field_option_model.dart';
+import 'package:kumo_claude/features/organization/data/models/org_feature_override_model.dart';
 import 'package:kumo_claude/features/organization/data/models/org_join_code_model.dart';
 import 'package:kumo_claude/features/organization/data/models/org_member_model.dart';
 import 'package:kumo_claude/features/organization/data/models/organization_model.dart';
@@ -757,5 +758,168 @@ void main() {
         );
       });
     }
+  });
+
+  group('setOrgDefaultApprovalThreshold', () {
+    test('returns Right(null) on success', () async {
+      when(
+        () => dataSource.setOrgDefaultApprovalThreshold(
+          orgId: any(named: 'orgId'),
+          threshold: any(named: 'threshold'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final result = await repository.setOrgDefaultApprovalThreshold(
+        orgId: 'org-1',
+        threshold: 100,
+      );
+
+      expect(result, const Right<Failure, void>(null));
+      verify(
+        () => dataSource.setOrgDefaultApprovalThreshold(
+          orgId: 'org-1',
+          threshold: 100,
+        ),
+      ).called(1);
+    });
+
+    test('maps ServerException to ServerFailure (e.g. not an admin)', () async {
+      when(
+        () => dataSource.setOrgDefaultApprovalThreshold(
+          orgId: any(named: 'orgId'),
+          threshold: any(named: 'threshold'),
+        ),
+      ).thenThrow(ServerException(message: 'not an admin'));
+
+      final result = await repository.setOrgDefaultApprovalThreshold(
+        orgId: 'org-1',
+        threshold: 100,
+      );
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('setCostFieldOptionApprovalThreshold', () {
+    test('returns Right(null) on success', () async {
+      when(
+        () => dataSource.setCostFieldOptionApprovalThreshold(
+          optionId: any(named: 'optionId'),
+          threshold: any(named: 'threshold'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final result = await repository.setCostFieldOptionApprovalThreshold(
+        optionId: 'option-1',
+        threshold: 25,
+      );
+
+      expect(result, const Right<Failure, void>(null));
+    });
+
+    test('maps ServerException to ServerFailure', () async {
+      when(
+        () => dataSource.setCostFieldOptionApprovalThreshold(
+          optionId: any(named: 'optionId'),
+          threshold: any(named: 'threshold'),
+        ),
+      ).thenThrow(ServerException(message: 'DB error'));
+
+      final result = await repository.setCostFieldOptionApprovalThreshold(
+        optionId: 'option-1',
+        threshold: 25,
+      );
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('fetchFeatureOverrides', () {
+    final tOverride = OrgFeatureOverrideModel(
+      id: 'ovr-1',
+      costFieldOptionId: 'option-1',
+      featureKey: 'google_maps',
+      enabled: true,
+    );
+
+    test('returns Right(overrides) on success', () async {
+      when(
+        () => dataSource.fetchFeatureOverrides(any()),
+      ).thenAnswer((_) async => [tOverride]);
+
+      final result = await repository.fetchFeatureOverrides('option-1');
+
+      result.fold(
+        (_) => fail('expected Right'),
+        (overrides) => expect(overrides, [tOverride]),
+      );
+    });
+
+    test('maps ServerException to ServerFailure', () async {
+      when(
+        () => dataSource.fetchFeatureOverrides(any()),
+      ).thenThrow(ServerException(message: 'DB error'));
+
+      final result = await repository.fetchFeatureOverrides('option-1');
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('setFeatureOverride', () {
+    test('returns Right(null) on success', () async {
+      when(
+        () => dataSource.setFeatureOverride(
+          optionId: any(named: 'optionId'),
+          featureKey: any(named: 'featureKey'),
+          enabled: any(named: 'enabled'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final result = await repository.setFeatureOverride(
+        optionId: 'option-1',
+        featureKey: 'google_maps',
+        enabled: true,
+      );
+
+      expect(result, const Right<Failure, void>(null));
+      verify(
+        () => dataSource.setFeatureOverride(
+          optionId: 'option-1',
+          featureKey: 'google_maps',
+          enabled: true,
+        ),
+      ).called(1);
+    });
+
+    test('maps ServerException to ServerFailure', () async {
+      when(
+        () => dataSource.setFeatureOverride(
+          optionId: any(named: 'optionId'),
+          featureKey: any(named: 'featureKey'),
+          enabled: any(named: 'enabled'),
+        ),
+      ).thenThrow(ServerException(message: 'DB error'));
+
+      final result = await repository.setFeatureOverride(
+        optionId: 'option-1',
+        featureKey: 'google_maps',
+        enabled: true,
+      );
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
   });
 }
