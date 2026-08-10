@@ -6,7 +6,7 @@
 
 **2026-08-09 remediation pass:** every finding classified as an "easy fix" (code/query/config change, no new infrastructure) is now fixed — SCALE-001, 003, 004, 005, 008, 009. See each entry's **Status** line below and `docs/supabase_migrations/stage33_social_feed_scale.sql`. SCALE-002, 006, 007, 010 remain open by design (real infrastructure additions, not justified until the traffic that would need them actually shows up — see the Verdict). SCALE-011 is a Supabase dashboard toggle on the live project, outside what a code change can do; SCALE-012 is a provider swap/self-host decision, not made here.
 
-**2026-08-09 second pass:** re-audited with the benefit of having just built the stage33 fixes and separately read the whole organization/work-mode schema in depth (during an unrelated test-coverage pass) — checking whether the fixes themselves introduced anything, and whether that schema (not in the original audit's primary scope) holds up. Found and fixed one real issue the first pass missed (SCALE-013); found and documented one real issue in the *new* pagination code itself (SCALE-014); otherwise confirmed clean. See both entries below, plus a `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql` migration — **not yet run against the live database.**
+**2026-08-09 second pass:** re-audited with the benefit of having just built the stage33 fixes and separately read the whole organization/work-mode schema in depth (during an unrelated test-coverage pass) — checking whether the fixes themselves introduced anything, and whether that schema (not in the original audit's primary scope) holds up. Found and fixed one real issue the first pass missed (SCALE-013); found and documented one real issue in the *new* pagination code itself (SCALE-014); otherwise confirmed clean. See both entries below, plus a `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql` migration — **✅ run against the live database (2026-08-11).**
 
 **Short answer up front:** No — not without three specific subsystem rewrites, and that's expected, not a failure. Instagram itself ran on a single Postgres primary for its first ~2 years and 30M+ users before it needed to shard. This app is a single-Postgres-instance design (via Supabase) with no background job/queue layer — the right shape for its actual current scale (trip-planning groups, not a public global feed), and the wrong shape for hundreds of millions of DAU and viral fan-out. The findings below separate "will break embarrassingly early" from "correct today, would need a rewrite only at real Instagram-tier volume."
 
@@ -87,11 +87,12 @@
 
 ### [SCALE-012] External dependencies are not production-scale services (already known)
 
-- `NominatimGeocodingService`'s self-imposed 1 req/sec throttle and `OsrmRoutingService`'s public OSRM demo server (confirmed in the 2026-08-09 route-geometry audit, `lib/core/maps/CLAUDE.md`) are free/evaluation-tier services with no production SLA. Not re-derived here — carried forward as still true.
+- **Status:** 📋 Decided (2026-08-11) — leave as-is. Asked the user directly (swap to a paid provider vs. self-host OSRM vs. accept as-is); chose to accept.
+- `NominatimGeocodingService`'s self-imposed 1 req/sec throttle and `OsrmRoutingService`'s public OSRM demo server (confirmed in the 2026-08-09 route-geometry audit, `lib/core/maps/CLAUDE.md`) are free/evaluation-tier services with no production SLA. Both already degrade gracefully today — geocoding just throttles rather than erroring, and routing falls back to a straight/curved line on failure with no user-facing error — so there's no live bug being accepted here, just a known ceiling on routing/geocoding reliability at real traffic. Revisit if either service's rate limit is actually hit in practice, not preemptively.
 
 ### [SCALE-013] `itinerary_posts` ended up with two overlapping rate-limit triggers
 
-- **Status:** ✅ Fixed (2026-08-09, second pass) — `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql`. **Not yet run against the live database.**
+- **Status:** ✅ Fixed (2026-08-09, second pass) — `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql`. **✅ Run against the live database (2026-08-11).**
 - **Found by:** re-checking the SCALE-003 fix itself, not a fresh area.
 - **Cause:** The first pass's SCALE-003 write-up said "no rate limiting on likes/follows/posts" and added `itinerary_posts_rate_limit` (a 20/hour cap) via stage33 — without noticing `itinerary_posts` already had `guard_publish_rate_limit` (a 30-second cooldown) from stage23. Neither was wrong on its own — both are `BEFORE INSERT` triggers doing an index-backed `SELECT ... WHERE author_id = ... AND created_at > ...` against `itinerary_posts_author_id_idx` — but every publish paid for two near-identical index range scans instead of one, and the schema was left with two separate rate-limit mechanisms on the same table for a future reader to reconcile. Low severity (both checks are cheap), but a real, avoidable redundancy, and worth correcting the original finding's claim that no protection existed at all for posts.
 - **Fix applied:** Folded the hourly cap into `guard_publish_rate_limit` (the function stage23's trigger already calls) and dropped stage33's separate trigger/function. One trigger, one function, both checks.
@@ -133,4 +134,4 @@ A few things worth confirming explicitly rather than re-deriving from scratch ea
 
 ## Verification (2026-08-09 second pass)
 
-New migration `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql` (SCALE-013) — SQL-only change, no Dart touched, so no analyze/test delta to report; **not yet run against the live database.**
+New migration `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql` (SCALE-013) — SQL-only change, no Dart touched, so no analyze/test delta to report; **✅ run against the live database (2026-08-11).**
