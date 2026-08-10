@@ -10,6 +10,7 @@ import '../../domain/entities/follow_stats.dart';
 import '../../domain/repositories/social_repository.dart'
     show kSocialFeedPageSize;
 import '../models/itinerary_post_model.dart';
+import '../models/post_comment_model.dart';
 
 abstract class SocialRemoteDataSource {
   /// The signed-in user's id, used to resolve `likedByMe` on fetched posts.
@@ -63,6 +64,15 @@ abstract class SocialRemoteDataSource {
   });
 
   Future<void> deletePost(String postId);
+
+  /// Live comment list for [postId], oldest first (see the impl's stream
+  /// doc for the same re-sort caveat every other `.stream()`-backed watch
+  /// in this app has).
+  Stream<List<PostCommentModel>> watchComments(String postId);
+
+  Future<void> addComment(Map<String, dynamic> insertJson);
+
+  Future<void> deleteComment(String commentId);
 }
 
 class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
@@ -73,11 +83,14 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
   static const _followsTable = 'follows';
   static const _itinerariesTable = 'itineraries';
   static const _segmentsTable = 'trip_segments';
+  static const _commentsTable = 'post_comments';
+  static const _commentStreamLimit = 200;
 
-  /// `like_count` is no longer a stored column (see stage33's migration) —
-  /// counted at read time via PostgREST's embedded-resource count syntax
-  /// instead, so every post-fetching select asks for this.
-  static const _postSelect = '*, post_likes(count)';
+  /// Neither `like_count` (stage33) nor a stored comment-count column
+  /// (stage38) exists — both are counted at read time via PostgREST's
+  /// embedded-resource count syntax instead, so every post-fetching select
+  /// asks for both.
+  static const _postSelect = '*, post_likes(count), post_comments(count)';
 
   /// A user following more than this many accounts still gets a feed, just
   /// capped to their most-recently-followed accounts, rather than sending an
@@ -430,6 +443,51 @@ class SocialRemoteDataSourceImpl implements SocialRemoteDataSource {
           .from(_postsTable)
           .delete()
           .eq('id', postId);
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Stream<List<PostCommentModel>> watchComments(String postId) =>
+      KumoSupabaseClient.client
+          .from(_commentsTable)
+          .stream(primaryKey: ['id'])
+          .eq('post_id', postId)
+          .order('created_at')
+          .limit(_commentStreamLimit)
+          .map((rows) {
+            // Same re-sort caveat as ChatRemoteDataSourceImpl.watchMessages
+            // — `.order()` only reliably sorts the initial snapshot.
+            final comments = rows.map(PostCommentModel.fromJson).toList()
+              ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            return comments;
+          });
+
+  @override
+  Future<void> addComment(Map<String, dynamic> insertJson) async {
+    try {
+      await KumoSupabaseClient.client.from(_commentsTable).insert(insertJson);
+      await _invokeSocialPush({
+        'type': 'comment',
+        'post_id': insertJson['post_id'],
+      });
+    } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> deleteComment(String commentId) async {
+    try {
+      await KumoSupabaseClient.client
+          .from(_commentsTable)
+          .delete()
+          .eq('id', commentId);
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

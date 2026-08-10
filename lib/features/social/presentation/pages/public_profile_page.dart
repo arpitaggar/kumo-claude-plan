@@ -10,6 +10,7 @@ import '../../../profile/presentation/providers/user_profile_provider.dart';
 import '../../domain/entities/follow_stats.dart';
 import '../../domain/entities/itinerary_post.dart';
 import '../providers/social_provider.dart';
+import '../widgets/comments_sheet.dart';
 import '../widgets/post_card.dart';
 
 class PublicProfilePage extends ConsumerWidget {
@@ -60,6 +61,19 @@ class PublicProfilePage extends ConsumerWidget {
     await ref
         .read(toggleLikeUseCaseProvider)
         .call(postId: post.id, userId: auth.user.id, like: !post.likedByMe);
+    ref.invalidate(authorPostsProvider(userId));
+  }
+
+  /// See `DiscoverPage._openComments`'s doc for why a refresh follows.
+  Future<void> _openComments(
+    BuildContext context,
+    WidgetRef ref,
+    ItineraryPost post,
+  ) async {
+    await showCommentsSheet(context, post.id);
+    if (!context.mounted) {
+      return;
+    }
     ref.invalidate(authorPostsProvider(userId));
   }
 
@@ -143,6 +157,7 @@ class PublicProfilePage extends ConsumerWidget {
             onFollowToggle: (stats) => _toggleFollow(ref, stats),
             onLike: (post) => _toggleLike(ref, post),
             onFork: (post) => _fork(context, ref, post),
+            onComment: (post) => _openComments(context, ref, post),
             onDelete: (post) => _delete(context, ref, post),
           );
         },
@@ -158,6 +173,7 @@ class _ProfileBody extends ConsumerWidget {
     required this.onFollowToggle,
     required this.onLike,
     required this.onFork,
+    required this.onComment,
     required this.onDelete,
   });
 
@@ -166,6 +182,7 @@ class _ProfileBody extends ConsumerWidget {
   final void Function(FollowStats stats) onFollowToggle;
   final void Function(ItineraryPost post) onLike;
   final void Function(ItineraryPost post) onFork;
+  final void Function(ItineraryPost post) onComment;
   final void Function(ItineraryPost post) onDelete;
 
   bool get _isPrivate =>
@@ -313,6 +330,7 @@ class _ProfileBody extends ConsumerWidget {
             isOwnProfile: isOwnProfile,
             onLike: onLike,
             onFork: onFork,
+            onComment: onComment,
             onDelete: onDelete,
           ),
       ],
@@ -354,6 +372,7 @@ class _AuthorPosts extends ConsumerWidget {
     required this.isOwnProfile,
     required this.onLike,
     required this.onFork,
+    required this.onComment,
     required this.onDelete,
   });
 
@@ -361,6 +380,7 @@ class _AuthorPosts extends ConsumerWidget {
   final bool isOwnProfile;
   final void Function(ItineraryPost post) onLike;
   final void Function(ItineraryPost post) onFork;
+  final void Function(ItineraryPost post) onComment;
   final void Function(ItineraryPost post) onDelete;
 
   @override
@@ -395,6 +415,7 @@ class _AuthorPosts extends ConsumerWidget {
                 onAuthorTap: () {},
                 onLike: () => onLike(post),
                 onFork: () => onFork(post),
+                onComment: () => onComment(post),
                 onDelete: isOwnProfile ? () => onDelete(post) : null,
               ),
               const SizedBox(height: 12),

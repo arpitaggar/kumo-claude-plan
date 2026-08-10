@@ -7,7 +7,10 @@ import '../../data/datasources/social_remote_datasource.dart';
 import '../../data/repositories/social_repository_impl.dart';
 import '../../domain/entities/follow_stats.dart';
 import '../../domain/entities/itinerary_post.dart';
+import '../../domain/entities/post_comment.dart';
 import '../../domain/repositories/social_repository.dart';
+import '../../domain/usecases/add_post_comment_usecase.dart';
+import '../../domain/usecases/delete_post_comment_usecase.dart';
 import '../../domain/usecases/delete_post_usecase.dart';
 import '../../domain/usecases/fetch_explore_posts_usecase.dart';
 import '../../domain/usecases/fetch_follow_stats_usecase.dart';
@@ -17,6 +20,7 @@ import '../../domain/usecases/fork_post_usecase.dart';
 import '../../domain/usecases/publish_itinerary_usecase.dart';
 import '../../domain/usecases/toggle_follow_usecase.dart';
 import '../../domain/usecases/toggle_like_usecase.dart';
+import '../../domain/usecases/watch_post_comments_usecase.dart';
 
 // ── Infrastructure ──────────────────────────────────────────────────────────
 
@@ -64,6 +68,18 @@ final fetchFollowStatsUseCaseProvider = Provider<FetchFollowStatsUseCase>(
 
 final deletePostUseCaseProvider = Provider<DeletePostUseCase>(
   (ref) => DeletePostUseCase(ref.watch(socialRepositoryProvider)),
+);
+
+final watchPostCommentsUseCaseProvider = Provider<WatchPostCommentsUseCase>(
+  (ref) => WatchPostCommentsUseCase(ref.watch(socialRepositoryProvider)),
+);
+
+final addPostCommentUseCaseProvider = Provider<AddPostCommentUseCase>(
+  (ref) => AddPostCommentUseCase(ref.watch(socialRepositoryProvider)),
+);
+
+final deletePostCommentUseCaseProvider = Provider<DeletePostCommentUseCase>(
+  (ref) => DeletePostCommentUseCase(ref.watch(socialRepositoryProvider)),
 );
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -253,3 +269,16 @@ final followStatsProvider = FutureProvider.autoDispose
           .call(userId: userId, currentUserId: auth.user.id);
       return result.fold((f) => throw Exception(f.message), (stats) => stats);
     });
+
+/// Live comment list for a post, oldest first — backs `CommentsSheet`.
+/// `.autoDispose` since it's only ever watched while the sheet is open.
+final postCommentsProvider = StreamProvider.autoDispose
+    .family<List<PostComment>, String>(
+      (ref, postId) => ref
+          .watch(watchPostCommentsUseCaseProvider)
+          .call(postId)
+          .map(
+            (either) =>
+                either.fold((f) => throw Exception(f.message), (c) => c),
+          ),
+    );

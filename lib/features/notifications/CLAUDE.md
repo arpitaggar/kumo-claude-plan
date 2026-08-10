@@ -1,18 +1,19 @@
 # lib/features/notifications
 
-Added 2026-08-10 — loads only when working under lib/features/notifications/. Second of three explicitly-deferred Stage 22 social-feed items (unpublish/delete was the first, see lib/features/social/ and Checklist.md; comments is the third, not yet built).
+Added 2026-08-10 — loads only when working under lib/features/notifications/. Second of three explicitly-deferred Stage 22 social-feed items (unpublish/delete was the first, see lib/features/social/ and Checklist.md; comments — stage38, adding the `comment` notification type below — was the third).
 
-### Social notifications: in-app feed + push for likes, follows, new posts
+### Social notifications: in-app feed + push for likes, follows, new posts, comments
 
-**Migration:** `docs/supabase_migrations/stage37_social_notifications.sql`
+**Migrations:** `docs/supabase_migrations/stage37_social_notifications.sql`, widened by `stage38_post_comments.sql` to add the `comment` type.
 Must be run in Supabase SQL editor before deploying the corresponding app build.
 
 #### Database schema
 
-`public.notifications` — one row per event: `recipient_id`, `actor_id`, denormalised `actor_name`/`actor_avatar_url` (same rationale as `itinerary_posts`' author fields — the feed renders with zero joins), `type` (`like`/`follow`/`new_post`), `post_id` + `post_title` (null for `follow`), `read_at`, `created_at`.
+`public.notifications` — one row per event: `recipient_id`, `actor_id`, denormalised `actor_name`/`actor_avatar_url` (same rationale as `itinerary_posts`' author fields — the feed renders with zero joins), `type` (`like`/`follow`/`new_post`/`comment`), `post_id` + `post_title` (null for `follow`), `read_at`, `created_at`.
 
 RLS has **no insert policy at all** — every row is written by a `SECURITY DEFINER` trigger function, never a direct client insert:
 - `notify_on_post_like` (on `post_likes` insert) — recipient is the post's author, skipped for a self-like
+- `notify_on_post_comment` (on `post_comments` insert, stage38) — recipient is the post's author, skipped for a self-comment; unlike the like trigger, no `profiles` lookup is needed since `post_comments` already denormalises the commenter's name/avatar
 - `notify_on_follow` (on `follows` insert) — recipient is the followee
 - `notify_on_new_post` (on `itinerary_posts` insert) — fans out to the author's followers, capped at 1000 most-recently-followed (same bound `fetchFeed` already applies, stage33)
 
@@ -30,7 +31,7 @@ Standard Clean Architecture layers — `AppNotification` entity (`NotificationTy
 
 #### Push delivery — `supabase/functions/send-social-push`
 
-Mirrors `send-message-push`'s Android-data-only / iOS-alert split (see `lib/features/chat/CLAUDE.md` for the fuller rationale). Invoked best-effort by `SocialRemoteDataSourceImpl` right after `toggleLike`(like)/`toggleFollow`(follow)/`publishItinerary` succeed. Re-derives the recipient(s) server-side from `post_likes`/`follows`/`itinerary_posts` rather than trusting the client, same posture `send-message-push` uses for its own recipient list — it does **not** read from `public.notifications`.
+Mirrors `send-message-push`'s Android-data-only / iOS-alert split (see `lib/features/chat/CLAUDE.md` for the fuller rationale). Invoked best-effort by `SocialRemoteDataSourceImpl` right after `toggleLike`(like)/`toggleFollow`(follow)/`publishItinerary`/`addComment` succeed. Re-derives the recipient(s) server-side from `post_likes`/`follows`/`itinerary_posts`/`post_comments` rather than trusting the client, same posture `send-message-push` uses for its own recipient list — it does **not** read from `public.notifications`. The `comment` branch re-verifies the caller left a comment on the post in the last minute (no natural unique key to look up one specific comment by, unlike `like`'s `post_id`+`user_id` composite key).
 
 The FCM data payload's `kind` field (`'chat'` vs `'social'`) is shared infrastructure with the chat push path — `lib/core/notifications/push_message_handler.dart`'s background handler and `handleIosPushTap` both branch on it, and `NotificationService`'s local-notification payload uses the same `'<kind>:<id>'` convention (`'social:<actorId>'`) so `NotificationService._onTap` can route without a second tap callback.
 

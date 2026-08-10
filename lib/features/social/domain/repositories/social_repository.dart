@@ -5,6 +5,7 @@ import '../../../itinerary/domain/entities/travel_itinerary.dart';
 import '../../../itinerary/domain/entities/trip_segment.dart';
 import '../entities/follow_stats.dart';
 import '../entities/itinerary_post.dart';
+import '../entities/post_comment.dart';
 
 /// Default page size for [SocialRepository.fetchExplore]/[SocialRepository.fetchFeed] —
 /// defined here (domain) rather than in the data layer's datasource, since
@@ -77,4 +78,19 @@ abstract class SocialRepository {
   /// not deleted themselves; they just lose the pointer (`on delete set
   /// null`/`cascade`, handled entirely by the migration).
   Future<Either<Failure, void>> deletePost(String postId);
+
+  /// Live, newest-first-in-DB-order comment list for [postId] (see the
+  /// datasource for exact ordering/bound). Flat, non-threaded.
+  Stream<Either<Failure, List<PostComment>>> watchComments(String postId);
+
+  Future<Either<Failure, void>> addComment({
+    required String postId,
+    required String authorId,
+    required String authorName,
+    required String content,
+    String? authorAvatarUrl,
+  });
+
+  /// RLS restricts this to the comment's own author.
+  Future<Either<Failure, void>> deleteComment(String commentId);
 }

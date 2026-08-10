@@ -1,16 +1,19 @@
 import 'package:equatable/equatable.dart';
 
 /// Mirrors the `type` check constraint on `public.notifications`
-/// (`stage37_social_notifications.sql`).
+/// (`stage37_social_notifications.sql`, widened by `stage38_post_comments.sql`
+/// to add `comment`).
 enum NotificationType {
   like,
   follow,
-  newPost;
+  newPost,
+  comment;
 
   static NotificationType fromWire(String value) => switch (value) {
     'like' => NotificationType.like,
     'follow' => NotificationType.follow,
     'new_post' => NotificationType.newPost,
+    'comment' => NotificationType.comment,
     _ => throw ArgumentError('Unknown notification type: $value'),
   };
 }

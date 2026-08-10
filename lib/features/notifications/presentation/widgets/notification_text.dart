@@ -17,4 +17,8 @@ import '../../domain/entities/app_notification.dart';
         '${notification.actorName} published a new trip',
         notification.postTitle ?? '',
       ),
+      NotificationType.comment => (
+        '${notification.actorName} commented on your trip',
+        notification.postTitle ?? '',
+      ),
     };

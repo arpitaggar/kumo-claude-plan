@@ -45,6 +45,7 @@ void main() {
     segments: const [],
     likeCount: 0,
     likedByMe: false,
+    commentCount: 0,
     createdAt: DateTime.utc(2026, 6, 10),
   );
 

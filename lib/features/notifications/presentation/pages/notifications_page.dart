@@ -149,6 +149,7 @@ class _NotificationTile extends StatelessWidget {
     NotificationType.like => Icons.favorite,
     NotificationType.follow => Icons.person_add_alt_1,
     NotificationType.newPost => Icons.card_travel,
+    NotificationType.comment => Icons.mode_comment,
   };
 
   @override

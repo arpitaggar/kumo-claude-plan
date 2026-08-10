@@ -15,6 +15,7 @@ class PostCard extends StatelessWidget {
     required this.onAuthorTap,
     required this.onLike,
     required this.onFork,
+    required this.onComment,
     this.onDelete,
     super.key,
   });
@@ -23,6 +24,9 @@ class PostCard extends StatelessWidget {
   final VoidCallback onAuthorTap;
   final VoidCallback onLike;
   final VoidCallback onFork;
+
+  /// Opens the comments sheet for [post].
+  final VoidCallback onComment;
 
   /// Shows a delete affordance on the card when non-null — the caller
   /// decides ownership (only the post's own author should ever pass this).
@@ -197,6 +201,34 @@ class PostCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               '${post.likeCount}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: onComment,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.mode_comment_outlined,
+                              size: 17,
+                              color: context.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${post.commentCount}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: context.colorScheme.onSurfaceVariant,

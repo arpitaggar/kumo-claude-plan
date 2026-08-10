@@ -23,6 +23,7 @@ class ItineraryPostModel extends ItineraryPost {
     required super.segments,
     required super.likeCount,
     required super.likedByMe,
+    required super.commentCount,
     required super.createdAt,
     super.sourceItineraryId,
     super.authorAvatarUrl,
@@ -54,21 +55,24 @@ class ItineraryPostModel extends ItineraryPost {
       segments: (snapshot['segments'] as List<dynamic>? ?? [])
           .map((s) => TripSegmentModel.fromJson(s as Map<String, dynamic>))
           .toList(),
-      likeCount: _likeCountFromJson(json),
+      likeCount: _countFromJson(json, 'post_likes'),
       likedByMe: likedByMe,
+      commentCount: _countFromJson(json, 'post_comments'),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
 
-  /// `like_count` is no longer a stored column (stage33's migration dropped
-  /// it to fix a hot-row write-contention problem on popular posts) — it's
-  /// counted at read time instead via PostgREST's embedded-resource count
-  /// syntax, `post_likes(count)`, which comes back as `post_likes:
-  /// [{count: N}]` alongside the row. Falls back to 0 when that embed wasn't
-  /// requested (e.g. `publishItinerary`'s insert-and-return, where the count
-  /// is always 0 for a just-created post anyway).
-  static int _likeCountFromJson(Map<String, dynamic> json) {
-    final embedded = json['post_likes'] as List<dynamic>?;
+  /// Neither `like_count` (stage33) nor a comment-count equivalent
+  /// (stage38) is a stored column — stage33's migration dropped the former
+  /// after it caused a hot-row write-contention problem on popular posts,
+  /// and comments got the same read-time-count treatment from the start.
+  /// Both are counted via PostgREST's embedded-resource count syntax
+  /// instead, e.g. `post_likes(count)`, which comes back as `post_likes:
+  /// [{count: N}]` alongside the row. Falls back to 0 when that embed
+  /// wasn't requested (e.g. `publishItinerary`'s insert-and-return, where
+  /// both counts are always 0 for a just-created post anyway).
+  static int _countFromJson(Map<String, dynamic> json, String embedKey) {
+    final embedded = json[embedKey] as List<dynamic>?;
     if (embedded == null || embedded.isEmpty) {
       return 0;
     }

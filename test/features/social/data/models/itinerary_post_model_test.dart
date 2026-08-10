@@ -45,6 +45,10 @@ void main() {
     'post_likes': [
       {'count': 4},
     ],
+    // Same read-time-count treatment as post_likes, added in stage38.
+    'post_comments': [
+      {'count': 2},
+    ],
     'created_at': '2026-06-10T00:00:00.000Z',
     'snapshot': {
       'items': [
@@ -91,6 +95,7 @@ void main() {
       expect(post.themeKey, 'sakura');
       expect(post.currencyCode, 'JPY');
       expect(post.likeCount, 4);
+      expect(post.commentCount, 2);
     });
 
     test('parses nested snapshot items and segments', () {
@@ -138,6 +143,13 @@ void main() {
       final post = ItineraryPostModel.fromJson(json);
 
       expect(post.likeCount, 0);
+    });
+
+    test('defaults commentCount to 0 when post_comments wasn\'t embedded', () {
+      final json = Map<String, dynamic>.from(fullJson)..remove('post_comments');
+      final post = ItineraryPostModel.fromJson(json);
+
+      expect(post.commentCount, 0);
     });
 
     test('handles an empty snapshot (no items/segments)', () {

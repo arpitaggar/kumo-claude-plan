@@ -6,6 +6,7 @@ import 'package:kumo_claude/features/itinerary/data/models/itinerary_model.dart'
 import 'package:kumo_claude/features/itinerary/domain/entities/travel_itinerary.dart';
 import 'package:kumo_claude/features/social/data/datasources/social_remote_datasource.dart';
 import 'package:kumo_claude/features/social/data/models/itinerary_post_model.dart';
+import 'package:kumo_claude/features/social/data/models/post_comment_model.dart';
 import 'package:kumo_claude/features/social/data/repositories/social_repository_impl.dart';
 import 'package:kumo_claude/features/social/domain/entities/follow_stats.dart';
 import 'package:mocktail/mocktail.dart';
@@ -30,6 +31,7 @@ void main() {
     segments: const [],
     likeCount: 0,
     likedByMe: false,
+    commentCount: 0,
     createdAt: DateTime.utc(2026, 6, 10),
   );
 
@@ -355,6 +357,130 @@ void main() {
       ).thenThrow(ServerException(message: 'DB error'));
 
       final result = await repository.deletePost('post-1');
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('watchComments', () {
+    final tComment = PostCommentModel(
+      id: 'comment-1',
+      postId: 'post-1',
+      authorId: 'user-1',
+      authorName: 'Alice',
+      content: 'Nice trip!',
+      createdAt: DateTime.utc(2026, 6, 10),
+    );
+
+    test('maps a data-source stream to Right', () async {
+      when(
+        () => dataSource.watchComments('post-1'),
+      ).thenAnswer((_) => Stream.value([tComment]));
+
+      final result = await repository.watchComments('post-1').first;
+
+      result.fold(
+        (_) => fail('expected Right'),
+        (comments) => expect(comments, [tComment]),
+      );
+    });
+
+    test(
+      'maps a stream error to Left(Failure) instead of dropping it',
+      () async {
+        when(() => dataSource.watchComments('post-1')).thenAnswer(
+          (_) => Stream<List<PostCommentModel>>.error(
+            ServerException(message: 'connection lost'),
+          ),
+        );
+
+        final result = await repository.watchComments('post-1').first;
+
+        result.fold(
+          (f) => expect(f, isA<ServerFailure>()),
+          (_) => fail('expected Left'),
+        );
+      },
+    );
+  });
+
+  group('addComment', () {
+    test('builds the insert JSON and returns Right(null) on success', () async {
+      when(() => dataSource.addComment(any())).thenAnswer((_) async {});
+
+      final result = await repository.addComment(
+        postId: 'post-1',
+        authorId: 'user-1',
+        authorName: 'Alice',
+        content: 'Nice trip!',
+        authorAvatarUrl: 'https://example.com/a.png',
+      );
+
+      expect(result, const Right<Failure, void>(null));
+      final captured =
+          verify(() => dataSource.addComment(captureAny())).captured.single
+              as Map<String, dynamic>;
+      expect(captured['post_id'], 'post-1');
+      expect(captured['author_id'], 'user-1');
+      expect(captured['author_name'], 'Alice');
+      expect(captured['author_avatar_url'], 'https://example.com/a.png');
+      expect(captured['content'], 'Nice trip!');
+    });
+
+    test('omits author_avatar_url when not provided', () async {
+      when(() => dataSource.addComment(any())).thenAnswer((_) async {});
+
+      await repository.addComment(
+        postId: 'post-1',
+        authorId: 'user-1',
+        authorName: 'Alice',
+        content: 'Nice trip!',
+      );
+
+      final captured =
+          verify(() => dataSource.addComment(captureAny())).captured.single
+              as Map<String, dynamic>;
+      expect(captured.containsKey('author_avatar_url'), isFalse);
+    });
+
+    test('maps ServerException to ServerFailure', () async {
+      when(
+        () => dataSource.addComment(any()),
+      ).thenThrow(ServerException(message: 'DB error'));
+
+      final result = await repository.addComment(
+        postId: 'post-1',
+        authorId: 'user-1',
+        authorName: 'Alice',
+        content: 'Nice trip!',
+      );
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('deleteComment', () {
+    test('returns Right(null) on success', () async {
+      when(() => dataSource.deleteComment(any())).thenAnswer((_) async {});
+
+      final result = await repository.deleteComment('comment-1');
+
+      expect(result, const Right<Failure, void>(null));
+      verify(() => dataSource.deleteComment('comment-1')).called(1);
+    });
+
+    test('maps ServerException to ServerFailure', () async {
+      when(
+        () => dataSource.deleteComment(any()),
+      ).thenThrow(ServerException(message: 'DB error'));
+
+      final result = await repository.deleteComment('comment-1');
 
       result.fold(
         (f) => expect(f, isA<ServerFailure>()),

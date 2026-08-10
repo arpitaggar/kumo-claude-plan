@@ -72,12 +72,13 @@ serve(async (req) => {
 
     // ── Parse request ─────────────────────────────────────────────────────
     const body = await req.json() as {
-      type?: 'like' | 'follow' | 'new_post'
+      type?: 'like' | 'follow' | 'new_post' | 'comment'
       post_id?: string
       followee_id?: string
     }
-    if (body.type !== 'like' && body.type !== 'follow' && body.type !== 'new_post') {
-      return json({ error: 'type must be like, follow, or new_post' }, 400)
+    const validTypes = ['like', 'follow', 'new_post', 'comment']
+    if (!body.type || !validTypes.includes(body.type)) {
+      return json({ error: `type must be one of: ${validTypes.join(', ')}` }, 400)
     }
 
     const { data: actorProfile } = await supabase
@@ -136,8 +137,7 @@ serve(async (req) => {
         title: `${actorName} started following you`,
         body: 'Tap to view their profile.',
       }]
-    } else {
-      // new_post
+    } else if (body.type === 'new_post') {
       if (!body.post_id) {
         return json({ error: 'post_id is required' }, 400)
       }
@@ -163,6 +163,40 @@ serve(async (req) => {
         title: `${actorName} published a new trip`,
         body: post.title ?? '',
       }))
+    } else {
+      // comment
+      if (!body.post_id) {
+        return json({ error: 'post_id is required' }, 400)
+      }
+      // Confirms the caller actually left a comment on this post recently —
+      // same "caller must be the real actor" posture as the like branch
+      // above. Scoped to the last minute rather than an exact row match,
+      // since (unlike post_likes) there's no natural unique key to look up
+      // a specific comment by without the client passing its id.
+      const { data: comment } = await supabase
+        .from('post_comments')
+        .select('post_id')
+        .eq('post_id', body.post_id)
+        .eq('author_id', user.id)
+        .gte('created_at', new Date(Date.now() - 60_000).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!comment) {
+        return json({ error: 'Forbidden' }, 403)
+      }
+      const { data: post } = await supabase
+        .from('itinerary_posts')
+        .select('author_id, title')
+        .eq('id', body.post_id)
+        .single()
+      if (post && post.author_id !== user.id) {
+        recipients = [{
+          id: post.author_id,
+          title: `${actorName} commented on your trip`,
+          body: post.title ?? '',
+        }]
+      }
     }
 
     if (recipients.length === 0) {

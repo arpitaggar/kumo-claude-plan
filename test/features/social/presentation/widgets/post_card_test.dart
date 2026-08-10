@@ -18,6 +18,7 @@ void main() {
     segments: const [],
     likeCount: 3,
     likedByMe: false,
+    commentCount: 2,
     createdAt: DateTime.utc(2026, 6, 10),
   );
 
@@ -26,6 +27,7 @@ void main() {
     VoidCallback? onAuthorTap,
     VoidCallback? onLike,
     VoidCallback? onFork,
+    VoidCallback? onComment,
     VoidCallback? onDelete,
   }) => MaterialApp(
     home: Scaffold(
@@ -34,6 +36,7 @@ void main() {
         onAuthorTap: onAuthorTap ?? () {},
         onLike: onLike ?? () {},
         onFork: onFork ?? () {},
+        onComment: onComment ?? () {},
         onDelete: onDelete,
       ),
     ),
@@ -75,6 +78,7 @@ void main() {
       segments: tPost.segments,
       likeCount: tPost.likeCount,
       likedByMe: tPost.likedByMe,
+      commentCount: tPost.commentCount,
       createdAt: tPost.createdAt,
       forkedFromPostId: 'post-0',
     );
@@ -119,12 +123,31 @@ void main() {
       segments: tPost.segments,
       likeCount: tPost.likeCount,
       likedByMe: true,
+      commentCount: tPost.commentCount,
       createdAt: tPost.createdAt,
     );
 
     await tester.pumpWidget(buildCard(post: liked));
     expect(find.byIcon(Icons.favorite), findsOneWidget);
     expect(find.byIcon(Icons.favorite_border), findsNothing);
+  });
+
+  testWidgets('shows the comment count', (tester) async {
+    await tester.pumpWidget(buildCard());
+    expect(find.byIcon(Icons.mode_comment_outlined), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+  });
+
+  testWidgets('fires onComment when the comment control is tapped', (
+    tester,
+  ) async {
+    var tapped = false;
+    await tester.pumpWidget(buildCard(onComment: () => tapped = true));
+
+    await tester.tap(find.byIcon(Icons.mode_comment_outlined));
+    await tester.pump();
+
+    expect(tapped, isTrue);
   });
 
   testWidgets('fires onFork when "Use this itinerary" is tapped', (

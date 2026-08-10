@@ -58,6 +58,7 @@ ItineraryPost _post(String id, DateTime createdAt) => ItineraryPost(
   segments: const [],
   likeCount: 0,
   likedByMe: false,
+  commentCount: 0,
   createdAt: createdAt,
 );
 

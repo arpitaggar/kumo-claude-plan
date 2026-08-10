@@ -9,6 +9,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../domain/entities/itinerary_post.dart';
 import '../providers/social_provider.dart';
+import '../widgets/comments_sheet.dart';
 import '../widgets/post_card.dart';
 
 class DiscoverPage extends ConsumerStatefulWidget {
@@ -153,6 +154,23 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
     );
   }
 
+  /// Opens the comments sheet and refreshes both feeds once it's closed, so
+  /// a post card's comment count reflects anything added/removed inside it
+  /// — the sheet's own comment list is a separate live stream, but the
+  /// feed's per-card `commentCount` isn't re-fetched until this refresh.
+  Future<void> _openComments(
+    BuildContext context,
+    WidgetRef ref,
+    ItineraryPost post,
+  ) async {
+    await showCommentsSheet(context, post.id);
+    if (!context.mounted) {
+      return;
+    }
+    await ref.read(explorePostsProvider(_query).notifier).refresh();
+    await ref.read(followingFeedProvider.notifier).refresh();
+  }
+
   Future<void> _toggleLike(WidgetRef ref, ItineraryPost post) async {
     final auth = ref.read(authNotifierProvider);
     if (auth is! AuthAuthenticated) {
@@ -269,6 +287,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
                           currentUserId: currentUserId,
                           onLike: (p) => _toggleLike(ref, p),
                           onFork: (p) => _fork(context, ref, p),
+                          onComment: (p) => _openComments(context, ref, p),
                           onDelete: (p) => _delete(context, ref, p),
                           onLoadMore: () => ref
                               .read(explorePostsProvider(_query).notifier)
@@ -311,6 +330,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage>
                     currentUserId: currentUserId,
                     onLike: (p) => _toggleLike(ref, p),
                     onFork: (p) => _fork(context, ref, p),
+                    onComment: (p) => _openComments(context, ref, p),
                     onDelete: (p) => _delete(context, ref, p),
                     onLoadMore: () =>
                         ref.read(followingFeedProvider.notifier).loadMore(),
@@ -334,6 +354,7 @@ class _PostList extends StatelessWidget {
     required this.currentUserId,
     required this.onLike,
     required this.onFork,
+    required this.onComment,
     required this.onDelete,
     required this.onLoadMore,
   });
@@ -344,6 +365,7 @@ class _PostList extends StatelessWidget {
   final String? currentUserId;
   final void Function(ItineraryPost post) onLike;
   final void Function(ItineraryPost post) onFork;
+  final void Function(ItineraryPost post) onComment;
   final void Function(ItineraryPost post) onDelete;
   final VoidCallback onLoadMore;
 
@@ -364,6 +386,7 @@ class _PostList extends StatelessWidget {
         onAuthorTap: () => context.push('/u/${post.authorId}'),
         onLike: () => onLike(post),
         onFork: () => onFork(post),
+        onComment: () => onComment(post),
         onDelete: post.authorId == currentUserId ? () => onDelete(post) : null,
       );
     },

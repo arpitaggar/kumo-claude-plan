@@ -23,6 +23,7 @@ class ItineraryPost extends Equatable {
     required this.segments,
     required this.likeCount,
     required this.likedByMe,
+    required this.commentCount,
     required this.createdAt,
     this.sourceItineraryId,
     this.authorAvatarUrl,
@@ -65,9 +66,15 @@ class ItineraryPost extends Equatable {
   /// Whether the current user has liked this post.
   final bool likedByMe;
 
+  final int commentCount;
+
   final DateTime createdAt;
 
-  ItineraryPost copyWith({int? likeCount, bool? likedByMe}) => ItineraryPost(
+  ItineraryPost copyWith({
+    int? likeCount,
+    bool? likedByMe,
+    int? commentCount,
+  }) => ItineraryPost(
     id: id,
     sourceItineraryId: sourceItineraryId,
     authorId: authorId,
@@ -84,6 +91,7 @@ class ItineraryPost extends Equatable {
     segments: segments,
     likeCount: likeCount ?? this.likeCount,
     likedByMe: likedByMe ?? this.likedByMe,
+    commentCount: commentCount ?? this.commentCount,
     createdAt: createdAt,
   );
 
@@ -105,6 +113,7 @@ class ItineraryPost extends Equatable {
     segments,
     likeCount,
     likedByMe,
+    commentCount,
     createdAt,
   ];
 }
