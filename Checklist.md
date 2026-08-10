@@ -199,3 +199,10 @@ Second of the two stage35 join-code follow-ups (the other, the deep link above, 
 **Verification:** `flutter analyze` — 229 issues, all info-level (new ones are test-file nits, same tolerance as the rest of this codebase). `flutter test` — **798/798 passing**. `dart format lib/ test/` — clean. Not yet committed.
 
 Both stage35 follow-ups (deep link, department overrides) are now closed. Migrations stage36–39 still need to run against the live database, in that order.
+
+## stage37 deployment blocker: pre-existing public.notifications table (2026-08-10)
+
+Running `stage37_social_notifications.sql` against the live database failed — `column "recipient_id" does not exist`, then (on a later attempt) `invalid input value for enum notif_type`. The live project already has a `public.notifications` table that predates this repo's migration history entirely (no migration in `docs/supabase_migrations/` creates one before stage37) — some `type` column typed as an enum (`notif_type`) with no `recipient_id`, origin unknown. `create table if not exists` silently no-opped against it, leaving every later statement in the file operating against the wrong schema.
+
+- [x] **Fixed in `stage37_social_notifications.sql` itself** — a new guard block at the top detects a pre-existing `public.notifications` missing a `recipient_id` column and renames it to `notifications_legacy_<timestamp>` (never drops it — whatever's in there, if anything, is preserved) before the real table is created. Re-run-safe: once the correct table exists, the guard is a no-op.
+- **Still unresolved:** never got a definitive read on what the pre-existing table actually was (columns, row count) — diagnostic queries kept coming back as the *original* `stage37` error instead of their own results, which points at the SQL editor pane still holding old content rather than actually running what was most recently pasted. The rename-and-preserve approach sidesteps needing that answer, but if `notifications_legacy_*` turns out to hold anything worth keeping, that's now sitting under a timestamped name for manual follow-up — check for it after this migration finally runs clean.

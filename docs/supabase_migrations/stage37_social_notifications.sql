@@ -9,6 +9,42 @@
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
+-- 0. Defensive guard against a pre-existing, unrelated public.notifications
+--    table (found live on this project: a `type` column of some other
+--    enum, e.g. notif_type, with no recipient_id at all — not created by
+--    any migration in this repo, so presumably left over from something
+--    else entirely). `create table if not exists` below would silently
+--    skip creating our version against a same-named table, and every
+--    statement after it would then fail against the wrong schema
+--    (`column "recipient_id" does not exist`, `invalid input value for
+--    enum notif_type`, ...).
+--
+--    Detected by the absence of a recipient_id column (our schema always
+--    has one) — if found, the old table is renamed out of the way rather
+--    than dropped, so nothing already in it is ever deleted by this
+--    migration. Safe to re-run: once our table exists (with
+--    recipient_id), this block is a no-op.
+-- -----------------------------------------------------------------------------
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'notifications'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'notifications'
+      and column_name = 'recipient_id'
+  ) then
+    execute format(
+      'alter table public.notifications rename to notifications_legacy_%s',
+      to_char(now(), 'YYYYMMDDHH24MISS')
+    );
+  end if;
+end;
+$$;
+
+-- -----------------------------------------------------------------------------
 -- 1. notifications
 --    One row per event the recipient should see in their activity feed.
 --    Actor name/avatar and (like/new_post) post title are denormalised at
