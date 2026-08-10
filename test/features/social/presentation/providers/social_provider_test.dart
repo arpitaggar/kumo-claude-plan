@@ -168,6 +168,61 @@ void main() {
       expect(state.hasMore, isFalse); // secondPage is shorter than a full page
     });
 
+    test(
+      // SCALE-014 (docs/SCALABILITY_AUDIT.md): loadMore used to concatenate
+      // every page forever. Loading enough pages to exceed
+      // kMaxFeedWindowPosts (10 pages) must evict the earliest-loaded page
+      // from the front while leaving the most recently loaded page intact
+      // and the pagination cursor (.last) still correct.
+      'loadMore evicts the oldest page once kMaxFeedWindowPosts is exceeded',
+      () async {
+        final pages = [
+          for (var p = 0; p < 11; p++)
+            _fullPage(startingAt: p * kSocialFeedPageSize),
+        ];
+
+        when(
+          () => mockRepo.fetchExplore(
+            query: any(named: 'query'),
+            before: null,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => Right(pages[0]));
+        for (var p = 1; p < pages.length; p++) {
+          when(
+            () => mockRepo.fetchExplore(
+              query: any(named: 'query'),
+              before: pages[p - 1].last.createdAt,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => Right(pages[p]));
+        }
+
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        container.listen(explorePostsProvider(null), (_, _) {});
+        await Future<void>.delayed(Duration.zero);
+
+        for (var p = 1; p < pages.length; p++) {
+          await container.read(explorePostsProvider(null).notifier).loadMore();
+        }
+
+        final state =
+            container.read(explorePostsProvider(null)) as PostFeedLoaded;
+        expect(state.posts.length, kMaxFeedWindowPosts);
+        // page 0 (the very first, oldest-loaded page) was evicted...
+        expect(
+          state.posts.any((post) => post.id == pages[0].first.id),
+          isFalse,
+        );
+        // ...but the most recently loaded page is still fully present.
+        expect(
+          state.posts.sublist(state.posts.length - kSocialFeedPageSize),
+          pages.last,
+        );
+      },
+    );
+
     test('loadMore is a no-op once hasMore is false', () async {
       when(
         () => mockRepo.fetchExplore(

@@ -84,6 +84,17 @@ final deletePostCommentUseCaseProvider = Provider<DeletePostCommentUseCase>(
 
 // ── Reads ────────────────────────────────────────────────────────────────────
 
+/// Caps how many posts `PostFeedNotifier.loadMore` keeps resident at once —
+/// SCALE-014 (`docs/SCALABILITY_AUDIT.md`): unbounded accumulation across
+/// many "Load more" taps means unbounded Dart-heap memory (each post carries
+/// its full snapshotted items/segments). 10 pages is generous — a user would
+/// need to tap "Load more" 10+ times in one session before eviction ever
+/// kicks in. Once it does, scrolling back up past the evicted window shows a
+/// fresh reload from the top rather than the exact posts scrolled past
+/// earlier — an accepted product trade-off (see the audit entry), not an
+/// oversight.
+const kMaxFeedWindowPosts = kSocialFeedPageSize * 10;
+
 /// A page of posts plus enough state to drive "load more" — see
 /// `PostFeedNotifier`. `hasMore` is a heuristic (the last page returned a
 /// full page's worth of rows), not a server-confirmed total; good enough for
@@ -184,13 +195,22 @@ abstract class PostFeedNotifier extends StateNotifier<PostFeedState> {
     if (!mounted) {
       return;
     }
-    result.fold(
-      (_) => state = current.copyWith(isLoadingMore: false),
-      (nextPage) => state = PostFeedLoaded([
-        ...current.posts,
-        ...nextPage,
-      ], hasMore: nextPage.length == kSocialFeedPageSize),
-    );
+    result.fold((_) => state = current.copyWith(isLoadingMore: false), (
+      nextPage,
+    ) {
+      final combined = [...current.posts, ...nextPage];
+      // Evict from the front (earliest-loaded, scrolled past longest ago)
+      // once the window cap is exceeded — see kMaxFeedWindowPosts's doc.
+      // The pagination cursor (`.last`, above) is always the tail, so
+      // trimming the front never disturbs it.
+      final windowed = combined.length > kMaxFeedWindowPosts
+          ? combined.sublist(combined.length - kMaxFeedWindowPosts)
+          : combined;
+      state = PostFeedLoaded(
+        windowed,
+        hasMore: nextPage.length == kSocialFeedPageSize,
+      );
+    });
   }
 }
 

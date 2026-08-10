@@ -155,3 +155,14 @@ Third and last of the deferred Stage 22 items. Full design writeup extended in `
 **Verification:** `flutter analyze` — 221 issues, all info-level (new ones are test-file nits, same tolerance). `flutter test` — **759/759 passing**. `dart format lib/ test/` — clean. Not yet committed.
 
 All three explicitly-deferred Stage 22 social-feed items (unpublish/delete, notifications, comments) are now closed. Migrations stage36–38 still need to run against the live database (SQL editor), in that order.
+
+## SCALE-014 fix: bound PostFeedNotifier's "Load more" memory growth (2026-08-10)
+
+`docs/SCALABILITY_AUDIT.md` had explicitly left this "documented, not fixed" as a product/UX trade-off rather than deciding unilaterally. Asked the user directly (efficiency vs. UX impact of capping); they chose to cap it.
+
+- [x] Added `kMaxFeedWindowPosts` (10 pages / 200 posts) to `lib/features/social/presentation/providers/social_provider.dart` — `PostFeedNotifier.loadMore()` now evicts the earliest-loaded page from the front once the concatenated list exceeds that cap. The pagination cursor (`current.posts.last.createdAt`) always derives from the tail, so trimming the front never disturbs it.
+- **Trade-off, chosen not assumed:** scrolling back up past the evicted window now shows a fresh reload from the top instead of the exact posts scrolled past earlier. Only reachable after 10+ "Load more" taps in one session.
+- **Tests** — new `loadMore evicts the oldest page once kMaxFeedWindowPosts is exceeded` case in `social_provider_test.dart`, driving 11 consecutive pages through a real `PostFeedNotifier` and asserting both the cap and that the pagination cursor still advances correctly post-eviction.
+- Marked ✅ Fixed in `docs/SCALABILITY_AUDIT.md`'s SCALE-014 entry and the Verdict summary line.
+
+**Verification:** `flutter analyze` — 222 issues, all info-level. `flutter test` — **760/760 passing**. `dart format lib/ test/` — clean.

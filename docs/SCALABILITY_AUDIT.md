@@ -98,12 +98,12 @@
 
 ### [SCALE-014] `PostFeedNotifier`'s "Load more" accumulates every loaded page in memory forever
 
-- **Status:** 📋 Documented, not fixed — a product/UX trade-off, not something to decide unilaterally.
+- **Status:** ✅ Fixed (2026-08-10) — `lib/features/social/presentation/providers/social_provider.dart`. Was explicitly left as "documented, not fixed" here since it's a product/UX trade-off, not a pure bug — user was asked directly and chose to cap it.
 - **Found by:** re-reading the SCALE-009 pagination fix itself, since it's new code the first pass never had a chance to scrutinize.
 - **Location:** `PostFeedNotifier.loadMore()`, `lib/features/social/presentation/providers/social_provider.dart`.
-- **Cause:** `state = PostFeedLoaded([...current.posts, ...nextPage], ...)` — every "Load more" tap concatenates onto the existing list, and nothing ever evicts earlier pages. `DiscoverPage`'s `ListView.separated` still renders lazily (only on-screen `PostCard`s get built), so this isn't a UI-jank problem — it's Dart-heap memory for every `ItineraryPost` (each carrying its full snapshotted `items`/`segments`) staying resident for as long as the provider lives.
-- **Breaks at:** a user would need to page through hundreds of "Load more" taps in one session before this meaningfully mattered — a real but distant threshold, not urgent at any scale this app is actually at.
-- **Standard fix pattern, if it ever becomes real:** cap the in-memory window (drop the oldest page once N pages are loaded) or move to a proper virtualized/windowed list controller. Not done here because it trades away simple, correct "everything you've scrolled past stays visible if you scroll back up" behavior for a problem that doesn't exist yet — exactly the kind of premature infrastructure investment the rest of this audit argues against building too early.
+- **Cause:** `state = PostFeedLoaded([...current.posts, ...nextPage], ...)` — every "Load more" tap concatenated onto the existing list, and nothing ever evicted earlier pages. `DiscoverPage`'s `ListView.separated` still renders lazily (only on-screen `PostCard`s get built), so this was never a UI-jank problem — it was Dart-heap memory for every `ItineraryPost` (each carrying its full snapshotted `items`/`segments`) staying resident for as long as the provider lived.
+- **Breaks at:** a user would need to page through hundreds of "Load more" taps in one session before this meaningfully mattered — a real but distant threshold, not urgent at any scale this app is actually at. Fixed anyway now that a decision was made either way.
+- **Fix applied:** capped at `kMaxFeedWindowPosts` (10 pages / 200 posts) — once `loadMore()`'s concatenated list exceeds that, the earliest-loaded page is evicted from the front. The pagination cursor (`current.posts.last.createdAt`) always derives from the tail, so trimming the front never disturbs it. Traded away: scrolling back up past the evicted window shows a fresh reload from the top instead of the exact posts scrolled past earlier — an accepted, explicitly-chosen trade-off, not an oversight.
 
 ---
 
@@ -117,7 +117,7 @@ It would **not** reach real Instagram-tier scale (hundreds of millions of users,
 2. **Introduce real queue/job infrastructure** (SCALE-002) — the single biggest structural gap. Nothing today can be deferred off the request path, which caps every future fan-out-heavy feature, not just the ones that exist now.
 3. **Migrate the feed/chat realtime firehose off Supabase Realtime's connection model** (SCALE-010) once its per-project connection ceiling is actually hit — a "graduate to different infrastructure" problem, not a bug.
 
-Everything else in this audit (SCALE-003 through SCALE-009, SCALE-011, SCALE-012) is either a known, already-flagged, low-effort fix — SCALE-001, 003, 004, 008, 009 are now fixed, and SCALE-005 is code-complete pending an ops toggle — or simply not a live problem at this app's actual data shapes (trip-sized groups, not public-broadcast-sized audiences). Building for Instagram-scale load today, before there's Instagram-scale traffic, would itself be a mistake — the standard advice (add read replicas/connection pooling first, then queue infrastructure, then counter/fan-out redesigns, roughly in that order of need) holds here.
+Everything else in this audit (SCALE-003 through SCALE-009, SCALE-011 through SCALE-014) is either a known, already-flagged, low-effort fix — SCALE-001, 003, 004, 008, 009, 013, 014 are now fixed, and SCALE-005 is code-complete pending an ops toggle — or simply not a live problem at this app's actual data shapes (trip-sized groups, not public-broadcast-sized audiences). Building for Instagram-scale load today, before there's Instagram-scale traffic, would itself be a mistake — the standard advice (add read replicas/connection pooling first, then queue infrastructure, then counter/fan-out redesigns, roughly in that order of need) holds here.
 
 ## Second-pass confirmations (2026-08-09) — checked, not just assumed
 
