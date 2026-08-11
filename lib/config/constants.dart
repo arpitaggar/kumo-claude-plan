@@ -48,11 +48,13 @@ class AppConstants {
   static const double maxExpenseAmount = 999999.99;
 
   // API Endpoints (Supabase tables)
-  static const String usersTable = 'users';
+  //
+  // Only itinerariesTable is actually referenced anywhere — most
+  // datasources hardcode their own `_table` string instead of using this
+  // class (see docs/SOLID_AUDIT.md). usersTable/itineraryEventsTable/
+  // groupsTable/groupMembersTable/expensesTable/messagesTable used to live
+  // here too but named tables that don't exist in the real schema at all
+  // (dead from the original v1.0 plan) and had zero references — removed
+  // rather than kept as misleading dead constants.
   static const String itinerariesTable = 'itineraries';
-  static const String itineraryEventsTable = 'itinerary_events';
-  static const String groupsTable = 'groups';
-  static const String groupMembersTable = 'group_members';
-  static const String expensesTable = 'expenses';
-  static const String messagesTable = 'messages';
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/rating_remote_datasource.dart';
 import '../../data/repositories/rating_repository_impl.dart';
 import '../../domain/entities/rating.dart';
+import '../../domain/repositories/rating_repository.dart';
 import '../../domain/usecases/add_rating_usecase.dart';
 import '../../domain/usecases/delete_rating_usecase.dart';
 
@@ -14,7 +15,7 @@ final ratingDataSourceProvider = Provider<RatingRemoteDataSource>(
   (_) => const RatingRemoteDataSourceImpl(),
 );
 
-final ratingRepositoryProvider = Provider<RatingRepositoryImpl>(
+final ratingRepositoryProvider = Provider<RatingRepository>(
   (ref) =>
       RatingRepositoryImpl(dataSource: ref.watch(ratingDataSourceProvider)),
 );

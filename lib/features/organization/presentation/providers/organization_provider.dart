@@ -8,6 +8,7 @@ import '../../domain/entities/org_join_code.dart';
 import '../../domain/entities/org_member.dart';
 import '../../domain/entities/organization.dart';
 import '../../domain/entities/pending_expense_approval.dart';
+import '../../domain/repositories/organization_repository.dart';
 import '../../domain/usecases/add_org_cost_field_option_usecase.dart';
 import '../../domain/usecases/create_org_cost_field_usecase.dart';
 import '../../domain/usecases/create_organization_usecase.dart';
@@ -39,7 +40,7 @@ final organizationDataSourceProvider = Provider<OrganizationRemoteDataSource>(
   (_) => const OrganizationRemoteDataSourceImpl(),
 );
 
-final organizationRepositoryProvider = Provider<OrganizationRepositoryImpl>(
+final organizationRepositoryProvider = Provider<OrganizationRepository>(
   (ref) => OrganizationRepositoryImpl(
     dataSource: ref.watch(organizationDataSourceProvider),
   ),

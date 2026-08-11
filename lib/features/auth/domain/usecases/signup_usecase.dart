@@ -5,6 +5,7 @@ import '../../../../core/error/failure.dart';
 import '../../../../core/utils/validators.dart';
 import '../entities/user.dart';
 import '../repositories/auth_repository.dart';
+import '../validators/auth_validators.dart';
 
 class SignupUseCase {
   const SignupUseCase(this._repository);
@@ -17,8 +18,8 @@ class SignupUseCase {
     String? displayName,
   }) async {
     try {
-      Validators.validateEmail(email);
-      Validators.validatePassword(password);
+      AuthValidators.validateEmail(email);
+      AuthValidators.validatePassword(password);
       if (displayName != null && displayName.isNotEmpty) {
         Validators.validateNonEmpty(displayName, 'Display name');
       }

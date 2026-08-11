@@ -338,7 +338,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         : currentMessages.first.createdAt;
 
     final result = await ref
-        .read(chatRepositoryRefProvider)
+        .read(chatRepositoryProvider)
         .fetchMessagesBefore(itineraryId: widget.itineraryId, before: oldest);
 
     if (!mounted) {

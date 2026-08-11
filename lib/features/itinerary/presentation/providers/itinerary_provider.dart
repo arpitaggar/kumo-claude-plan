@@ -6,6 +6,7 @@ import '../../data/datasources/itinerary_local_datasource.dart';
 import '../../data/datasources/itinerary_remote_datasource.dart';
 import '../../data/repositories/itinerary_repository_impl.dart';
 import '../../domain/entities/travel_itinerary.dart';
+import '../../domain/repositories/itinerary_repository.dart';
 import '../../domain/usecases/create_itinerary_usecase.dart';
 import '../../domain/usecases/delete_itinerary_usecase.dart';
 import '../../domain/usecases/fetch_itineraries_usecase.dart';
@@ -24,7 +25,7 @@ final itineraryLocalDataSourceProvider = Provider<ItineraryLocalDataSource>(
   (_) => const ItineraryLocalDataSource(),
 );
 
-final itineraryRepositoryProvider = Provider<ItineraryRepositoryImpl>(
+final itineraryRepositoryProvider = Provider<ItineraryRepository>(
   (ref) => ItineraryRepositoryImpl(
     remoteDataSource: ref.watch(itineraryRemoteDataSourceProvider),
     localDataSource: ref.watch(itineraryLocalDataSourceProvider),

@@ -280,7 +280,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Invite email (Resend branded) | Needs Resend account + domain — Supabase built-in fallback works today |
 | GitHub Pages for legal docs | Enable in repo Settings → Pages → /docs; submit URL to app stores |
 | WCAG 2.1 full accessibility audit | Partial (send button + dots done); full audit deferred |
-| Widget + integration tests | Domain/model/legal/organization/social/work-mode/gamification coverage now substantial (919 tests as of 2026-08-11); still no end-to-end integration test suite, and neither the join-code deep link, Work Mode's retheme/banner/filtering, nor gamification's card/dialog/grid has ever been smoke-tested on a real device or simulator (none available in this dev environment) |
+| Widget + integration tests | Domain/model/legal/organization/social/work-mode/gamification coverage now substantial (950 tests as of 2026-08-11, across three dedicated coverage-gap passes); still no end-to-end integration test suite, and neither the join-code deep link, Work Mode's retheme/banner/filtering, nor gamification's card/dialog/grid has ever been smoke-tested on a real device or simulator (none available in this dev environment) |
 | Concierge AI mode (agents, streaming) | Requires backend agent infrastructure |
 | Virtual Debit Card (Stripe Issuing) | Legal/compliance review required |
 | Full B2B admin portal (dashboard, travel-policy engine) | Stage 21 shipped the minimal real substrate (orgs, expense approval, cost fields, join codes, department overrides); the admin-facing surface on top of it is explicitly left to a future admin portal or an external system (e.g. SAP), not this app |
@@ -289,7 +289,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Masked trip email (live) | Code-complete (Stage 19); needs a domain + inbound-email provider (Cloudflare Email Routing / Postmark / Mailgun) wired to `inbound-trip-email`, plus the `INBOUND_WEBHOOK_SECRET` secret set — see that stage's entry above |
 | SEC-014 (Firebase key rotation) | The one open finding in `docs/SECURITY_AUDIT.md` that can't be closed by a code change — a manual Firebase console action |
 | Background job/queue infrastructure | `docs/SCALABILITY_AUDIT.md` SCALE-002 — the prerequisite for the *proper* long-term version of the like-counter and for scaling push fan-out past trip-sized groups; not justified until real fan-out traffic shows up |
-| Architecture cleanup backlog | `docs/SOLID_AUDIT.md`'s 12-item ranked list (a few providers typed to concrete classes instead of interfaces, `SocialRepository` bundles 3 concerns, some enum-driven rendering duplicated across 3-4 files) — incremental, non-blocking, tracked there rather than here |
+| Architecture cleanup backlog | `docs/SOLID_AUDIT.md`'s ranked list — a 2026-08-11 pass is working through all 12 items; check that doc for current status. Incremental, non-blocking, tracked there rather than here |
 
 ---
 
@@ -326,7 +326,7 @@ Jun–Jul 2026
 
 ## Quality Gates
 
-- `flutter analyze` — zero warnings/errors; ~260 info-level style nits tolerated (same bar applied consistently across the codebase — see `docs/SOLID_AUDIT.md`/`Checklist.md` for what those are) ✅
+- `flutter analyze` — zero warnings/errors; ~265 info-level style nits tolerated (same bar applied consistently across the codebase — see `docs/SOLID_AUDIT.md`/`Checklist.md` for what those are) ✅
 - No secrets committed to git (`.env` in `.gitignore`, API keys in Supabase secrets) ✅
 - Supabase RLS enabled on all tables, and independently security-reviewed twice (2026-08-05, 2026-08-09) — see `docs/SECURITY_AUDIT.md` ✅
 - Every SQL migration, through `stage41_gamification_rate_limits.sql`, is confirmed live against the production database (2026-08-11) ✅
@@ -334,7 +334,7 @@ Jun–Jul 2026
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
 - Signup consent checkbox before account creation ✅
-- **919 unit/widget tests passing** (up from 227) ✅
+- **950 unit/widget tests passing** (up from 227) ✅
 - Scalability audit complete — every finding fixed-and-live, explicitly decided, or documented as not-yet-justified at this app's actual scale (`docs/SCALABILITY_AUDIT.md`) ✅
 
 Outstanding:

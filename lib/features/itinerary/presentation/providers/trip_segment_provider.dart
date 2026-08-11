@@ -6,6 +6,7 @@ import '../../../../core/utils/logger.dart';
 import '../../data/datasources/trip_segment_remote_datasource.dart';
 import '../../data/repositories/trip_segment_repository_impl.dart';
 import '../../domain/entities/trip_segment.dart';
+import '../../domain/repositories/trip_segment_repository.dart';
 import '../../domain/usecases/add_trip_segment_usecase.dart';
 import '../../domain/usecases/delete_trip_segment_usecase.dart';
 import '../../domain/usecases/reorder_trip_segments_usecase.dart';
@@ -20,7 +21,7 @@ final tripSegmentDataSourceProvider = Provider<TripSegmentRemoteDataSource>(
   (_) => const TripSegmentRemoteDataSourceImpl(),
 );
 
-final tripSegmentRepositoryProvider = Provider<TripSegmentRepositoryImpl>(
+final tripSegmentRepositoryProvider = Provider<TripSegmentRepository>(
   (ref) => TripSegmentRepositoryImpl(
     dataSource: ref.watch(tripSegmentDataSourceProvider),
   ),

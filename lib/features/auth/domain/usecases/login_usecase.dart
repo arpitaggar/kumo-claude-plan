@@ -2,9 +2,9 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/exception.dart';
 import '../../../../core/error/failure.dart';
-import '../../../../core/utils/validators.dart';
 import '../entities/user.dart';
 import '../repositories/auth_repository.dart';
+import '../validators/auth_validators.dart';
 
 class LoginUseCase {
   const LoginUseCase(this._repository);
@@ -16,8 +16,8 @@ class LoginUseCase {
     required String password,
   }) async {
     try {
-      Validators.validateEmail(email);
-      Validators.validatePassword(password);
+      AuthValidators.validateEmail(email);
+      AuthValidators.validatePassword(password);
     } on ValidationException catch (e) {
       return Left(ValidationFailure(e.message));
     }

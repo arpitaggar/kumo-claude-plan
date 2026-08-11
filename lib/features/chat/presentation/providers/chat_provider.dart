@@ -13,6 +13,7 @@ import '../../data/repositories/chat_repository_impl.dart';
 import '../../domain/entities/message.dart';
 import '../../domain/entities/message_attachment.dart';
 import '../../domain/entities/message_read_receipt.dart';
+import '../../domain/repositories/chat_repository.dart';
 import '../../domain/usecases/send_message_usecase.dart';
 
 // ---------------------------------------------------------------------------
@@ -23,7 +24,7 @@ final chatRemoteDataSourceProvider = Provider<ChatRemoteDataSource>(
   (_) => const ChatRemoteDataSourceImpl(),
 );
 
-final chatRepositoryProvider = Provider<ChatRepositoryImpl>(
+final chatRepositoryProvider = Provider<ChatRepository>(
   (ref) => ChatRepositoryImpl(
     remoteDataSource: ref.watch(chatRemoteDataSourceProvider),
   ),
@@ -51,14 +52,6 @@ final chatStreamProvider = StreamProvider.family<List<Message>, String>(
           (messages) => messages,
         ),
       ),
-);
-
-// ---------------------------------------------------------------------------
-// Earlier-messages: direct repository access for REST pagination
-// ---------------------------------------------------------------------------
-
-final chatRepositoryRefProvider = Provider<ChatRepositoryImpl>(
-  (ref) => ref.watch(chatRepositoryProvider),
 );
 
 // ---------------------------------------------------------------------------

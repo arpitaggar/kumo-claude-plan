@@ -8,6 +8,7 @@ import '../../data/repositories/ai_generation_repository_impl.dart';
 import '../../domain/entities/ai_generated_segment.dart';
 import '../../domain/entities/ai_generation_request.dart';
 import '../../domain/entities/ai_generation_result.dart';
+import '../../domain/repositories/ai_generation_repository.dart';
 import '../../domain/usecases/generate_itinerary_usecase.dart';
 
 // ---------------------------------------------------------------------------
@@ -18,7 +19,7 @@ final aiGenerationDataSourceProvider = Provider<AiGenerationDataSource>(
   (_) => const AiGenerationDataSourceImpl(),
 );
 
-final aiGenerationRepositoryProvider = Provider<AiGenerationRepositoryImpl>(
+final aiGenerationRepositoryProvider = Provider<AiGenerationRepository>(
   (ref) => AiGenerationRepositoryImpl(
     dataSource: ref.watch(aiGenerationDataSourceProvider),
   ),
