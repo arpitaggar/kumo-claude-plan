@@ -9,6 +9,7 @@ import '../features/auth/presentation/pages/update_password_page.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/chat/presentation/pages/chat_page.dart';
 import '../features/expense_split/presentation/pages/add_expense_page.dart';
+import '../features/gamification/presentation/pages/achievements_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/itinerary/domain/entities/trip_segment.dart';
 import '../features/itinerary/presentation/pages/add_edit_item_page.dart';
@@ -186,6 +187,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/organizations',
         pageBuilder: (context, state) =>
             _slidePage(const OrganizationsListPage(), state),
+      ),
+      GoRoute(
+        path: '/achievements',
+        pageBuilder: (context, state) =>
+            _slidePage(const AchievementsPage(), state),
       ),
       GoRoute(
         path: '/organizations/new',

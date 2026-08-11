@@ -5,7 +5,7 @@
 **Previous Version:** 1.0 (original plan) → 2.0 (Stage 1–19, through masked trip email)  
 **Target Launch:** Q3 2026
 
-> **2026-08-11 refresh:** This doc was last substantively written before the social feed grew into a real social product surface and before any B2B/org work existed (Stage 19 and earlier only). Stages 20–22 below cover everything shipped since — see `Checklist.md` (repo root) for the full, continuously-updated day-by-day log this doc summarizes; that file is the actual source of truth going forward, not this one.
+> **2026-08-11 refresh:** This doc was last substantively written before the social feed grew into a real social product surface and before any B2B/org work existed (Stage 19 and earlier only). Stages 20–23 below cover everything shipped since — see `Checklist.md` (repo root) for the full, continuously-updated day-by-day log this doc summarizes; that file is the actual source of truth going forward, not this one.
 
 ---
 
@@ -41,6 +41,7 @@ v1.0 Stage 4 (Fintech + Ratings)   →  v2.0 Stage 4 (Expenses + Ratings) ✅ (n
 v1.0 Stage 5 (Social + B2B)        →  v2.0 Stage 6 (Discover + Notes) ✅ (subset only, superseded)
                                        v2.0 Stage 20 (Real Social Feed) ✅
                                        v2.0 Stage 21 (Orgs / minimal B2B) ✅ (subset only)
+                                       v2.0 Stage 23 (Gamification) ✅
 
 Not in v1.0                        →  v2.0 Stage 5 (Packing Lists) ✅
 Not in v1.0                        →  v2.0 Stage 7 (Connectivity + Search) ✅ (partial)
@@ -258,6 +259,18 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 ---
 
+### Stage 23 — Gamification: XP, Levels, and Badges ✅
+
+**Shipped:** Closes out the last piece of the original v1.0 social-layer brief ("Feed with likes, comments, follows, gamification (XP/badges)" — the rest shipped in Stage 20). XP is awarded entirely by Postgres triggers on tables that already exist (`itineraries`, `itinerary_posts`, `post_likes`, `follows`, `post_comments`) — the exact same shape `public.notifications` already uses — so no existing mutation code path changes at all; the whole feature is new, read-only Flutter code (`lib/features/gamification/`) reading an append-only `xp_events` ledger. A `GamificationCard` on the Profile page shows level + XP progress + badge count and pushes a new `/achievements` page (full 8-badge grid, locked vs. earned, plus recent XP activity). 8 badges, purely derived from the ledger client-side (no separate `badges` table) — e.g. "First Steps" (plan a trip), "Globetrotter" (complete 5 trips), "Century Club" (100 XP).
+
+**vs. v1.0:** Not in the original plan as a separate stage, but directly closes a gap the original brief named explicitly. Anti-cheat closes two abuse vectors by construction: a unique dedup index (not a rate-limit trigger) keyed so a trip's status can't be flipped back and forth to farm the completion award, and so unlike/relike or unfollow/refollow by the same actor can't re-earn a like/follow award.
+
+**Deliberate scope trims:** expenses excluded as an XP source (no rate limit anywhere on that table today — trivially farmable); no push notification or persisted `notifications` row for a badge unlock (in-app celebration dialog only).
+
+**SQL migration:** `docs/supabase_migrations/stage40_gamification.sql` — **✅ run against the live database (2026-08-11).**
+
+---
+
 ## What Remains (Deferred / Not Implemented)
 
 | Feature | Why Deferred |
@@ -267,10 +280,9 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Invite email (Resend branded) | Needs Resend account + domain — Supabase built-in fallback works today |
 | GitHub Pages for legal docs | Enable in repo Settings → Pages → /docs; submit URL to app stores |
 | WCAG 2.1 full accessibility audit | Partial (send button + dots done); full audit deferred |
-| Widget + integration tests | Domain/model/legal/organization/social/work-mode coverage now substantial (878 tests as of 2026-08-11); still no end-to-end integration test suite, and neither the join-code deep link nor Work Mode's retheme/banner/filtering has ever been smoke-tested on a real device or simulator (none available in this dev environment) |
+| Widget + integration tests | Domain/model/legal/organization/social/work-mode/gamification coverage now substantial (919 tests as of 2026-08-11); still no end-to-end integration test suite, and neither the join-code deep link, Work Mode's retheme/banner/filtering, nor gamification's card/dialog/grid has ever been smoke-tested on a real device or simulator (none available in this dev environment) |
 | Concierge AI mode (agents, streaming) | Requires backend agent infrastructure |
 | Virtual Debit Card (Stripe Issuing) | Legal/compliance review required |
-| Gamification (XP, achievements, badges) | Post-retention-baseline; the rest of the v1.0 social-graph vision (likes/comments/follows) shipped in Stage 20 |
 | Full B2B admin portal (dashboard, travel-policy engine) | Stage 21 shipped the minimal real substrate (orgs, expense approval, cost fields, join codes, department overrides); the admin-facing surface on top of it is explicitly left to a future admin portal or an external system (e.g. SAP), not this app |
 | Multi-org-per-user support | Product currently assumes at most one org per user (Stage 21/22) — a user in more than one silently falls back to the first rather than picking; revisit if that assumption ever breaks in practice |
 | Google Maps route rendering (live) | Code-complete behind the map-provider abstraction (Stage 18); needs a real Google Cloud Maps API key dropped into the gitignored `google_maps_api.xml` (Android) / `Secrets.xcconfig` (iOS) — currently builds with a placeholder key so tiles won't render |
@@ -306,22 +318,23 @@ Jun–Jul 2026
 ├── Stage 19: Masked Trip Email              🔧                   Aug 2026
 ├── Stage 20: Real Social Feed               ✅                   Aug 2026
 ├── Stage 21: Organizations / Minimal B2B    ✅                   Aug 2026
-└── Stage 22: Work Mode Toggle               ✅                   Aug 2026
+├── Stage 22: Work Mode Toggle               ✅                   Aug 2026
+└── Stage 23: Gamification (XP/Badges)       ✅                   Aug 2026
 ```
 
 ---
 
 ## Quality Gates
 
-- `flutter analyze` — zero warnings/errors; ~253 info-level style nits tolerated (same bar applied consistently across the codebase — see `docs/SOLID_AUDIT.md`/`Checklist.md` for what those are) ✅
+- `flutter analyze` — zero warnings/errors; ~260 info-level style nits tolerated (same bar applied consistently across the codebase — see `docs/SOLID_AUDIT.md`/`Checklist.md` for what those are) ✅
 - No secrets committed to git (`.env` in `.gitignore`, API keys in Supabase secrets) ✅
 - Supabase RLS enabled on all tables, and independently security-reviewed twice (2026-08-05, 2026-08-09) — see `docs/SECURITY_AUDIT.md` ✅
-- Every SQL migration through `stage39_department_overrides.sql` is confirmed live against the production database (2026-08-11) ✅
+- Every SQL migration, through `stage40_gamification.sql`, is confirmed live against the production database (2026-08-11) ✅
 - Clean Architecture layer boundaries respected — audited (`docs/SOLID_AUDIT.md`), no domain-layer framework leaks anywhere including the newest features ✅
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
 - Signup consent checkbox before account creation ✅
-- **878 unit/widget tests passing** (up from 227) ✅
+- **919 unit/widget tests passing** (up from 227) ✅
 - Scalability audit complete — every finding fixed-and-live, explicitly decided, or documented as not-yet-justified at this app's actual scale (`docs/SCALABILITY_AUDIT.md`) ✅
 
 Outstanding:
@@ -330,7 +343,7 @@ Outstanding:
 - Drop a real Google Maps API key into the gitignored native config files to make that map provider actually render (Stage 18)
 - Wire up an inbound-email provider + `INBOUND_WEBHOOK_SECRET`, then deploy `inbound-trip-email`, to make masked trip email actually receive mail (Stage 19)
 - Enable GitHub Pages → submit legal URLs to App Store Connect / Google Play Console
-- No end-to-end integration test suite; the join-code deep link and Work Mode (Stage 22) have never been smoke-tested on a real device or simulator — none available in this dev environment
+- No end-to-end integration test suite; the join-code deep link, Work Mode (Stage 22), and gamification's card/dialog/grid (Stage 23) have never been smoke-tested on a real device or simulator — none available in this dev environment
 - No formal WCAG 2.1 accessibility audit
 - Solo development; no PR review process
 

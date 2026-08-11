@@ -8,6 +8,7 @@ import '../../core/network/supabase_image_url.dart';
 import '../../core/premium/premium_feature.dart';
 import '../../core/premium/premium_providers.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/gamification/presentation/widgets/gamification_card.dart';
 import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
 import '../../features/work_mode/presentation/providers/work_mode_provider.dart';
 import '../../shared/extensions/context_extensions.dart';
@@ -155,6 +156,8 @@ class ProfilePage extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           const _StatsCard(),
+          const SizedBox(height: 12),
+          const GamificationCard(),
           const SizedBox(height: 24),
           const _SectionHeader('Appearance'),
           const SizedBox(height: 8),
