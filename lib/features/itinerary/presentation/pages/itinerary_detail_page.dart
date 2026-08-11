@@ -24,6 +24,7 @@ import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_segment.dart';
 import '../../domain/entities/trip_theme.dart';
 import '../../domain/trip_segment_order.dart';
+import '../extensions/trip_theme_context_extension.dart';
 import '../providers/itinerary_provider.dart';
 import '../providers/trip_cost_field_value_provider.dart';
 import '../providers/trip_email_alias_provider.dart';
@@ -1155,24 +1156,13 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
         if (itinerary == null) {
           return;
         }
-        final current = itinerary.expenseSummary;
-        final byCategory = Map<String, double>.from(current.spentByCategory);
-        byCategory[expense.category.name] =
-            ((byCategory[expense.category.name] ?? 0) - expense.amount).clamp(
-              0.0,
-              double.infinity,
-            );
         await ref
             .read(updateItineraryUseCaseProvider)
             .call(
               itinerary.copyWith(
-                expenseSummary: ExpenseSummary(
-                  totalSpent: (current.totalSpent - expense.amount).clamp(
-                    0.0,
-                    double.infinity,
-                  ),
-                  spentByCategory: byCategory,
-                  memberBalances: current.memberBalances,
+                expenseSummary: itinerary.expenseSummary.adjustedBy(
+                  categoryKey: expense.category.name,
+                  delta: -expense.amount,
                 ),
               ),
             );

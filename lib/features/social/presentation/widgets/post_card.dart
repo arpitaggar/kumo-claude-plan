@@ -4,6 +4,7 @@ import '../../../../core/network/supabase_image_url.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../itinerary/domain/entities/trip_theme.dart';
+import '../../../itinerary/presentation/extensions/trip_theme_context_extension.dart';
 import '../../domain/entities/itinerary_post.dart';
 
 /// A published itinerary snapshot, as it appears in the feed or on a public

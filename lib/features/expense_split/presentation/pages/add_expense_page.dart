@@ -291,20 +291,13 @@ class _AddExpensePageState extends ConsumerState<AddExpensePage> {
     TravelItinerary itinerary,
     double addedAmount,
   ) async {
-    final current = itinerary.expenseSummary;
-    final spent = current.totalSpent + addedAmount;
-    final byCategory = Map<String, double>.from(current.spentByCategory);
-    byCategory[_category.name] =
-        (byCategory[_category.name] ?? 0) + addedAmount;
-
     await ref
         .read(updateItineraryUseCaseProvider)
         .call(
           itinerary.copyWith(
-            expenseSummary: ExpenseSummary(
-              totalSpent: spent,
-              spentByCategory: byCategory,
-              memberBalances: current.memberBalances,
+            expenseSummary: itinerary.expenseSummary.adjustedBy(
+              categoryKey: _category.name,
+              delta: addedAmount,
             ),
           ),
         );

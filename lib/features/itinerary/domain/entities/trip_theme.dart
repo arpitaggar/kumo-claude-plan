@@ -1,4 +1,9 @@
-import 'package:flutter/material.dart';
+// Scoped to Flutter's paint-primitives library — plain, context-free value
+// types (Color, LinearGradient) — not `package:flutter/material.dart`,
+// which would also pull in BuildContext/Theme/widgets. See
+// TripThemeContextX (presentation/extensions/trip_theme_context_extension.dart)
+// for the one piece of this theme that genuinely needs a BuildContext.
+import 'package:flutter/painting.dart' show Color, LinearGradient;
 
 /// Defines a destination-based visual theme for a trip.
 ///
@@ -127,26 +132,6 @@ class TripTheme {
   /// Returns the preset matching [key], falling back to [classic].
   static TripTheme forKey(String key) =>
       all.firstWhere((t) => t.key == key, orElse: () => classic);
-
-  /// For 'classic' trips, replaces the hardcoded Cherry-Blossom palette with
-  /// the active app theme's primary colors so the card bar, header gradient,
-  /// and scaffold tint always complement whichever app theme is selected.
-  /// Destination-specific themes (sakura, tropical, …) are returned as-is.
-  TripTheme withContext(BuildContext context) {
-    if (key != 'classic') {
-      return this;
-    }
-    final cs = Theme.of(context).colorScheme;
-    return TripTheme(
-      key: key,
-      label: label,
-      emoji: emoji,
-      primary: cs.primary,
-      gradientStart: cs.primaryContainer,
-      gradientEnd: cs.primary,
-      backgroundTint: Theme.of(context).scaffoldBackgroundColor,
-    );
-  }
 
   /// Infers a theme from keywords in [title] (case-insensitive).
   /// Returns [classic] when no keyword matches.

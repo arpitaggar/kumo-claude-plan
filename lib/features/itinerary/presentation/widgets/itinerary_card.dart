@@ -4,6 +4,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_theme.dart';
+import '../extensions/trip_theme_context_extension.dart';
 
 class ItineraryCard extends StatelessWidget {
   const ItineraryCard({

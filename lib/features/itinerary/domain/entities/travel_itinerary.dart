@@ -348,6 +348,28 @@ class ExpenseSummary extends Equatable {
   /// Value: balance (positive = owed to user, negative = owes others)
   final Map<String, double> memberBalances;
 
+  /// Returns a copy with [delta] applied to both [categoryKey]'s spend and
+  /// the running total — the single place an expense being added (positive
+  /// delta) or removed (negative delta) adjusts this summary, so the two
+  /// call sites (add/delete) can't drift out of sync with each other.
+  /// Clamped to non-negative to guard against float drift or an expense
+  /// somehow being removed twice.
+  ExpenseSummary adjustedBy({
+    required String categoryKey,
+    required double delta,
+  }) {
+    final byCategory = Map<String, double>.from(spentByCategory);
+    byCategory[categoryKey] = ((byCategory[categoryKey] ?? 0) + delta).clamp(
+      0.0,
+      double.infinity,
+    );
+    return ExpenseSummary(
+      totalSpent: (totalSpent + delta).clamp(0.0, double.infinity),
+      spentByCategory: byCategory,
+      memberBalances: memberBalances,
+    );
+  }
+
   @override
   List<Object> get props => [totalSpent, spentByCategory, memberBalances];
 }
