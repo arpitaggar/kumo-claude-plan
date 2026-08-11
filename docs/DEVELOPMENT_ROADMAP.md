@@ -267,7 +267,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 **Deliberate scope trims:** expenses excluded as an XP source (no rate limit anywhere on that table today — trivially farmable); no push notification or persisted `notifications` row for a badge unlock (in-app celebration dialog only).
 
-**SQL migration:** `docs/supabase_migrations/stage40_gamification.sql` — **✅ run against the live database (2026-08-11).**
+**SQL migration:** `docs/supabase_migrations/stage40_gamification.sql`, patched by `stage41_gamification_rate_limits.sql` (SEC-032 — rate-limits the trip creation/completion XP triggers) — **✅ both run against the live database (2026-08-11).**
 
 ---
 
@@ -329,7 +329,7 @@ Jun–Jul 2026
 - `flutter analyze` — zero warnings/errors; ~260 info-level style nits tolerated (same bar applied consistently across the codebase — see `docs/SOLID_AUDIT.md`/`Checklist.md` for what those are) ✅
 - No secrets committed to git (`.env` in `.gitignore`, API keys in Supabase secrets) ✅
 - Supabase RLS enabled on all tables, and independently security-reviewed twice (2026-08-05, 2026-08-09) — see `docs/SECURITY_AUDIT.md` ✅
-- Every SQL migration, through `stage40_gamification.sql`, is confirmed live against the production database (2026-08-11) ✅
+- Every SQL migration, through `stage41_gamification_rate_limits.sql`, is confirmed live against the production database (2026-08-11) ✅
 - Clean Architecture layer boundaries respected — audited (`docs/SOLID_AUDIT.md`), no domain-layer framework leaks anywhere including the newest features ✅
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
