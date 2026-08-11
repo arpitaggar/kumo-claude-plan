@@ -242,7 +242,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 **vs. v1.0:** A real but intentionally minimal slice of the original "multi-tenant schema, travel policies, admin dashboard" vision — no admin dashboard, no travel-policy engine, no multi-org-per-user support (the product currently assumes at most one org per user). Deliberately scoped this way rather than building further speculatively without a pilot customer; see Stage 22 below for how a user actually experiences being in an org day-to-day.
 
-**SQL migrations:** `stage28_work_mode_orgs.sql` through `stage32_security_hardening_2.sql`, `stage35_org_join_codes.sql`, `stage39_department_overrides.sql`. **stage39 has not yet been run against the live database** — see What Remains below.
+**SQL migrations:** `stage28_work_mode_orgs.sql` through `stage32_security_hardening_2.sql`, `stage35_org_join_codes.sql`, `stage39_department_overrides.sql` — **all ✅ live on the database (stage39 confirmed 2026-08-11).**
 
 **Security note:** a mid-build review of this stage found and fixed 4 real RLS issues before anything shipped broadly (an `org_members` policy self-recursion bug, an unauthenticated trip-email-alias IDOR, a cross-tenant expense-injection path, and an over-broad org-admin `SELECT` grant that leaked full trip rows instead of just row-existence — see `docs/SECURITY_AUDIT.md` SEC-026 through SEC-029). The over-broad grant was fully removed, not narrowed — org admins today have no direct table-level read access into trips they don't own or aren't a member of.
 
@@ -275,7 +275,6 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Multi-org-per-user support | Product currently assumes at most one org per user (Stage 21/22) — a user in more than one silently falls back to the first rather than picking; revisit if that assumption ever breaks in practice |
 | Google Maps route rendering (live) | Code-complete behind the map-provider abstraction (Stage 18); needs a real Google Cloud Maps API key dropped into the gitignored `google_maps_api.xml` (Android) / `Secrets.xcconfig` (iOS) — currently builds with a placeholder key so tiles won't render |
 | Masked trip email (live) | Code-complete (Stage 19); needs a domain + inbound-email provider (Cloudflare Email Routing / Postmark / Mailgun) wired to `inbound-trip-email`, plus the `INBOUND_WEBHOOK_SECRET` secret set — see that stage's entry above |
-| Migrations not yet run against the live database | `stage36_post_delete.sql` and `stage39_department_overrides.sql` — everything through stage35 and stage37/38 is confirmed live; see `Checklist.md` for the exact running status |
 | SEC-014 (Firebase key rotation) | The one open finding in `docs/SECURITY_AUDIT.md` that can't be closed by a code change — a manual Firebase console action |
 | Background job/queue infrastructure | `docs/SCALABILITY_AUDIT.md` SCALE-002 — the prerequisite for the *proper* long-term version of the like-counter and for scaling push fan-out past trip-sized groups; not justified until real fan-out traffic shows up |
 | Architecture cleanup backlog | `docs/SOLID_AUDIT.md`'s 12-item ranked list (a few providers typed to concrete classes instead of interfaces, `SocialRepository` bundles 3 concerns, some enum-driven rendering duplicated across 3-4 files) — incremental, non-blocking, tracked there rather than here |
@@ -317,6 +316,7 @@ Jun–Jul 2026
 - `flutter analyze` — zero warnings/errors; ~253 info-level style nits tolerated (same bar applied consistently across the codebase — see `docs/SOLID_AUDIT.md`/`Checklist.md` for what those are) ✅
 - No secrets committed to git (`.env` in `.gitignore`, API keys in Supabase secrets) ✅
 - Supabase RLS enabled on all tables, and independently security-reviewed twice (2026-08-05, 2026-08-09) — see `docs/SECURITY_AUDIT.md` ✅
+- Every SQL migration through `stage39_department_overrides.sql` is confirmed live against the production database (2026-08-11) ✅
 - Clean Architecture layer boundaries respected — audited (`docs/SOLID_AUDIT.md`), no domain-layer framework leaks anywhere including the newest features ✅
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
@@ -325,11 +325,10 @@ Jun–Jul 2026
 - Scalability audit complete — every finding fixed-and-live, explicitly decided, or documented as not-yet-justified at this app's actual scale (`docs/SCALABILITY_AUDIT.md`) ✅
 
 Outstanding:
-- Run `stage36_post_delete.sql` and `stage39_department_overrides.sql` in the Supabase SQL editor — everything through stage35 and stage37/38 is confirmed live
 - SEC-014: rotate the Firebase key via the Firebase console (the one open security finding that isn't a code change)
+- Deploy/redeploy the Edge Functions with their secrets set: `generate-itinerary` (Katha AI, `ANTHROPIC_API_KEY`), `send-message-push` (push notifications, `FIREBASE_SERVICE_ACCOUNT_KEY`), and `invite-email` — all three also still need the `ALLOWED_ORIGIN` secret from SEC-002; ship a Flutter build via `--dart-define-from-file=env.local.json` to go with it
 - Drop a real Google Maps API key into the gitignored native config files to make that map provider actually render (Stage 18)
 - Wire up an inbound-email provider + `INBOUND_WEBHOOK_SECRET`, then deploy `inbound-trip-email`, to make masked trip email actually receive mail (Stage 19)
-- Deploy `generate-itinerary` (Katha AI) and `send-message-push` (push notifications) with their respective secrets set — both are code-complete, neither is live
 - Enable GitHub Pages → submit legal URLs to App Store Connect / Google Play Console
 - No end-to-end integration test suite; the join-code deep link and Work Mode (Stage 22) have never been smoke-tested on a real device or simulator — none available in this dev environment
 - No formal WCAG 2.1 accessibility audit

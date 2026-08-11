@@ -120,7 +120,7 @@ Self-serve onboarding for Work Mode — an org admin generates a code (shown as 
 
 First of three explicitly-deferred Stage 22 items (unpublish/delete, notifications, comments — see that stage's entry above), picked up at user request.
 
-- [x] **New migration `docs/supabase_migrations/stage36_post_delete.sql`** — adds an author-only `delete` RLS policy to `itinerary_posts` (previously insert-only/immutable by design). No other schema change needed: `post_likes` already cascades on `post_id`, and both `itinerary_posts.forked_from_post_id` (self-FK) and `itineraries.origin_post_id` are already `on delete set null` (stage22), so deleting a post just silently drops "remixed from" lineage on any forks rather than blocking the delete or cascading through them. **Not yet run against the live database.**
+- [x] **New migration `docs/supabase_migrations/stage36_post_delete.sql`** — adds an author-only `delete` RLS policy to `itinerary_posts` (previously insert-only/immutable by design). No other schema change needed: `post_likes` already cascades on `post_id`, and both `itinerary_posts.forked_from_post_id` (self-FK) and `itineraries.origin_post_id` are already `on delete set null` (stage22), so deleting a post just silently drops "remixed from" lineage on any forks rather than blocking the delete or cascading through them. **✅ Run against the live database (2026-08-11).**
 - [x] **Domain/data** — `SocialRepository.deletePost(postId)` + `DeletePostUseCase`, datasource/repository impl wiring (a plain `.delete().eq('id', postId)`, RLS does the author check).
 - [x] **UI** — `PostCard` gained an optional `onDelete` callback (null hides the affordance entirely — caller decides ownership, never the widget). Wired into `DiscoverPage`'s Explore/Following tabs (shown only when `post.authorId == currentUserId`, i.e. your own post can surface in the public feed too) and `PublicProfilePage`'s own-posts list (`isOwnProfile` gate), both behind the same delete-confirmation `AlertDialog` pattern already used for delete-account.
 - **Deliberate scope decision, not re-litigated from stage22:** deleting a post does not touch `TravelItinerary.isPublic` (the "has this ever been published" badge) — that flag is a one-way historical marker by design, same as editing an itinerary never un-publishes it.
@@ -154,7 +154,7 @@ Third and last of the deferred Stage 22 items. Full design writeup extended in `
 
 **Verification:** `flutter analyze` — 221 issues, all info-level (new ones are test-file nits, same tolerance). `flutter test` — **759/759 passing**. `dart format lib/ test/` — clean. Not yet committed.
 
-All three explicitly-deferred Stage 22 social-feed items (unpublish/delete, notifications, comments) are now closed. Migrations stage36–38 still need to run against the live database (SQL editor), in that order.
+All three explicitly-deferred Stage 22 social-feed items (unpublish/delete, notifications, comments) are now closed. Migrations stage36–38 are now all live (see later entries — stage36 confirmed 2026-08-11, stage37–38 confirmed below).
 
 ## SCALE-014 fix: bound PostFeedNotifier's "Load more" memory growth (2026-08-10)
 
@@ -190,7 +190,7 @@ Second of the two stage35 join-code follow-ups (the other, the deep link above, 
   - `auto_approved` is fully server-computed inside that same function, every time, regardless of what a client sends — `expenses_payer_update` (stage29) lets a payer update any column on their own row, so without unconditionally overwriting it, a payer could spoof `auto_approved = true` to slip past the admin check without actually qualifying.
   - `set_org_default_approval_threshold` RPC (org has no admin-scoped update RLS, owner-only — an RPC avoids widening that). The department-level threshold needs no RPC — `org_cost_field_options_admin_write` (stage31) already grants admins full row control.
   - New `org_feature_overrides` table, grant-only (never a deny) — layered on top of, never replacing, the existing per-user `isPremiumUserProvider` check. `has_department_feature_override` RPC for the narrow "does my department grant me this" read (no member-select RLS on the table itself — only admins need to browse the whole thing, to manage it).
-  - **Not yet run against the live database.**
+  - **✅ Run against the live database (2026-08-11).**
 - [x] **Domain/data** — `Organization.defaultApprovalThreshold`, `OrgCostFieldOption.approvalThreshold`, new `OrgFeatureOverride` entity; 4 new `OrganizationRepository` methods + usecases; `PremiumFeatureDataSource.hasDepartmentOverride` + `departmentFeatureOverrideProvider`; `canUseFeatureProvider` now checks premium status OR department override (either sufficient).
 - [x] **UI** — `OrgCostFieldsSettingsPage` gained a leading org-default-threshold card and a per-department settings sheet (threshold + a switch per premium feature) reached via a new icon next to each department's existing delete action.
 - **Deliberate scope trim, not surfaced:** `expenses.auto_approved` is stored but not read anywhere in the Flutter `Expense` entity/UI — no existing UI in this app distinguishes *how* an expense got approved (there's no approval-status display at all outside the admin queue, and auto-approved expenses never enter that queue in the first place), so there was nothing to wire it into without inventing new UI beyond what was asked.
@@ -198,7 +198,7 @@ Second of the two stage35 join-code follow-ups (the other, the deep link above, 
 
 **Verification:** `flutter analyze` — 229 issues, all info-level (new ones are test-file nits, same tolerance as the rest of this codebase). `flutter test` — **798/798 passing**. `dart format lib/ test/` — clean. Not yet committed.
 
-Both stage35 follow-ups (deep link, department overrides) are now closed. stage37 and stage38 are now live (see the deployment-blocker note below); stage36 and stage39 still need to run against the live database.
+Both stage35 follow-ups (deep link, department overrides) are now closed. stage37 and stage38 are now live (see the deployment-blocker note below); stage36 and stage39 are also now live (2026-08-11).
 
 ## stage37 deployment blocker: pre-existing public.notifications table (2026-08-10)
 
@@ -214,7 +214,7 @@ Running `stage37_social_notifications.sql` against the live database failed — 
 - [x] **SCALE-012** (Nominatim geocoding / OSRM routing are both free demo-tier services, no production SLA) — asked directly: swap to a paid provider, self-host OSRM, or accept as-is. **Decision: accept as-is** — both already degrade gracefully (geocoding throttles rather than erroring; routing falls back to a straight/curved line with no user-facing error), so there's no live bug being accepted, just a known reliability ceiling. Revisit only if the rate limit is actually hit in practice.
 - **Not touched, deliberately:** SCALE-002 (queue infra), SCALE-006 (JSONB-array RLS scans), SCALE-007 (synchronous push fan-out), SCALE-010 (Realtime connection ceiling), SCALE-011 (single Postgres instance, read replicas). All five are real-infrastructure or platform-level items the audit's own verdict already argues against building preemptively — "not a live problem at this app's actual data shapes," not gaps found and skipped this pass.
 
-Every SCALABILITY_AUDIT.md finding is now either fixed-and-live, explicitly decided, or documented as correctly not-yet-justified. Migrations stage36 and stage39 are still the only ones outstanding against the live database.
+Every SCALABILITY_AUDIT.md finding is now either fixed-and-live, explicitly decided, or documented as correctly not-yet-justified. Migrations stage36 and stage39 were the only ones outstanding against the live database at the time — **both now run (2026-08-11); every migration through stage39 is live.**
 
 ## Test coverage pass (2026-08-11)
 
@@ -255,3 +255,9 @@ Requested explicitly ("do another round of audit"), scoped to (a) the Work Mode 
 - Also fixed a `Checklist.md` structural slip from the previous "Test coverage pass" entry — its closing verification line had ended up after the Work Mode section instead of terminating its own section.
 
 **Verification:** `flutter analyze` — 253 issues, all info-level (unchanged — the `profile_page.dart` fix and new test file are both clean). `flutter test` — **878/878 passing** (+5 from the 873 baseline above, all from the new `profile_page_test.dart`). `dart format lib/ test/` — clean. Not yet committed.
+
+## Migration deployment status: all caught up (2026-08-11)
+
+User confirmed every outstanding SQL migration has now been run against the live database — closing out `stage36_post_delete.sql` and `stage39_department_overrides.sql` (the last two open), and also `stage23_security_hardening.sql`, which `docs/SECURITY_AUDIT.md` had been flagging as un-deployed since 2026-08-05. Every migration through stage39 is now confirmed live. Updated the running status notes above, `docs/SECURITY_AUDIT.md`'s executive summary, and `docs/DEVELOPMENT_ROADMAP.md`'s outstanding-migrations rows accordingly.
+
+**Still outstanding (not migrations — separate deployment steps):** Edge Function redeploys + `ALLOWED_ORIGIN` secret (SEC-002/SECURITY_AUDIT.md), the `--dart-define-from-file` build switch, Katha AI / push-notification secrets + function deploys, a real Google Maps API key, and the masked-email inbound-provider wiring — see `docs/DEVELOPMENT_ROADMAP.md`'s Outstanding list for the full set.
