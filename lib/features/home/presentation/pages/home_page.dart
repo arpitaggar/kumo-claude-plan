@@ -149,6 +149,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final listState = ref.watch(itineraryListProvider);
+    final visibleItineraries = ref.watch(visibleItinerariesProvider);
     final user = authState is AuthAuthenticated ? authState.user : null;
     final firstName = user?.displayName?.split(' ').first ?? 'Traveler';
 
@@ -272,8 +273,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ItineraryListError(:final message) => SliverFillRemaining(
                 child: AppErrorWidget(message: message, onRetry: _load),
               ),
-              ItineraryListLoaded(:final itineraries)
-                  when itineraries.isEmpty =>
+              ItineraryListLoaded() when visibleItineraries.isEmpty =>
                 SliverFillRemaining(
                   child: _EmptyState(
                     onCreate: () async {
@@ -290,12 +290,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                     },
                   ),
                 ),
-              ItineraryListLoaded(:final itineraries) => _buildTripList(
+              ItineraryListLoaded() => _buildTripList(
                 context,
                 ref,
                 _searchQuery.isEmpty
-                    ? itineraries
-                    : itineraries
+                    ? visibleItineraries
+                    : visibleItineraries
                           .where(
                             (t) =>
                                 t.title.toLowerCase().contains(

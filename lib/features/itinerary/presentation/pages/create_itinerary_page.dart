@@ -7,7 +7,7 @@ import '../../../../config/constants.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../organization/presentation/providers/organization_provider.dart';
+import '../../../work_mode/presentation/providers/work_mode_provider.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_theme.dart';
 import '../providers/itinerary_provider.dart';
@@ -35,7 +35,6 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
   String _themeKey = TripTheme.classic.key;
   bool _autoTheme = true;
   bool _isSubmitting = false;
-  String? _selectedOrgId;
   Map<String, String> _costFieldValues = {};
   List<ItineraryItem> _generatedItems = const [];
 
@@ -124,6 +123,10 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
 
     setState(() => _isSubmitting = true);
 
+    final effectiveOrgId = ref.read(isWorkModeActiveProvider)
+        ? ref.read(currentWorkOrgProvider)?.id
+        : null;
+
     final created = await ref
         .read(itineraryListProvider.notifier)
         .createItinerary(
@@ -139,7 +142,7 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
               : _descriptionController.text.trim(),
           items: _generatedItems.isEmpty ? null : _generatedItems,
           themeKey: _themeKey,
-          orgId: _selectedOrgId,
+          orgId: effectiveOrgId,
         );
 
     if (created != null && _costFieldValues.isNotEmpty) {
@@ -168,6 +171,10 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
     if (_isSubmitting) {
       return const Scaffold(body: LoadingWidget(message: 'Creating trip…'));
     }
+
+    final workModeActive = ref.watch(isWorkModeActiveProvider);
+    final workOrg = ref.watch(currentWorkOrgProvider);
+    final effectiveOrgId = workModeActive ? workOrg?.id : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -287,18 +294,16 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
                     _autoTheme = false;
                   }),
                 ),
-                const SizedBox(height: 24),
-                _OrgPicker(
-                  selectedOrgId: _selectedOrgId,
-                  onSelected: (id) => setState(() {
-                    _selectedOrgId = id;
-                    _costFieldValues = {};
-                  }),
-                ),
-                if (_selectedOrgId != null) ...[
-                  const SizedBox(height: 24),
+                if (effectiveOrgId != null) ...[
+                  Text(
+                    'This trip will be tagged to ${workOrg?.name ?? 'your organization'}.',
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   CostFieldPicker(
-                    orgId: _selectedOrgId!,
+                    orgId: effectiveOrgId,
                     values: _costFieldValues,
                     onChanged: (fieldId, optionId) => setState(() {
                       _costFieldValues = {
@@ -307,8 +312,8 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
                       };
                     }),
                   ),
+                  const SizedBox(height: 24),
                 ],
-                const SizedBox(height: 24),
                 _AiSection(
                   generatedItems: _generatedItems,
                   onGenerate: _openAiSheet,
@@ -324,47 +329,6 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Optional "tag as a work trip" picker — hidden entirely for a user who
-/// belongs to zero organizations, so someone who's never touched work mode
-/// never sees org UI at all. See stage28's migration / the `organization`
-/// feature for what tagging a trip with an org actually does (narrow admin
-/// oversight, expense-approval eligibility) — nothing more.
-class _OrgPicker extends ConsumerWidget {
-  const _OrgPicker({required this.selectedOrgId, required this.onSelected});
-
-  final String? selectedOrgId;
-  final ValueChanged<String?> onSelected;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final orgsAsync = ref.watch(myOrganizationsProvider);
-    final orgs = orgsAsync.value ?? const [];
-    if (orgs.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Organization (optional)', style: context.textTheme.labelLarge),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String?>(
-          initialValue: selectedOrgId,
-          decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.work_outline),
-          ),
-          items: [
-            const DropdownMenuItem(child: Text('Personal trip')),
-            for (final org in orgs)
-              DropdownMenuItem(value: org.id, child: Text(org.name)),
-          ],
-          onChanged: onSelected,
-        ),
-      ],
     );
   }
 }

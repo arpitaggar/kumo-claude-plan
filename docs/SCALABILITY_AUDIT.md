@@ -135,3 +135,7 @@ A few things worth confirming explicitly rather than re-deriving from scratch ea
 ## Verification (2026-08-09 second pass)
 
 New migration `docs/supabase_migrations/stage34_consolidate_post_rate_limits.sql` (SCALE-013) — SQL-only change, no Dart touched, so no analyze/test delta to report; **✅ run against the live database (2026-08-11).**
+
+## Third pass (2026-08-11) — reviewed the new Work Mode feature
+
+No new findings. `visibleItinerariesProvider` (Home/Trips filtering) is pure in-memory `.where()` over a list `itineraryListProvider` had already fetched for other reasons — zero additional queries. `isWorkModeAvailableProvider`/`currentWorkOrgProvider` read the existing, already-cached `myOrganizationsProvider` (a one-shot `FutureProvider`, same as before this feature) rather than issuing a new fetch, and `WorkModeBanner` being mounted in `KumoShell` on every screen doesn't change that — it's a cheap re-read of cached provider state, not a re-query. No new Realtime subscriptions, no new hot paths, no N+1. Confirms the rest of this audit's scope is unaffected by this feature.

@@ -9,6 +9,7 @@ import '../../core/premium/premium_feature.dart';
 import '../../core/premium/premium_providers.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
+import '../../features/work_mode/presentation/providers/work_mode_provider.dart';
 import '../../shared/extensions/context_extensions.dart';
 
 // Per-provider display metadata used in the map provider picker.
@@ -88,6 +89,8 @@ class ProfilePage extends ConsumerWidget {
     final user = authState is AuthAuthenticated ? authState.user : null;
     final currentTheme = ref.watch(themeProvider);
     final currentMapProvider = ref.watch(mapProviderConfigProvider);
+    final workModeActive = ref.watch(isWorkModeActiveProvider);
+    final workModeAvailable = ref.watch(isWorkModeAvailableProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -155,13 +158,23 @@ class ProfilePage extends ConsumerWidget {
           const SizedBox(height: 24),
           const _SectionHeader('Appearance'),
           const SizedBox(height: 8),
-          _tile(
-            context,
-            icon: Icons.palette_outlined,
-            label: 'Theme: ${_kThemeMeta[currentTheme]!.label}',
-            trailing: _ThemeSwatch(theme: currentTheme),
-            onTap: () => _showThemePicker(context, ref),
-          ),
+          if (workModeActive)
+            _tile(
+              context,
+              icon: Icons.palette_outlined,
+              label: 'Theme: Onyx & Gold (locked by Work Mode)',
+              onTap: () => context.showSnackBar(
+                'Switch to Personal mode to change your theme.',
+              ),
+            )
+          else
+            _tile(
+              context,
+              icon: Icons.palette_outlined,
+              label: 'Theme: ${_kThemeMeta[currentTheme]!.label}',
+              trailing: _ThemeSwatch(theme: currentTheme),
+              onTap: () => _showThemePicker(context, ref),
+            ),
           const SizedBox(height: 8),
           _tile(
             context,
@@ -192,13 +205,15 @@ class ProfilePage extends ConsumerWidget {
             label: 'Privacy Settings',
             onTap: () => context.push('/settings/privacy'),
           ),
-          const SizedBox(height: 8),
-          _tile(
-            context,
-            icon: Icons.work_outline,
-            label: 'My Organizations',
-            onTap: () => context.push('/organizations'),
-          ),
+          if (workModeAvailable) ...[
+            const SizedBox(height: 8),
+            _tile(
+              context,
+              icon: Icons.work_outline,
+              label: 'My Organizations',
+              onTap: () => context.push('/organizations'),
+            ),
+          ],
           const SizedBox(height: 8),
           _tile(
             context,
@@ -407,6 +422,7 @@ class _ThemePickerSheet extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: 32),
               child: Column(
                 children: KumoTheme.values
+                    .where((t) => t != KumoTheme.onyxGold)
                     .map(
                       (t) => _ThemeOption(
                         theme: t,

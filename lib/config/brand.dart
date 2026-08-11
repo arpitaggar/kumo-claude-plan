@@ -45,6 +45,8 @@ class Brand {
       'assets/icons/kumo_logo_verdigris_bronze.svg';
   static const String _cloudSilverLogo =
       'assets/icons/kumo_logo_cloud_silver.svg';
+  static const String _onyxGoldLogo =
+      'assets/icons/kumo_logo_stacked_premium_gold.svg';
 
   static String logoFor(KumoTheme theme) => switch (theme) {
     KumoTheme.goldenHour => _goldenHourLogo,
@@ -57,5 +59,6 @@ class Brand {
     KumoTheme.dawnFlight => _dawnFlightLogo,
     KumoTheme.verdigrisBronze => _verdigrisBronzeLogo,
     KumoTheme.cloudSilver => _cloudSilverLogo,
+    KumoTheme.onyxGold => _onyxGoldLogo,
   };
 }

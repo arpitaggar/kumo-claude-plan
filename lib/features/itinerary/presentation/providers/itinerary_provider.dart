@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../work_mode/presentation/providers/work_mode_provider.dart';
 import '../../data/datasources/itinerary_local_datasource.dart';
 import '../../data/datasources/itinerary_remote_datasource.dart';
 import '../../data/repositories/itinerary_repository_impl.dart';
@@ -197,3 +199,39 @@ final itineraryListProvider =
         deleteUseCase: ref.watch(deleteItineraryUseCaseProvider),
       ),
     );
+
+/// The trips relevant to the current mode: personal (untagged) trips in
+/// Private Mode, or the signed-in user's own trips (owned or member of) at
+/// the current work org in Work Mode.
+///
+/// The ownerId/members recheck is currently redundant against what
+/// `fetchItineraries()` returns — `org_admin_trip_visibility_select`, the
+/// RLS policy that used to grant org admins row-visibility into teammates'
+/// org-tagged trips, was removed in stage32 (SEC-3: it leaked full row data,
+/// not just the row's existence) and never replaced with an equivalent
+/// grant, so RLS alone already scopes every fetch to owned/member trips. The
+/// recheck is kept anyway as defense-in-depth and to lock in the confirmed
+/// Work Mode scope decision (your own trips only, never a teammate-oversight
+/// view) against a future RLS change silently reintroducing broader
+/// visibility.
+final visibleItinerariesProvider = Provider<List<TravelItinerary>>((ref) {
+  final listState = ref.watch(itineraryListProvider);
+  final all = listState is ItineraryListLoaded
+      ? listState.itineraries
+      : const <TravelItinerary>[];
+
+  if (!ref.watch(isWorkModeActiveProvider)) {
+    return all.where((t) => t.orgId == null).toList();
+  }
+
+  final orgId = ref.watch(currentWorkOrgProvider)?.id;
+  final auth = ref.watch(authNotifierProvider);
+  final userId = auth is AuthAuthenticated ? auth.user.id : null;
+  return all
+      .where(
+        (t) =>
+            t.orgId == orgId &&
+            (t.ownerId == userId || t.members.any((m) => m.userId == userId)),
+      )
+      .toList();
+});

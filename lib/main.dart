@@ -133,7 +133,7 @@ class KumoApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    final kumoTheme = ref.watch(themeProvider);
+    final kumoTheme = ref.watch(effectiveThemeProvider);
 
     return MaterialApp.router(
       title: Brand.appName,
@@ -149,6 +149,7 @@ class KumoApp extends ConsumerWidget {
         KumoTheme.dawnFlight => AppTheme.dawnFlight,
         KumoTheme.verdigrisBronze => AppTheme.verdigrisBronze,
         KumoTheme.cloudSilver => AppTheme.cloudSilver,
+        KumoTheme.onyxGold => AppTheme.onyxGoldTheme,
       },
       routerConfig: router,
     );

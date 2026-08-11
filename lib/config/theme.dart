@@ -584,6 +584,61 @@ class AppTheme {
   );
 
   // ══════════════════════════════════════════════════════════════════════════
+  // Onyx & Gold — enforced Work Mode theme (dark). Never user-selectable via
+  // the theme picker; applied automatically whenever Work Mode is active.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  static const onyxBg = Color(0xFF121212); // scaffold background
+  static const onyxSurface = Color(0xFF1C1A17); // cards / nav / inputs
+  static const onyxOutline = Color(0xFF3A342A); // dividers / borders
+  static const onyxGoldColor = Color(0xFFD4AF37); // primary — metallic gold
+  static const onyxBronze = Color(0xFFAD8A56); // secondary
+  static const onyxCopper = Color(0xFFB87333); // tertiary
+  static const onyxOnSurface = Color(0xFFF2E9D8); // warm ivory text
+  static const _onyxInk = Color(0xFF1C1508); // dark ink on bright gold/bronze
+
+  static const _onyxGoldScheme = ColorScheme(
+    brightness: Brightness.dark,
+    primary: onyxGoldColor,
+    onPrimary: _onyxInk,
+    primaryContainer: Color(0xFF4A3C10),
+    onPrimaryContainer: Color(0xFFFFE9A8),
+    secondary: onyxBronze,
+    onSecondary: _onyxInk,
+    secondaryContainer: Color(0xFF3A2E18),
+    onSecondaryContainer: Color(0xFFE8D4AC),
+    tertiary: onyxCopper,
+    onTertiary: cloudWhite,
+    tertiaryContainer: Color(0xFF3E2410),
+    onTertiaryContainer: Color(0xFFFFD9B8),
+    surface: onyxSurface,
+    onSurface: onyxOnSurface,
+    surfaceContainerHighest: onyxOutline,
+    onSurfaceVariant: Color(0xFFC9BBA0),
+    outline: Color(0xFF6E6248),
+    outlineVariant: onyxOutline,
+    // Material's standard *dark*-theme error pair — matches Synthwave Tokyo /
+    // Dawn Flight.
+    error: Color(0xFFFFB4AB),
+    onError: Color(0xFF690005),
+    errorContainer: Color(0xFF93000A),
+    onErrorContainer: Color(0xFFFFDAD6),
+    shadow: Color(0xFF000000),
+    scrim: Color(0xFF000000),
+    inverseSurface: onyxOnSurface,
+    onInverseSurface: onyxSurface,
+    inversePrimary: Color(0xFF8A6D1E),
+    surfaceTint: onyxGoldColor,
+  );
+
+  static ThemeData get onyxGoldTheme => _buildTheme(
+    scheme: _onyxGoldScheme,
+    background: onyxBg,
+    border: onyxOutline,
+    navIndicator: onyxGoldColor.withValues(alpha: 0.3),
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
   // Shared builder — keeps component styles DRY across themes
   // ══════════════════════════════════════════════════════════════════════════
 

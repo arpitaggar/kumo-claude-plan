@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/notifications/notification_providers.dart';
 import '../../features/chat/presentation/providers/chat_provider.dart';
 import '../../features/notifications/presentation/providers/notifications_provider.dart';
+import '../../features/work_mode/presentation/widgets/work_mode_banner.dart';
 import '../extensions/context_extensions.dart';
 import 'offline_banner.dart';
 
@@ -51,6 +52,7 @@ class KumoShell extends ConsumerWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
+          const WorkModeBanner(),
           const OfflineBanner(),
           Expanded(child: child),
         ],

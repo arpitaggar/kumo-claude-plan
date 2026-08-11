@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/work_mode/presentation/providers/work_mode_provider.dart';
+
 enum KumoTheme {
   cherryBlossom,
   goldenHour,
@@ -12,6 +14,9 @@ enum KumoTheme {
   dawnFlight,
   verdigrisBronze,
   cloudSilver,
+  // Enforced-only: never user-selectable via the theme picker. Applied
+  // automatically whenever Work Mode is active — see effectiveThemeProvider.
+  onyxGold,
 }
 
 final themeProvider = StateNotifierProvider<ThemeNotifier, KumoTheme>(
@@ -48,3 +53,14 @@ class ThemeNotifier extends StateNotifier<KumoTheme> {
     setTheme(values[(values.indexOf(state) + 1) % values.length]);
   }
 }
+
+/// The theme actually rendered by the app: forced to Onyx & Gold while Work
+/// Mode is active, otherwise the user's own persisted [themeProvider] choice.
+/// Work Mode never writes to [themeProvider] itself, so switching back to
+/// Private Mode always restores the exact prior personal theme.
+final effectiveThemeProvider = Provider<KumoTheme>((ref) {
+  if (ref.watch(isWorkModeActiveProvider)) {
+    return KumoTheme.onyxGold;
+  }
+  return ref.watch(themeProvider);
+});

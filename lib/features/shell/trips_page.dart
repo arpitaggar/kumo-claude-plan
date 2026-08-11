@@ -22,6 +22,7 @@ class _TripsPageState extends ConsumerState<TripsPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(itineraryListProvider);
     final auth = ref.watch(authNotifierProvider);
+    final visibleItineraries = ref.watch(visibleItinerariesProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -69,13 +70,13 @@ class _TripsPageState extends ConsumerState<TripsPage> {
             ],
           ),
         ),
-        ItineraryListLoaded(:final itineraries) => Column(
+        ItineraryListLoaded() => Column(
           children: [
             _FilterRow(
               current: _statusFilter,
               onSelect: (s) => setState(() => _statusFilter = s),
             ),
-            Expanded(child: _buildList(context, ref, auth, itineraries)),
+            Expanded(child: _buildList(context, ref, auth, visibleItineraries)),
           ],
         ),
       },
