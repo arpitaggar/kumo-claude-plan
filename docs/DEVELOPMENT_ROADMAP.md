@@ -1,9 +1,11 @@
 # Kumo Development Roadmap
 
 **Project:** Kumo — Collaborative Travel Super-App  
-**Current Version:** 2.0 (as-built)  
-**Previous Version:** 1.0 (original plan)  
+**Current Version:** 2.1 (as-built)  
+**Previous Version:** 1.0 (original plan) → 2.0 (Stage 1–19, through masked trip email)  
 **Target Launch:** Q3 2026
+
+> **2026-08-11 refresh:** This doc was last substantively written before the social feed grew into a real social product surface and before any B2B/org work existed (Stage 19 and earlier only). Stages 20–22 below cover everything shipped since — see `Checklist.md` (repo root) for the full, continuously-updated day-by-day log this doc summarizes; that file is the actual source of truth going forward, not this one.
 
 ---
 
@@ -20,10 +22,10 @@ The original 5-stage plan was restructured during implementation. Stages were br
 | AI tier | Skeletal mode + Concierge mode (CrewAI agents, streaming) | Single-call generation (Claude Haiku) | Agentic AI requires backend infrastructure not yet in place |
 | AI security | Supabase Edge Function (key server-side) | Direct client call (key in .env) | Edge function scaffolding deferred; acceptable for dev/beta |
 | Fintech | Expense split + Virtual Debit Card (Stripe Issuing) + Stripe Connect | Expense split only | Stripe Issuing requires legal/compliance review; deferred |
-| Social layer | Feed with likes, comments, follows, gamification (XP/badges) | Read-only Discover feed (public itineraries) | Full social graph is a separate product surface; deferred |
-| B2B portal | Multi-tenant schema, travel policies, admin dashboard | Not built | Requires pilot customer; premature to build without validated demand |
+| Social layer | Feed with likes, comments, follows, gamification (XP/badges) | Real social feed shipped (Stage 20): publish-as-snapshot with fork lineage, likes, follows, comments, delete/unpublish, in-app + push notifications, cursor pagination, server-side search. Only gamification (XP/badges) remains deferred. | Superseded the original read-only Discover-tab plan once built out; gamification is genuinely a separate, later concern |
+| B2B portal | Multi-tenant schema, travel policies, admin dashboard | Minimal real foundation shipped (Stage 21): organizations, org-tagged trips, expense-approval workflow, cost-center fields, self-serve join codes (QR + manual + deep link), per-department approval thresholds and feature-flag overrides, and a client-side "Work Mode" toggle (Stage 22) separating personal/work context. No admin dashboard or travel-policy engine. | Built the minimum real B2B substrate a pilot customer would actually need, rather than the full portal speculatively; admin-side workflows are explicitly left to a future admin portal or an external system (e.g. SAP), not this app |
 | Chat polish | Typing indicators, read receipts | Built (Stage 16) | Read receipts via SECURITY DEFINER RPC; typing indicators via Realtime Broadcast |
-| New (not in v1.0) | — | Packing lists, trip notes, share sheet, offline banner, home search, profile stats | Surfaced as higher value during implementation |
+| New (not in v1.0) | — | Packing lists, trip notes, share sheet, offline banner, home search, profile stats, destination-based trip themes, trip route segments with routed geometry, weather chips, premium feature flags, masked trip email, an 11th ("Onyx & Gold") enforced theme for Work Mode | Surfaced as higher value during implementation |
 
 ---
 
@@ -36,11 +38,14 @@ v1.0 Stage 2 (Collaboration)       →  v2.0 Stage 2 (Collaboration) ✅ (simpli
 v1.0 Stage 3 (Agentic AI)          →  v2.0 Stage 3 (AI Generation) ✅ (simplified)
                                        v2.0 Stage 8 (AI Integration) ✅
 v1.0 Stage 4 (Fintech + Ratings)   →  v2.0 Stage 4 (Expenses + Ratings) ✅ (no Stripe)
-v1.0 Stage 5 (Social + B2B)        →  v2.0 Stage 6 (Discover + Notes) ✅ (subset only)
+v1.0 Stage 5 (Social + B2B)        →  v2.0 Stage 6 (Discover + Notes) ✅ (subset only, superseded)
+                                       v2.0 Stage 20 (Real Social Feed) ✅
+                                       v2.0 Stage 21 (Orgs / minimal B2B) ✅ (subset only)
 
 Not in v1.0                        →  v2.0 Stage 5 (Packing Lists) ✅
 Not in v1.0                        →  v2.0 Stage 7 (Connectivity + Search) ✅ (partial)
 Not in v1.0                        →  v2.0 Stage 9 (Polish + Release Prep) ⬜
+Not in v1.0                        →  v2.0 Stage 22 (Work Mode toggle) ✅
 ```
 
 ---
@@ -217,6 +222,42 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 ---
 
+### Stage 20 — Real Social Feed: Publish, Likes, Follows, Comments, Notifications ✅
+
+**Note on numbering:** this stage's own migrations are numbered stage33–38 in `docs/supabase_migrations/`; the roadmap-stage number here is this doc's own sequence, continuing from Stage 19. Full day-by-day detail lives in `Checklist.md`, not duplicated here.
+
+**Shipped:** The Stage 6 "read-only Discover feed" grew into a real social product surface. Publishing an itinerary now snapshots it into `itinerary_posts` (with fork lineage back to the original if forked from someone else's post), likes and follows with their own tables and rate limits, author-only delete/unpublish, a full comment thread per post (bottom-sheet UI, not a new route), and an in-app + push notification system (`lib/features/notifications/`) covering likes/follows/new-posts/comments — with its own unread badge and mark-read-on-open flow. Explore search is now real server-side search (`pg_trgm`) instead of a 50-post client-side filter, and both feed tabs use cursor pagination with a bounded in-memory window (`PostFeedNotifier`, capped at 200 posts) instead of unbounded "Load more" accumulation.
+
+**vs. v1.0:** This is the v1.0 Stage 5 social-graph concept, actually built — likes, comments, follows are all here now. Only gamification (XP/achievements/badges) remains deferred, and there's still no algorithmic ranking (chronological only).
+
+**SQL migrations:** `stage33_social_feed_scale.sql` through `stage38_post_comments.sql`, run in order — all ✅ live on the database.
+
+---
+
+### Stage 21 — Organizations & Minimal B2B Foundation ✅ (subset of the original B2B vision)
+
+**Note on numbering:** migrations stage28–32 (RLS hardening) and stage39 (department overrides) — again, see `Checklist.md` for the day-by-day breakdown; this entry is the high-level summary.
+
+**Shipped:** A real, minimal organization layer: `organizations`/`org_members` with roles, trips taggable to an org (`itineraries.org_id`, owner-only, only to an org you belong to — RLS-enforced, not just UI-restricted), an expense-approval workflow with admin review, configurable cost-tracking fields per org (including a `select`-type department field and a `generated` cost-center-code field), and a self-serve join-code system (QR display/scan, manual entry, and a `kumo://join?code=...` deep link) so a new member can get into an org without an admin doing it by hand. Stage 39 added per-department auto-approval thresholds (an expense strictly under the threshold auto-approves on submit) and per-department feature-flag overrides (a premium-gating exception, e.g. "everyone in Sales gets Google Maps regardless of trial status").
+
+**vs. v1.0:** A real but intentionally minimal slice of the original "multi-tenant schema, travel policies, admin dashboard" vision — no admin dashboard, no travel-policy engine, no multi-org-per-user support (the product currently assumes at most one org per user). Deliberately scoped this way rather than building further speculatively without a pilot customer; see Stage 22 below for how a user actually experiences being in an org day-to-day.
+
+**SQL migrations:** `stage28_work_mode_orgs.sql` through `stage32_security_hardening_2.sql`, `stage35_org_join_codes.sql`, `stage39_department_overrides.sql`. **stage39 has not yet been run against the live database** — see What Remains below.
+
+**Security note:** a mid-build review of this stage found and fixed 4 real RLS issues before anything shipped broadly (an `org_members` policy self-recursion bug, an unauthenticated trip-email-alias IDOR, a cross-tenant expense-injection path, and an over-broad org-admin `SELECT` grant that leaked full trip rows instead of just row-existence — see `docs/SECURITY_AUDIT.md` SEC-026 through SEC-029). The over-broad grant was fully removed, not narrowed — org admins today have no direct table-level read access into trips they don't own or aren't a member of.
+
+---
+
+### Stage 22 — Work Mode / Private Mode Toggle ✅
+
+**Shipped:** A global mode switch, requested directly rather than audit-driven, for the subset of users who both belong to an org (Stage 21) and travel personally — a consultant being the motivating case. Work Mode forces a distinct dark "Onyx & Gold" theme and a "Kumo — for {Org}" banner so the mode is never ambiguous, filters Home/Trips to the current context (only the signed-in user's own trips at the current org while in Work Mode — deliberately never an admin-oversight view of teammates' trips), and auto-tags new trips to the org instead of a manual picker. Invisible to the majority of users who belong to zero orgs.
+
+**vs. v1.0:** Not in the original plan. A UX layer on top of Stage 21's org substrate, not new backend capability — purely client-side (theme/filter/banner), no new tables or RLS.
+
+**Follow-up audit pass (same day):** found and fixed one real bug (org management was accidentally gated on "Work Mode currently on" instead of "user has an org," locking org-admin tasks like generating a join code behind first switching into Work Mode) and corrected a stale code comment that cited an RLS grant already removed in Stage 21's security pass. See `Checklist.md`'s 2026-08-11 audit-round entry for the full writeup.
+
+---
+
 ## What Remains (Deferred / Not Implemented)
 
 | Feature | Why Deferred |
@@ -226,15 +267,18 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Invite email (Resend branded) | Needs Resend account + domain — Supabase built-in fallback works today |
 | GitHub Pages for legal docs | Enable in repo Settings → Pages → /docs; submit URL to app stores |
 | WCAG 2.1 full accessibility audit | Partial (send button + dots done); full audit deferred |
-| Widget + integration tests | Domain + model + legal widget tests done; full UI coverage deferred |
+| Widget + integration tests | Domain/model/legal/organization/social/work-mode coverage now substantial (878 tests as of 2026-08-11); still no end-to-end integration test suite, and neither the join-code deep link nor Work Mode's retheme/banner/filtering has ever been smoke-tested on a real device or simulator (none available in this dev environment) |
 | Concierge AI mode (agents, streaming) | Requires backend agent infrastructure |
 | Virtual Debit Card (Stripe Issuing) | Legal/compliance review required |
-| Social feed (likes, comments, follows) | Separate product surface |
-| Gamification (XP, achievements, badges) | Post-retention-baseline |
-| B2B portal | Requires pilot customer |
+| Gamification (XP, achievements, badges) | Post-retention-baseline; the rest of the v1.0 social-graph vision (likes/comments/follows) shipped in Stage 20 |
+| Full B2B admin portal (dashboard, travel-policy engine) | Stage 21 shipped the minimal real substrate (orgs, expense approval, cost fields, join codes, department overrides); the admin-facing surface on top of it is explicitly left to a future admin portal or an external system (e.g. SAP), not this app |
+| Multi-org-per-user support | Product currently assumes at most one org per user (Stage 21/22) — a user in more than one silently falls back to the first rather than picking; revisit if that assumption ever breaks in practice |
 | Google Maps route rendering (live) | Code-complete behind the map-provider abstraction (Stage 18); needs a real Google Cloud Maps API key dropped into the gitignored `google_maps_api.xml` (Android) / `Secrets.xcconfig` (iOS) — currently builds with a placeholder key so tiles won't render |
-| Org/sub-org premium config inheritance | Premium defaults (trial length, feature-flag overrides) are a single global `app_config`/`feature_flags` value today; per-organisation overrides need an organisation entity first (see B2B portal above) — the right shape is a fallback lookup (org row → global row), not class-style inheritance |
 | Masked trip email (live) | Code-complete (Stage 19); needs a domain + inbound-email provider (Cloudflare Email Routing / Postmark / Mailgun) wired to `inbound-trip-email`, plus the `INBOUND_WEBHOOK_SECRET` secret set — see that stage's entry above |
+| Migrations not yet run against the live database | `stage36_post_delete.sql` and `stage39_department_overrides.sql` — everything through stage35 and stage37/38 is confirmed live; see `Checklist.md` for the exact running status |
+| SEC-014 (Firebase key rotation) | The one open finding in `docs/SECURITY_AUDIT.md` that can't be closed by a code change — a manual Firebase console action |
+| Background job/queue infrastructure | `docs/SCALABILITY_AUDIT.md` SCALE-002 — the prerequisite for the *proper* long-term version of the like-counter and for scaling push fan-out past trip-sized groups; not justified until real fan-out traffic shows up |
+| Architecture cleanup backlog | `docs/SOLID_AUDIT.md`'s 12-item ranked list (a few providers typed to concrete classes instead of interfaces, `SocialRepository` bundles 3 concerns, some enum-driven rendering duplicated across 3-4 files) — incremental, non-blocking, tracked there rather than here |
 
 ---
 
@@ -260,33 +304,37 @@ Jun–Jul 2026
 ├── Stage 16: Chat Polish, Animations & A11y ✅ Week 7
 ├── Stage 17: Profile/Expense/Chat/Push      ✅ Android / 🔧 iOS   Jul 2026
 ├── Stage 18: Route Segments + Premium Flags ✅                   Aug 2026
-└── Stage 19: Masked Trip Email              🔧                   Aug 2026
+├── Stage 19: Masked Trip Email              🔧                   Aug 2026
+├── Stage 20: Real Social Feed               ✅                   Aug 2026
+├── Stage 21: Organizations / Minimal B2B    ✅                   Aug 2026
+└── Stage 22: Work Mode Toggle               ✅                   Aug 2026
 ```
 
 ---
 
 ## Quality Gates
 
-- `flutter analyze` passes with zero issues ✅
+- `flutter analyze` — zero warnings/errors; ~253 info-level style nits tolerated (same bar applied consistently across the codebase — see `docs/SOLID_AUDIT.md`/`Checklist.md` for what those are) ✅
 - No secrets committed to git (`.env` in `.gitignore`, API keys in Supabase secrets) ✅
-- Supabase RLS enabled on all tables ✅
-- Clean Architecture layer boundaries respected ✅
+- Supabase RLS enabled on all tables, and independently security-reviewed twice (2026-08-05, 2026-08-09) — see `docs/SECURITY_AUDIT.md` ✅
+- Clean Architecture layer boundaries respected — audited (`docs/SOLID_AUDIT.md`), no domain-layer framework leaks anywhere including the newest features ✅
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
 - Signup consent checkbox before account creation ✅
-- 227 unit/widget tests passing ✅
+- **878 unit/widget tests passing** (up from 227) ✅
+- Scalability audit complete — every finding fixed-and-live, explicitly decided, or documented as not-yet-justified at this app's actual scale (`docs/SCALABILITY_AUDIT.md`) ✅
 
 Outstanding:
-- Run `stage14_delete_user_rpc.sql` migration in Supabase SQL editor
-- Run `stage21_trip_segments.sql` migration in Supabase SQL editor (Stage 18)
+- Run `stage36_post_delete.sql` and `stage39_department_overrides.sql` in the Supabase SQL editor — everything through stage35 and stage37/38 is confirmed live
+- SEC-014: rotate the Firebase key via the Firebase console (the one open security finding that isn't a code change)
 - Drop a real Google Maps API key into the gitignored native config files to make that map provider actually render (Stage 18)
-- Run `stage25_trip_segment_visibility.sql`, `stage26_trip_segments_replica_identity.sql`, and `stage27_trip_email_alias.sql` migrations in Supabase SQL editor
 - Wire up an inbound-email provider + `INBOUND_WEBHOOK_SECRET`, then deploy `inbound-trip-email`, to make masked trip email actually receive mail (Stage 19)
+- Deploy `generate-itinerary` (Katha AI) and `send-message-push` (push notifications) with their respective secrets set — both are code-complete, neither is live
 - Enable GitHub Pages → submit legal URLs to App Store Connect / Google Play Console
-- Widget tests and integration tests not yet written
+- No end-to-end integration test suite; the join-code deep link and Work Mode (Stage 22) have never been smoke-tested on a real device or simulator — none available in this dev environment
 - No formal WCAG 2.1 accessibility audit
 - Solo development; no PR review process
 
 ---
 
-**End of Development Roadmap v2.0**
+**End of Development Roadmap v2.1** — see `Checklist.md` for the continuously-updated day-by-day log this document summarizes.
