@@ -4,12 +4,13 @@
 
 - **Last Updated:** 2026-08-09
 - **Overall Posture:** Action Required — remediation applied, one item needs manual follow-up
-- **Open Critical/High Issues:** 0 code-fixable (30 of 31 findings resolved across the 2026-08-05 and 2026-08-09 remediation passes; SEC-014 remains open pending a manual Firebase console action — key rotation can't be done from a code change)
+- **Open Critical/High Issues:** 0 code-fixable (31 of 32 findings resolved across the 2026-08-05, 2026-08-09, and 2026-08-11 remediation passes; SEC-014 remains open pending a manual Firebase console action — key rotation can't be done from a code change)
 - **2026-08-09 update:** A security review of the work-mode/org feature (stages 28-30, shipped 2026-08-08) and the current uncommitted diff found and fixed 6 new findings — SEC-026 through SEC-031 — covering an RLS self-recursion bug, an unauthenticated trip-email-alias IDOR, a cross-tenant expense-injection path, an over-broad org-admin SELECT grant, an information-disclosure nit in the new startup-failure screen, and a non-constant-time secret comparison in `inbound-trip-email`. See those entries below.
 - **2026-08-11 spot-check:** Reviewed the new client-side Work Mode toggle feature (personal/work theme + trip-visibility split, no new tables/RLS/endpoints). Two things worth recording, neither a live vulnerability:
   1. **Verified, not assumed:** `CreateItineraryPage` now derives `org_id` for a new trip from client state (`currentWorkOrgProvider`) instead of a picker, and passes it straight to the insert. Confirmed this is still RLS-enforced, not just UI-restricted — `itineraries_owner_all` (`stage31_fix_org_members_rls_recursion.sql:168-173`) requires `owner_id = auth.uid() and (org_id is null or is_org_member(org_id))` on `with check`, so a tampered client sending an `org_id` the caller doesn't belong to is rejected at the database, not just hidden by the UI.
   2. **Corrected a stale reference introduced by the same feature:** a code comment in `visibleItinerariesProvider` (and the matching `Checklist.md` entry) cited `org_admin_trip_visibility_select` as a still-active RLS grant that the client-side filter needed to defend against. That policy was already dropped in SEC-029 (2026-08-09, before Work Mode was written) and replaced with the narrow `fetch_org_pending_approvals` RPC — org admins have had zero direct table-level SELECT into other members' trips since then. The client-side ownerId/member recheck in `visibleItinerariesProvider` is harmless (defense-in-depth, matches the product's confirmed Work Mode scope) but its original justification was inaccurate; both the code comment and Checklist.md have been corrected to state the real, current rationale.
 - **2026-08-11 deployment update:** every SQL migration through `stage39_department_overrides.sql` has now been run against the live database, including `stage23_security_hardening.sql` — closing the deployment gap this doc had been flagging since 2026-08-05. Edge Function redeployment and the `--dart-define-from-file` build switch (items 2–3 below) are still outstanding.
+- **2026-08-11 gamification audit:** reviewed the new `lib/features/gamification/` feature (Stage 23) against the same anti-abuse standard already applied to the social feed. Found and fixed one real gap — SEC-032, XP for trip creation/completion had no rate limit, unlike every other award source — see that entry below.
 
 **⚠️ Partially deployed.** All 25 findings below were audited and 24 fixed in code/migrations on 2026-08-05. Since then:
 1. ✅ **Run (2026-08-11):** `docs/supabase_migrations/stage23_security_hardening.sql` — and every migration after it — is now live against the Supabase project. The two Critical privilege-escalation fixes and the GDPR-erasure fix are protected in production.
@@ -678,6 +679,19 @@ Scope: full `lib/` tree, all `supabase/functions/*`, all `docs/supabase_migratio
 
 ---
 
+### [SEC-032] Gamification XP for trip creation/completion had no rate limit, unlike every other XP source
+
+- **Category:** Abuse / Anti-Cheat
+- **Severity:** Low
+- **Status:** ✅ Resolved (2026-08-11) — `docs/supabase_migrations/stage41_gamification_rate_limits.sql`
+- **Location:** `award_xp_on_trip_created`/`award_xp_on_trip_completed` (`stage40_gamification.sql`, Stage 23)
+- **1. Cause:** Stage 40 deliberately excluded expenses as an XP source specifically because "expenses have no rate limit anywhere in this schema, trivially farmable" — but didn't apply that same reasoning to `itineraries`, which also has no INSERT rate limit anywhere in this codebase (confirmed by grep across every migration). Every other XP source (post publish/like/follow/comment) sits on a table that already has its own rate-limit trigger from stage33/34; trip creation and completion did not.
+- **2. Impact:** Low — the only asset at stake is a cosmetic level number and 8 badges, not financial or private data. Still a real, cheap-to-exploit gap: a scripted client could spam trip creation (+10 XP each, unlimited) or create-then-immediately-complete (+40 XP each) with nothing to stop it, inconsistent with the anti-abuse posture applied to every other award source.
+- **3. Remediation:** `CREATE OR REPLACE` on both trigger functions, adding a windowed count check (5 awards/hour each, independent counters) before the `xp_events` insert. Deliberately does **not** add a rate limit to the `itineraries` table itself — creating/completing trips stays fully unrestricted for every user; only the XP award is throttled.
+- **4. Resolution Mechanism:** Same windowed-`count(*)`-trigger pattern already established for likes/follows/posts (stage33) — applied here to close a gap in the *newest* feature's own design, found by holding it to the same standard already applied to the rest of the social feed rather than assuming new code inherited that reasoning automatically.
+
+---
+
 ## Verified Compliant Controls (no action needed)
 
 - **Anthropic API key correctly server-side only** — read via `Deno.env.get` inside Edge Functions, never bundled client-side (Stage 13 migration).
@@ -739,5 +753,6 @@ Fixed in code/migrations on 2026-08-05, plus a second pass on 2026-08-09 coverin
 | SEC-029 | `org_admin_trip_visibility_select` over-broad SELECT | High |
 | SEC-030 | Raw exception shown on startup-failure screen | Low |
 | SEC-031 | Non-constant-time webhook-secret comparison | Low |
+| SEC-032 | Gamification XP for trip creation/completion had no rate limit | Low |
 
 **Still open:** SEC-014 (Firebase key rotation — manual console action, see Active Remediation Log above).

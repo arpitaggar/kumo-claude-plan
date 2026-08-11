@@ -5,6 +5,7 @@ import '../../data/datasources/gamification_remote_datasource.dart';
 import '../../data/repositories/gamification_repository_impl.dart';
 import '../../domain/entities/xp_event.dart';
 import '../../domain/entities/xp_summary.dart';
+import '../../domain/repositories/gamification_repository.dart';
 import '../../domain/usecases/fetch_xp_events_usecase.dart';
 
 // ---------------------------------------------------------------------------
@@ -15,7 +16,11 @@ final gamificationDataSourceProvider = Provider<GamificationRemoteDataSource>(
   (_) => const GamificationRemoteDataSourceImpl(),
 );
 
-final gamificationRepositoryProvider = Provider<GamificationRepositoryImpl>(
+// Typed to the abstract GamificationRepository, not the concrete Impl —
+// most repository providers in this codebase are typed to the concrete
+// class instead (a widespread DIP violation, see docs/SOLID_AUDIT.md);
+// new code shouldn't repeat it just because it's the dominant pattern.
+final gamificationRepositoryProvider = Provider<GamificationRepository>(
   (ref) =>
       GamificationRepositoryImpl(ref.watch(gamificationDataSourceProvider)),
 );

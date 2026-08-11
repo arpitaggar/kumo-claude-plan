@@ -4,7 +4,7 @@ Added 2026-08-11 — loads only when working under lib/features/gamification/. C
 
 ### XP, levels, and badges
 
-**Migrations:** `docs/supabase_migrations/stage40_gamification.sql`.
+**Migrations:** `docs/supabase_migrations/stage40_gamification.sql`, patched by `stage41_gamification_rate_limits.sql` (adds the rate limit on `award_xp_on_trip_created`/`award_xp_on_trip_completed` described below — see `docs/SECURITY_AUDIT.md` SEC-032).
 Must be run in Supabase SQL editor before deploying the corresponding app build.
 
 #### Database schema
@@ -12,8 +12,8 @@ Must be run in Supabase SQL editor before deploying the corresponding app build.
 `public.xp_events` — one append-only row per XP award: `user_id`, `amount`, `reason` (human-readable, e.g. "Completed a trip"), `source_type` (`trip_created`/`trip_completed`/`post_published`/`post_liked`/`follower_gained`/`comment_posted`), `source_id`, `created_at`. A user's current total is `sum(amount)` over their own rows — not a mutable counter column — same shape as `profile_status` (stage21).
 
 RLS has **no insert policy at all** — every row is written by a `SECURITY DEFINER` trigger function, never a direct client insert, exactly like `public.notifications` (stage37):
-- `award_xp_on_trip_created` (on `itineraries` insert) — recipient is `owner_id`.
-- `award_xp_on_trip_completed` (on `itineraries` update of `status`, only when it transitions *to* `completed`) — recipient is `owner_id`.
+- `award_xp_on_trip_created` (on `itineraries` insert) — recipient is `owner_id`. Rate-limited to 5/hour (stage41) — `itineraries` has no INSERT rate limit anywhere in this schema, so the *award* is throttled instead; trip creation itself stays fully unrestricted.
+- `award_xp_on_trip_completed` (on `itineraries` update of `status`, only when it transitions *to* `completed`) — recipient is `owner_id`. Also rate-limited to 5/hour (stage41), independent counter from the above.
 - `award_xp_on_post_published` (on `itinerary_posts` insert) — recipient is `author_id`.
 - `award_xp_on_post_liked` (on `post_likes` insert) — recipient is the post's author (looked up), skipped for a self-like.
 - `award_xp_on_follower_gained` (on `follows` insert) — recipient is `followee_id`.
@@ -41,3 +41,4 @@ Standard Clean Architecture layers, all read-only — **no existing mutation cod
 - **No push notification or persisted `notifications` row for a badge unlock** — in-app celebration only (`showBadgeUnlockDialog`), a deliberate scope trim to avoid touching the `notifications` table/`NotificationType` enum/`send-social-push` for this pass. Revisit only if badge unlocks turn out to need to reach a user who isn't in the app at the moment they cross a threshold.
 - **Expenses are excluded from XP sources** — see the schema section above; revisit only if expenses ever gain a rate limit for other reasons.
 - **Trip completion dedups via the trip's own id**, so a user cannot flip a trip's status `active ⇄ completed` repeatedly to farm the 30 XP award more than once.
+- **Trip creation/completion XP is rate-limited (stage41, SEC-032)** — a follow-up audit caught that these two sources had no throttle at all, inconsistent with the "expenses have no rate limit, so exclude them" reasoning already applied above; `itineraries` genuinely has no INSERT rate limit anywhere in this schema. Fixed by throttling the *award* (5/hour per source, independent counters) rather than restricting trip creation/completion itself, which stays fully unrestricted for every user regardless of this feature.
