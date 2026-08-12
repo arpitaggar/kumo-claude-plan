@@ -545,4 +545,48 @@ void main() {
       );
     });
   });
+
+  group('confirmAge', () {
+    final tDob = DateTime(1990, 1, 1);
+
+    test('returns Right(true) when the datasource reports verified', () async {
+      when(() => remote.confirmAge(tDob)).thenAnswer((_) async => true);
+
+      final result = await repository.confirmAge(tDob);
+
+      result.fold((_) => fail('expected Right'), (v) => expect(v, isTrue));
+    });
+
+    test('returns Right(false) when the datasource reports rejected', () async {
+      when(() => remote.confirmAge(tDob)).thenAnswer((_) async => false);
+
+      final result = await repository.confirmAge(tDob);
+
+      result.fold((_) => fail('expected Right'), (v) => expect(v, isFalse));
+    });
+
+    test('maps AuthException to AuthFailure', () async {
+      when(
+        () => remote.confirmAge(any()),
+      ).thenThrow(AuthException.sessionExpired());
+
+      final result = await repository.confirmAge(tDob);
+
+      result.fold(
+        (f) => expect(f, isA<AuthFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+
+    test('maps unexpected errors to UnexpectedFailure', () async {
+      when(() => remote.confirmAge(any())).thenThrow(Exception('boom'));
+
+      final result = await repository.confirmAge(tDob);
+
+      result.fold(
+        (f) => expect(f, isA<UnexpectedFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
 }
