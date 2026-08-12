@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'organization.dart' show Organization;
+
 /// Membership of a user in an [Organization] — a separate axis from
 /// `GroupMemberRole` (per-trip role): an org role governs org roster
 /// management and expense-approval rights, never a specific trip's content.

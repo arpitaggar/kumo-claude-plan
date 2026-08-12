@@ -1,3 +1,6 @@
+import '../geocoding/nominatim_geocoding_service.dart'
+    show NominatimGeocodingService;
+import 'fallback_weather_service.dart' show FallbackWeatherService;
 import 'weather_forecast.dart';
 
 /// A single weather data source. Implementations are self-contained and

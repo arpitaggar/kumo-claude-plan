@@ -1,3 +1,5 @@
+import 'travel_itinerary.dart' show GroupMember;
+
 /// The three participant tiers on a Kumo trip.
 ///
 /// This is a *classification* layered on top of the existing storage model,

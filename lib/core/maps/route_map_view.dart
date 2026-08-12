@@ -379,15 +379,16 @@ class _DirectionArrowPainter extends CustomPainter {
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
       ..close();
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = outlineColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5
-        ..strokeJoin = StrokeJoin.round,
-    );
-    canvas.drawPath(path, Paint()..color = color);
+    canvas
+      ..drawPath(
+        path,
+        Paint()
+          ..color = outlineColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5
+          ..strokeJoin = StrokeJoin.round,
+      )
+      ..drawPath(path, Paint()..color = color);
   }
 
   @override
@@ -537,7 +538,7 @@ String _bitmapCacheKey(List<TripSegment> segments, ColorScheme colorScheme) {
 }
 
 class _GoogleRouteMapState extends State<_GoogleRouteMap> {
-  Future<_RouteBitmaps>? _bitmapsFuture;
+  late Future<_RouteBitmaps> _bitmapsFuture;
   String? _bitmapsKey;
 
   Future<_RouteBitmaps> _ensureBitmaps(ColorScheme colorScheme) {
@@ -546,7 +547,7 @@ class _GoogleRouteMapState extends State<_GoogleRouteMap> {
       _bitmapsKey = key;
       _bitmapsFuture = _loadRouteBitmaps(widget.segments, colorScheme);
     }
-    return _bitmapsFuture!;
+    return _bitmapsFuture;
   }
 
   @override
@@ -623,26 +624,27 @@ class _GoogleRouteMapState extends State<_GoogleRouteMap> {
       final modeIcon = bitmaps?.modeIcons[s.mode];
       if (modeIcon != null) {
         final mid = pointAtFraction(geoPath, 0.5);
-        markers.add(
-          gm.Marker(
-            markerId: gm.MarkerId('${s.id}-mode-arrow'),
-            position: gm.LatLng(mid.lat, mid.lng),
-            icon: bitmaps!.directionArrow,
-            rotation: mid.bearingDegrees,
-            anchor: const Offset(0.5, 0.5),
-            zIndexInt: 2,
-          ),
-        );
-        markers.add(
-          gm.Marker(
-            markerId: gm.MarkerId('${s.id}-mode'),
-            position: gm.LatLng(mid.lat, mid.lng),
-            icon: modeIcon,
-            anchor: const Offset(0.5, 0.5),
-            onTap: () => widget.onSegmentTap(s),
-            zIndexInt: 3,
-          ),
-        );
+        markers
+          ..add(
+            gm.Marker(
+              markerId: gm.MarkerId('${s.id}-mode-arrow'),
+              position: gm.LatLng(mid.lat, mid.lng),
+              icon: bitmaps!.directionArrow,
+              rotation: mid.bearingDegrees,
+              anchor: const Offset(0.5, 0.5),
+              zIndexInt: 2,
+            ),
+          )
+          ..add(
+            gm.Marker(
+              markerId: gm.MarkerId('${s.id}-mode'),
+              position: gm.LatLng(mid.lat, mid.lng),
+              icon: modeIcon,
+              anchor: const Offset(0.5, 0.5),
+              onTap: () => widget.onSegmentTap(s),
+              zIndexInt: 3,
+            ),
+          );
       }
 
       markers.add(
@@ -652,7 +654,6 @@ class _GoogleRouteMapState extends State<_GoogleRouteMap> {
           icon:
               bitmaps?.destinationPins[s.id] ??
               gm.BitmapDescriptor.defaultMarker,
-          anchor: const Offset(0.5, 1),
           onTap: () => widget.onSegmentTap(s),
           zIndexInt: 4,
         ),

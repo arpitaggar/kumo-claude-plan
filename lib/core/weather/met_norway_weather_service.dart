@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'nws_weather_service.dart' show NwsWeatherService;
 import 'weather_condition.dart';
 import 'weather_forecast.dart';
 import 'weather_service.dart';

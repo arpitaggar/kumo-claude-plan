@@ -5,6 +5,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
 import '../providers/organization_provider.dart';
+import 'org_join_codes_page.dart' show OrgJoinCodesPage;
 
 /// Employee-facing screen to self-serve join an organization via a code an
 /// admin generated on [OrgJoinCodesPage] — scan its QR or type it in. Both
@@ -75,102 +76,97 @@ class _JoinOrganizationPageState extends ConsumerState<JoinOrganizationPage> {
       },
       (org) {
         ref.invalidate(myOrganizationsProvider);
-        context.showSnackBar('Joined ${org.name}');
-        context.go('/organizations/${org.id}/members');
+        context
+          ..showSnackBar('Joined ${org.name}')
+          ..go('/organizations/${org.id}/members');
       },
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Join organization'),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _scanning ? Icons.keyboard_outlined : Icons.qr_code_scanner,
-            ),
-            tooltip: _scanning ? 'Enter code manually' : 'Scan QR code',
-            onPressed: _redeeming
-                ? null
-                : () => setState(() {
-                    _scanning = !_scanning;
-                    if (_scanning) {
-                      _controller.start();
-                    } else {
-                      _controller.stop();
-                    }
-                  }),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Join organization'),
+      actions: [
+        IconButton(
+          icon: Icon(
+            _scanning ? Icons.keyboard_outlined : Icons.qr_code_scanner,
           ),
-        ],
-      ),
-      body: _scanning ? _buildScanner(context) : _buildManualEntry(context),
-    );
-  }
+          tooltip: _scanning ? 'Enter code manually' : 'Scan QR code',
+          onPressed: _redeeming
+              ? null
+              : () => setState(() {
+                  _scanning = !_scanning;
+                  if (_scanning) {
+                    _controller.start();
+                  } else {
+                    _controller.stop();
+                  }
+                }),
+        ),
+      ],
+    ),
+    body: _scanning ? _buildScanner(context) : _buildManualEntry(context),
+  );
 
-  Widget _buildScanner(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        MobileScanner(controller: _controller, onDetect: _onDetect),
+  Widget _buildScanner(BuildContext context) => Stack(
+    alignment: Alignment.center,
+    children: [
+      MobileScanner(controller: _controller, onDetect: _onDetect),
+      Container(
+        width: 240,
+        height: 240,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white70, width: 2),
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      if (_redeeming)
         Container(
-          width: 240,
-          height: 240,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.white70, width: 2),
-            borderRadius: BorderRadius.circular(16),
+          color: Colors.black45,
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(),
+        ),
+    ],
+  );
+
+  Widget _buildManualEntry(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(24),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Enter the join code your organization gave you.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _codeController,
+          textCapitalization: TextCapitalization.characters,
+          enabled: !_redeeming,
+          decoration: const InputDecoration(
+            labelText: 'Join code',
+            border: OutlineInputBorder(),
           ),
         ),
-        if (_redeeming)
-          Container(
-            color: Colors.black45,
-            alignment: Alignment.center,
-            child: const CircularProgressIndicator(),
+        const SizedBox(height: 16),
+        AnimatedBuilder(
+          animation: _codeController,
+          builder: (context, _) => FilledButton(
+            onPressed: _redeeming || _codeController.text.trim().isEmpty
+                ? null
+                : () => _redeem(_codeController.text.trim()),
+            child: _redeeming
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Join'),
           ),
+        ),
       ],
-    );
-  }
-
-  Widget _buildManualEntry(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Enter the join code your organization gave you.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _codeController,
-            textCapitalization: TextCapitalization.characters,
-            enabled: !_redeeming,
-            decoration: const InputDecoration(
-              labelText: 'Join code',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          AnimatedBuilder(
-            animation: _codeController,
-            builder: (context, _) => FilledButton(
-              onPressed: _redeeming || _codeController.text.trim().isEmpty
-                  ? null
-                  : () => _redeem(_codeController.text.trim()),
-              child: _redeeming
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Join'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    ),
+  );
 }

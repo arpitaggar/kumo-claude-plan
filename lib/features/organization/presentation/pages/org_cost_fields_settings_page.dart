@@ -303,17 +303,15 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     OrgCostFieldOption option,
-  ) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => _DepartmentSettingsSheet(
-        option: option,
-        onEditThreshold: () => _editOptionThreshold(context, ref, option),
-      ),
-    );
-  }
+  ) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (_) => _DepartmentSettingsSheet(
+      option: option,
+      onEditThreshold: () => _editOptionThreshold(context, ref, option),
+    ),
+  );
 
   Future<void> _editDefaultThreshold(
     BuildContext context,

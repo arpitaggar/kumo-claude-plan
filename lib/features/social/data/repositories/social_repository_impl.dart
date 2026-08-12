@@ -201,7 +201,7 @@ class SocialRepositoryImpl implements SocialRepository {
         'post_id': postId,
         'author_id': authorId,
         'author_name': authorName,
-        if (authorAvatarUrl != null) 'author_avatar_url': authorAvatarUrl,
+        'author_avatar_url': ?authorAvatarUrl,
         'content': content,
       });
       return const Right(null);

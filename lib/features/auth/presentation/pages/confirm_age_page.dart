@@ -129,10 +129,10 @@ class _ConfirmAgePageState extends ConsumerState<ConfirmAgePage> {
                 onTap: _pickDateOfBirth,
                 borderRadius: BorderRadius.circular(4),
                 child: InputDecorator(
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Date of birth',
-                    prefixIcon: const Icon(Icons.cake_outlined),
-                    suffixIcon: const Icon(Icons.calendar_today_outlined),
+                    prefixIcon: Icon(Icons.cake_outlined),
+                    suffixIcon: Icon(Icons.calendar_today_outlined),
                   ),
                   child: Text(
                     _dateOfBirth == null

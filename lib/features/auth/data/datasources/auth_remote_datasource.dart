@@ -61,7 +61,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: email,
         password: password,
         data: {
-          if (displayName != null) 'display_name': displayName,
+          'display_name': ?displayName,
           'date_of_birth': dateOfBirth.toIso8601String().split('T').first,
         },
       );

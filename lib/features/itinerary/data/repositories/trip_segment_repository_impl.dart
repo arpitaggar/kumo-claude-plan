@@ -125,11 +125,11 @@ class TripSegmentRepositoryImpl implements TripSegmentRepository {
 
   @override
   Future<Either<Failure, void>> setSegmentVisibility(
-    String segmentId,
-    bool isVisible,
-  ) async {
+    String segmentId, {
+    required bool isVisible,
+  }) async {
     try {
-      await dataSource.setVisibility(segmentId, isVisible);
+      await dataSource.setVisibility(segmentId, isVisible: isVisible);
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

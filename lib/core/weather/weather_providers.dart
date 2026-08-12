@@ -12,13 +12,13 @@ import 'weather_service.dart';
 /// MET Norway (official, global) -> Open-Meteo (generic, global safety
 /// net). This list is the single place that defines the fallback order —
 /// see fallback_weather_service.dart.
-final weatherServiceProvider = Provider<WeatherService>((ref) {
-  return FallbackWeatherService([
+final weatherServiceProvider = Provider<WeatherService>(
+  (ref) => FallbackWeatherService([
     NwsWeatherService(),
     MetNorwayWeatherService(),
     OpenMeteoWeatherService(),
-  ]);
-});
+  ]),
+);
 
 /// Family key for [segmentWeatherProvider] — a location rounded to ~100m
 /// precision plus a date-only [date], so repeated widget rebuilds for the
@@ -41,12 +41,12 @@ class WeatherRequest extends Equatable {
 }
 
 final segmentWeatherProvider =
-    FutureProvider.family<WeatherForecast?, WeatherRequest>((ref, request) {
-      return ref
+    FutureProvider.family<WeatherForecast?, WeatherRequest>(
+      (ref, request) => ref
           .watch(weatherServiceProvider)
           .forecastFor(
             latitude: request.latitude,
             longitude: request.longitude,
             date: request.date,
-          );
-    });
+          ),
+    );

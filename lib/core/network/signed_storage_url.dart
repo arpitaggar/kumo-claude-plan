@@ -51,13 +51,13 @@ const _signedUrlTtl = Duration(hours: 6);
 /// `MessageAttachment.url` — to a time-limited signed URL, required to
 /// render anything from the private `avatars`/`chat-attachments` buckets.
 ///
-/// Cached per [sourceUrl] for the provider's lifetime (Riverpod's default
+/// Cached per `sourceUrl` for the provider's lifetime (Riverpod's default
 /// `.family` behavior — no `.autoDispose`, so repeat widget rebuilds and
 /// re-renders of the same avatar/attachment across the app reuse one signed
 /// URL instead of re-signing on every build).
 ///
 /// Returns null (renders as "no image", same as a null source URL) if
-/// [sourceUrl] isn't a recognized Storage object URL or signing fails —
+/// `sourceUrl` isn't a recognized Storage object URL or signing fails —
 /// e.g. the caller lost access (removed from the trip, profile went
 /// private) since the URL was first stored.
 final signedStorageUrlProvider = FutureProvider.family<String?, String>((

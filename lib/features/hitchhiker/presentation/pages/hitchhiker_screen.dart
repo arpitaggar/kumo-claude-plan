@@ -256,7 +256,6 @@ class _ChatTab extends StatelessWidget {
                 ),
               )
             : ListView.builder(
-                reverse: false,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,

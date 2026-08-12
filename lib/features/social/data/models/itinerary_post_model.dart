@@ -92,7 +92,7 @@ class ItineraryPostModel extends ItineraryPost {
     'source_itinerary_id': itinerary.id,
     'author_id': authorId,
     'author_name': authorName,
-    if (authorAvatarUrl != null) 'author_avatar_url': authorAvatarUrl,
+    'author_avatar_url': ?authorAvatarUrl,
     if (itinerary.originPostId != null)
       'forked_from_post_id': itinerary.originPostId,
     'title': itinerary.title,

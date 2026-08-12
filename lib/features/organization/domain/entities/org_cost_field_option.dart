@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'org_cost_field.dart' show OrgCostField;
+
 /// One admin-managed value for a [CostFieldType.select] [OrgCostField] —
 /// e.g. for a "Department" field, `value: "Sales", code: "SAL"`. `code` is
 /// the short token used when a generated field concatenates this option

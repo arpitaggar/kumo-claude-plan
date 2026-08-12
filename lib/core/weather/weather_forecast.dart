@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'weather_condition.dart';
+import 'weather_service.dart' show WeatherService;
 
 /// A single day's forecast for one location, as returned by a
 /// [WeatherService]. Kept daily-only (no hourly breakdown) since the three

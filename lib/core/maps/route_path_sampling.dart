@@ -26,7 +26,9 @@ double _bearingDegrees({
 }) {
   final dLat = toLat - fromLat;
   final dLng = toLng - fromLng;
-  if (dLat == 0 && dLng == 0) return 0;
+  if (dLat == 0 && dLng == 0) {
+    return 0;
+  }
   final radians = atan2(dLng, dLat);
   final degrees = radians * 180 / pi;
   return (degrees + 360) % 360;
@@ -55,7 +57,7 @@ double pathLength(List<(double, double)> path) {
 /// The point at arc-length fraction [t] (0 = start, 1 = end) along [path],
 /// with the local bearing at that point. [path] must have at least 2 points.
 RoutePoint pointAtFraction(List<(double, double)> path, double t) {
-  assert(path.length >= 2);
+  assert(path.length >= 2, 'path must have at least 2 points');
   final clamped = t.clamp(0.0, 1.0);
   final total = pathLength(path);
   if (total == 0) {
@@ -84,7 +86,9 @@ RoutePoint pointAtFraction(List<(double, double)> path, double t) {
       toLat: lat2,
       toLng: lng2,
     );
-    if (segLength == 0) continue;
+    if (segLength == 0) {
+      continue;
+    }
     if (walked + segLength >= target || i == path.length - 2) {
       final segT = ((target - walked) / segLength).clamp(0.0, 1.0);
       return RoutePoint(
@@ -113,7 +117,9 @@ RoutePoint pointAtFraction(List<(double, double)> path, double t) {
 /// each of [count] equal-length slices (so ticks don't land exactly on the
 /// endpoints, where they'd overlap the origin/destination markers).
 List<RoutePoint> sampleEvenly(List<(double, double)> path, int count) {
-  if (count <= 0 || path.length < 2) return const [];
+  if (count <= 0 || path.length < 2) {
+    return const [];
+  }
   return [
     for (var i = 0; i < count; i++) pointAtFraction(path, (i + 0.5) / count),
   ];
@@ -130,7 +136,9 @@ List<RoutePoint> sampleEvenly(List<(double, double)> path, int count) {
 /// to draw a constant-pixel-width parallel line, so its double-tread/
 /// train-track legs fall back to this geometry-based approximation.
 List<(double, double)> offsetPath(List<(double, double)> path, double amount) {
-  if (path.length < 2 || amount == 0) return path;
+  if (path.length < 2 || amount == 0) {
+    return path;
+  }
   return [for (var i = 0; i < path.length; i++) _offsetPoint(path, i, amount)];
 }
 
@@ -144,7 +152,9 @@ List<(double, double)> offsetPath(List<(double, double)> path, double amount) {
   final dLat = next.$1 - prev.$1;
   final dLng = next.$2 - prev.$2;
   final dist = sqrt(dLat * dLat + dLng * dLng);
-  if (dist == 0) return path[i];
+  if (dist == 0) {
+    return path[i];
+  }
   final perpLng = -dLat / dist;
   final perpLat = dLng / dist;
   return (path[i].$1 + perpLat * amount, path[i].$2 + perpLng * amount);

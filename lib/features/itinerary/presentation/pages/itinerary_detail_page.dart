@@ -101,9 +101,11 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
   void _shareTrip() {
     final start = Formatters.formatDate(it.startDate);
     final end = Formatters.formatDate(it.endDate);
-    Share.share(
-      '✈️ Check out "${it.title}" ($start – $end) planned on Kumo!',
-      subject: it.title,
+    SharePlus.instance.share(
+      ShareParams(
+        text: '✈️ Check out "${it.title}" ($start – $end) planned on Kumo!',
+        subject: it.title,
+      ),
     );
   }
 
@@ -654,7 +656,7 @@ Future<void> _toggleSegmentVisibility(
 ) async {
   final result = await ref
       .read(setTripSegmentVisibilityUseCaseProvider)
-      .call(segment.id, !segment.isVisible);
+      .call(segment.id, isVisible: !segment.isVisible);
   if (result.isLeft() && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Failed to update segment visibility')),
@@ -1180,7 +1182,12 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
         '$date,$title,${e.category.name},${e.amount.toStringAsFixed(2)},${e.currencyCode},${e.payerName},${e.costCenterCode ?? ''}',
       );
     }
-    Share.share(buf.toString(), subject: 'Expenses — ${itinerary.title}');
+    SharePlus.instance.share(
+      ShareParams(
+        text: buf.toString(),
+        subject: 'Expenses — ${itinerary.title}',
+      ),
+    );
   }
 }
 

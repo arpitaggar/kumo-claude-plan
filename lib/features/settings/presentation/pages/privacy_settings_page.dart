@@ -139,7 +139,9 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
       (failure) => context.showSnackBar(failure.message, isError: true),
       (data) {
         final json = const JsonEncoder.withIndent('  ').convert(data);
-        Share.share(json, subject: 'My Kumo data export');
+        SharePlus.instance.share(
+          ShareParams(text: json, subject: 'My Kumo data export'),
+        );
       },
     );
   }

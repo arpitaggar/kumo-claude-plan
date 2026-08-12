@@ -18,30 +18,38 @@ void main() {
 
   test('delegates to repository with the provided id and flag', () async {
     when(
-      () => mockRepo.setSegmentVisibility('seg-1', false),
+      () => mockRepo.setSegmentVisibility('seg-1', isVisible: false),
     ).thenAnswer((_) async => const Right(null));
 
-    await useCase('seg-1', false);
+    await useCase('seg-1', isVisible: false);
 
-    verify(() => mockRepo.setSegmentVisibility('seg-1', false)).called(1);
+    verify(
+      () => mockRepo.setSegmentVisibility('seg-1', isVisible: false),
+    ).called(1);
   });
 
   test('returns Right(null) on success', () async {
     when(
-      () => mockRepo.setSegmentVisibility(any(), any()),
+      () => mockRepo.setSegmentVisibility(
+        any(),
+        isVisible: any(named: 'isVisible'),
+      ),
     ).thenAnswer((_) async => const Right(null));
 
-    final result = await useCase('seg-1', true);
+    final result = await useCase('seg-1', isVisible: true);
 
     expect(result.isRight(), isTrue);
   });
 
   test('propagates ServerFailure from repository', () async {
     when(
-      () => mockRepo.setSegmentVisibility(any(), any()),
+      () => mockRepo.setSegmentVisibility(
+        any(),
+        isVisible: any(named: 'isVisible'),
+      ),
     ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
-    final result = await useCase('seg-1', false);
+    final result = await useCase('seg-1', isVisible: false);
 
     result.fold(
       (f) => expect(f, isA<ServerFailure>()),

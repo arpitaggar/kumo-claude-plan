@@ -5,6 +5,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
+import '../../../itinerary/presentation/pages/invite_member_page.dart'
+    show InviteMemberPage;
 import '../../domain/entities/hitchhiker.dart';
 import '../providers/hitchhiker_provider.dart';
 
@@ -151,8 +153,11 @@ class _HitchhikerTabState extends ConsumerState<HitchhikerTab> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => Share.share(
-                      "Join ${hitchhiker.displayName == '' ? 'my' : ''} trip on Kumo: $link",
+                    onPressed: () => SharePlus.instance.share(
+                      ShareParams(
+                        text:
+                            "Join ${hitchhiker.displayName == '' ? 'my' : ''} trip on Kumo: $link",
+                      ),
                     ),
                     icon: const Icon(Icons.ios_share),
                     label: const Text('Share'),

@@ -28,8 +28,7 @@ Future<gm.BitmapDescriptor> _render(
   final canvas = Canvas(
     recorder,
     Rect.fromLTWH(0, 0, width * _pixelRatio, height * _pixelRatio),
-  );
-  canvas.scale(_pixelRatio);
+  )..scale(_pixelRatio);
   draw(canvas);
   final picture = recorder.endRecording();
   final image = await picture.toImage(
@@ -162,7 +161,7 @@ Future<gm.BitmapDescriptor> directionArrowBitmap({
   const size = 48.0;
   const arrowWidth = 14.0;
   const arrowHeight = 12.0;
-  final left = size / 2 - arrowWidth / 2;
+  const left = size / 2 - arrowWidth / 2;
   final path = Path()
     ..moveTo(size / 2, 0)
     ..lineTo(left + arrowWidth, arrowHeight)
@@ -171,15 +170,16 @@ Future<gm.BitmapDescriptor> directionArrowBitmap({
 
   return _render(
     (canvas) {
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = outlineColor
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5
-          ..strokeJoin = StrokeJoin.round,
-      );
-      canvas.drawPath(path, Paint()..color = color);
+      canvas
+        ..drawPath(
+          path,
+          Paint()
+            ..color = outlineColor
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5
+            ..strokeJoin = StrokeJoin.round,
+        )
+        ..drawPath(path, Paint()..color = color);
     },
     width: size,
     height: size,
@@ -209,22 +209,23 @@ Future<gm.BitmapDescriptor>? textureTickBitmap({
     case RouteTexture.footsteps:
       return _render(
         (canvas) {
-          canvas.drawOval(
-            Rect.fromCenter(
-              center: const Offset(size / 2, size * 0.62),
-              width: size * 0.4,
-              height: size * 0.42,
-            ),
-            Paint()..color = color,
-          );
-          canvas.drawOval(
-            Rect.fromCenter(
-              center: const Offset(size / 2, size * 0.28),
-              width: size * 0.3,
-              height: size * 0.3,
-            ),
-            Paint()..color = color,
-          );
+          canvas
+            ..drawOval(
+              Rect.fromCenter(
+                center: const Offset(size / 2, size * 0.62),
+                width: size * 0.4,
+                height: size * 0.42,
+              ),
+              Paint()..color = color,
+            )
+            ..drawOval(
+              Rect.fromCenter(
+                center: const Offset(size / 2, size * 0.28),
+                width: size * 0.3,
+                height: size * 0.3,
+              ),
+              Paint()..color = color,
+            );
         },
         width: size,
         height: size,
@@ -245,40 +246,41 @@ Future<gm.BitmapDescriptor>? textureTickBitmap({
       return _render(
         (canvas) {
           final fillPaint = Paint()..color = color;
-          canvas.drawPath(
-            Path()
-              ..moveTo(3.76, 7.74)
-              ..lineTo(5.56, 5.4)
-              ..cubicTo(5.56, 4.14, 4.84, 3.42, 3.76, 3.42)
-              ..close(),
-            fillPaint,
-          );
-          canvas.drawPath(
-            Path()
-              ..moveTo(10.24, 5.22)
-              ..lineTo(8.44, 2.88)
-              ..cubicTo(8.44, 1.62, 9.16, 0.9, 10.24, 0.9)
-              ..close(),
-            fillPaint,
-          );
-          canvas.drawPath(
-            Path()
-              ..moveTo(1.96, 2.34)
-              ..lineTo(3.4, 1.26)
-              ..lineTo(1.96, 1.26)
-              ..cubicTo(1.6, 1.26, 1.24, 1.62, 1.24, 1.98)
-              ..close(),
-            fillPaint,
-          );
-          canvas.drawPath(
-            Path()
-              ..moveTo(12.04, 8.1)
-              ..lineTo(10.6, 7.02)
-              ..lineTo(12.04, 7.02)
-              ..cubicTo(12.4, 7.02, 12.76, 6.66, 12.76, 6.3)
-              ..close(),
-            fillPaint,
-          );
+          canvas
+            ..drawPath(
+              Path()
+                ..moveTo(3.76, 7.74)
+                ..lineTo(5.56, 5.4)
+                ..cubicTo(5.56, 4.14, 4.84, 3.42, 3.76, 3.42)
+                ..close(),
+              fillPaint,
+            )
+            ..drawPath(
+              Path()
+                ..moveTo(10.24, 5.22)
+                ..lineTo(8.44, 2.88)
+                ..cubicTo(8.44, 1.62, 9.16, 0.9, 10.24, 0.9)
+                ..close(),
+              fillPaint,
+            )
+            ..drawPath(
+              Path()
+                ..moveTo(1.96, 2.34)
+                ..lineTo(3.4, 1.26)
+                ..lineTo(1.96, 1.26)
+                ..cubicTo(1.6, 1.26, 1.24, 1.62, 1.24, 1.98)
+                ..close(),
+              fillPaint,
+            )
+            ..drawPath(
+              Path()
+                ..moveTo(12.04, 8.1)
+                ..lineTo(10.6, 7.02)
+                ..lineTo(12.04, 7.02)
+                ..cubicTo(12.4, 7.02, 12.76, 6.66, 12.76, 6.3)
+                ..close(),
+              fillPaint,
+            );
         },
         width: 14,
         height: 9,
@@ -356,20 +358,21 @@ Future<gm.BitmapDescriptor>? textureTickBitmap({
             Offset(7.504, 1.72),
             Offset(8.848, 2.8),
           ]);
-          canvas.drawRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTRB(6.79, 4.36, 7.21, 6.16),
-              const Radius.circular(0.084),
-            ),
-            fillPaint,
-          );
-          canvas.drawRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTRB(6.79, 1.96, 7.21, 3.76),
-              const Radius.circular(0.084),
-            ),
-            fillPaint,
-          );
+          canvas
+            ..drawRRect(
+              RRect.fromRectAndRadius(
+                const Rect.fromLTRB(6.79, 4.36, 7.21, 6.16),
+                const Radius.circular(0.084),
+              ),
+              fillPaint,
+            )
+            ..drawRRect(
+              RRect.fromRectAndRadius(
+                const Rect.fromLTRB(6.79, 1.96, 7.21, 3.76),
+                const Radius.circular(0.084),
+              ),
+              fillPaint,
+            );
         },
         width: 14,
         height: 8,
@@ -379,8 +382,8 @@ Future<gm.BitmapDescriptor>? textureTickBitmap({
       return _render(
         (canvas) {
           canvas.drawLine(
-            Offset(size * 0.15, size / 2),
-            Offset(size * 0.85, size / 2),
+            const Offset(size * 0.15, size / 2),
+            const Offset(size * 0.85, size / 2),
             paint,
           );
         },

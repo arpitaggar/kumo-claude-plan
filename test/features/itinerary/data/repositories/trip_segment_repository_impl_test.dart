@@ -255,21 +255,31 @@ void main() {
   group('setSegmentVisibility', () {
     test('returns Right(null) on success', () async {
       when(
-        () => dataSource.setVisibility(any(), any()),
+        () =>
+            dataSource.setVisibility(any(), isVisible: any(named: 'isVisible')),
       ).thenAnswer((_) async {});
 
-      final result = await repository.setSegmentVisibility('seg-1', false);
+      final result = await repository.setSegmentVisibility(
+        'seg-1',
+        isVisible: false,
+      );
 
       expect(result, const Right<Failure, void>(null));
-      verify(() => dataSource.setVisibility('seg-1', false)).called(1);
+      verify(
+        () => dataSource.setVisibility('seg-1', isVisible: false),
+      ).called(1);
     });
 
     test('maps ServerException to ServerFailure', () async {
       when(
-        () => dataSource.setVisibility(any(), any()),
+        () =>
+            dataSource.setVisibility(any(), isVisible: any(named: 'isVisible')),
       ).thenThrow(ServerException(message: 'DB error'));
 
-      final result = await repository.setSegmentVisibility('seg-1', true);
+      final result = await repository.setSegmentVisibility(
+        'seg-1',
+        isVisible: true,
+      );
 
       result.fold(
         (f) => expect(f, isA<ServerFailure>()),

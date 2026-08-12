@@ -6,6 +6,7 @@ import '../../../../core/maps/route_map_view.dart';
 import '../../../../core/weather/weather_condition.dart';
 import '../../../../core/weather/weather_forecast.dart';
 import '../../../../core/weather/weather_providers.dart';
+import '../../../../core/weather/weather_service.dart' show WeatherService;
 import '../../domain/entities/trip_segment.dart';
 
 /// How far ahead a forecast can realistically be shown — the furthest of

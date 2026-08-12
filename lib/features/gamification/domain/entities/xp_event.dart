@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'xp_summary.dart' show XpMetric;
+
 /// A single XP award, as recorded by a Postgres trigger on the source event
 /// (a trip being created, a post getting liked, ...) — see
 /// `docs/supabase_migrations/stage40_gamification.sql`. Append-only: a

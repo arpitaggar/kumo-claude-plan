@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import 'gamification_badge.dart' show GamificationBadge;
 import 'xp_event.dart';
 
 /// A countable dimension of a user's activity, used to key a

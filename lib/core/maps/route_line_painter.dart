@@ -30,7 +30,9 @@ _Sample _sampleAt(List<Offset> path, double distance) {
     final a = path[i];
     final b = path[i + 1];
     final segLength = (b - a).distance;
-    if (segLength == 0) continue;
+    if (segLength == 0) {
+      continue;
+    }
     if (walked + segLength >= distance || i == path.length - 2) {
       final t = ((distance - walked) / segLength).clamp(0.0, 1.0);
       return (point: Offset.lerp(a, b, t)!, tangent: (b - a) / segLength);
@@ -47,9 +49,13 @@ _Sample _sampleAt(List<Offset> path, double distance) {
 }
 
 List<_Sample> _sampleEvenly(List<Offset> path, int count) {
-  if (count <= 0 || path.length < 2) return const [];
+  if (count <= 0 || path.length < 2) {
+    return const [];
+  }
   final total = _pathLengthPx(path);
-  if (total == 0) return const [];
+  if (total == 0) {
+    return const [];
+  }
   return [
     for (var i = 0; i < count; i++) _sampleAt(path, total * (i + 0.5) / count),
   ];
@@ -132,12 +138,16 @@ void _drawDashed(
     var a = path[i];
     final b = path[i + 1];
     var segLength = (b - a).distance;
-    if (segLength == 0) continue;
+    if (segLength == 0) {
+      continue;
+    }
     final dir = (b - a) / segLength;
     while (segLength > 0) {
       final step = min(remaining, segLength);
       final next = a + dir * step;
-      if (drawing) canvas.drawLine(a, next, paint);
+      if (drawing) {
+        canvas.drawLine(a, next, paint);
+      }
       a = next;
       segLength -= step;
       remaining -= step;
@@ -184,45 +194,46 @@ void _fillPolygon(Canvas canvas, Paint paint, List<Offset> points) {
 void _drawMotoTreadBlocks(Canvas canvas, List<_Sample> samples, Paint paint) {
   for (final s in samples) {
     final angle = atan2(s.tangent.dy, s.tangent.dx) - pi / 2;
-    canvas.save();
-    canvas.translate(s.point.dx, s.point.dy);
-    canvas.rotate(angle);
     // Local frame: +y is the travel direction (see _drawFootsteps).
-    canvas.drawPath(
-      Path()
-        ..moveTo(-3.24, -3.24)
-        ..lineTo(-1.44, -0.9)
-        ..cubicTo(-1.44, 0.36, -2.16, 1.08, -3.24, 1.08)
-        ..close(),
-      paint,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(3.24, -0.72)
-        ..lineTo(1.44, 1.62)
-        ..cubicTo(1.44, 2.88, 2.16, 3.6, 3.24, 3.6)
-        ..close(),
-      paint,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(-5.04, 2.16)
-        ..lineTo(-3.6, 3.24)
-        ..lineTo(-5.04, 3.24)
-        ..cubicTo(-5.4, 3.24, -5.76, 2.88, -5.76, 2.52)
-        ..close(),
-      paint,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(5.04, -3.6)
-        ..lineTo(3.6, -2.52)
-        ..lineTo(5.04, -2.52)
-        ..cubicTo(5.4, -2.52, 5.76, -2.16, 5.76, -1.8)
-        ..close(),
-      paint,
-    );
-    canvas.restore();
+    canvas
+      ..save()
+      ..translate(s.point.dx, s.point.dy)
+      ..rotate(angle)
+      ..drawPath(
+        Path()
+          ..moveTo(-3.24, -3.24)
+          ..lineTo(-1.44, -0.9)
+          ..cubicTo(-1.44, 0.36, -2.16, 1.08, -3.24, 1.08)
+          ..close(),
+        paint,
+      )
+      ..drawPath(
+        Path()
+          ..moveTo(3.24, -0.72)
+          ..lineTo(1.44, 1.62)
+          ..cubicTo(1.44, 2.88, 2.16, 3.6, 3.24, 3.6)
+          ..close(),
+        paint,
+      )
+      ..drawPath(
+        Path()
+          ..moveTo(-5.04, 2.16)
+          ..lineTo(-3.6, 3.24)
+          ..lineTo(-5.04, 3.24)
+          ..cubicTo(-5.4, 3.24, -5.76, 2.88, -5.76, 2.52)
+          ..close(),
+        paint,
+      )
+      ..drawPath(
+        Path()
+          ..moveTo(5.04, -3.6)
+          ..lineTo(3.6, -2.52)
+          ..lineTo(5.04, -2.52)
+          ..cubicTo(5.4, -2.52, 5.76, -2.16, 5.76, -1.8)
+          ..close(),
+        paint,
+      )
+      ..restore();
   }
 }
 
@@ -249,9 +260,10 @@ void _drawCarTreadBlocks(
     final perp = _perp(s.tangent);
     final railCenter = s.point + perp * railOffset;
     final angle = atan2(s.tangent.dy, s.tangent.dx) - pi / 2;
-    canvas.save();
-    canvas.translate(railCenter.dx, railCenter.dy);
-    canvas.rotate(angle);
+    canvas
+      ..save()
+      ..translate(railCenter.dx, railCenter.dy)
+      ..rotate(angle);
     // Local frame: +y is the travel direction (see _drawFootsteps).
     _fillPolygon(canvas, paint, const [
       Offset(-3.78, -1.8),
@@ -301,21 +313,22 @@ void _drawCarTreadBlocks(
       Offset(0.504, 2.28),
       Offset(1.848, 1.2),
     ]);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTRB(-0.21, -2.16, 0.21, -0.36),
-        const Radius.circular(0.084),
-      ),
-      paint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTRB(-0.21, 0.24, 0.21, 2.04),
-        const Radius.circular(0.084),
-      ),
-      paint,
-    );
-    canvas.restore();
+    canvas
+      ..drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTRB(-0.21, -2.16, 0.21, -0.36),
+          const Radius.circular(0.084),
+        ),
+        paint,
+      )
+      ..drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTRB(-0.21, 0.24, 0.21, 2.04),
+          const Radius.circular(0.084),
+        ),
+        paint,
+      )
+      ..restore();
   }
 }
 
@@ -325,20 +338,21 @@ void _drawFootsteps(Canvas canvas, List<_Sample> samples, Paint paint) {
     final angle = atan2(s.tangent.dy, s.tangent.dx) - pi / 2;
     final side = i.isEven ? 1.0 : -1.0;
     final center = s.point + _perp(s.tangent) * (3.5 * side);
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(angle);
     // Local frame: +y is the travel direction, so the toes (drawn further
     // along +y) point the way the traveller is walking.
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 2.2), width: 4.4, height: 6.2),
-      paint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, -3.4), width: 3.4, height: 3.8),
-      paint,
-    );
-    canvas.restore();
+    canvas
+      ..save()
+      ..translate(center.dx, center.dy)
+      ..rotate(angle)
+      ..drawOval(
+        Rect.fromCenter(center: const Offset(0, 2.2), width: 4.4, height: 6.2),
+        paint,
+      )
+      ..drawOval(
+        Rect.fromCenter(center: const Offset(0, -3.4), width: 3.4, height: 3.8),
+        paint,
+      )
+      ..restore();
   }
 }
 
@@ -350,7 +364,9 @@ void paintRouteTexture({
   required TransportMode mode,
   required Color color,
 }) {
-  if (path.length < 2) return;
+  if (path.length < 2) {
+    return;
+  }
   final texture = textureForMode(mode);
 
   switch (texture) {

@@ -29,7 +29,7 @@ abstract class TripSegmentRemoteDataSource {
   /// Patches only `is_visible` — same rationale as [updateRouteGeometry]:
   /// a plain map-display toggle shouldn't risk clobbering a concurrent edit
   /// to the rest of the segment.
-  Future<void> setVisibility(String segmentId, bool isVisible);
+  Future<void> setVisibility(String segmentId, {required bool isVisible});
 }
 
 class TripSegmentRemoteDataSourceImpl implements TripSegmentRemoteDataSource {
@@ -137,7 +137,10 @@ class TripSegmentRemoteDataSourceImpl implements TripSegmentRemoteDataSource {
   }
 
   @override
-  Future<void> setVisibility(String segmentId, bool isVisible) async {
+  Future<void> setVisibility(
+    String segmentId, {
+    required bool isVisible,
+  }) async {
     try {
       await KumoSupabaseClient.client
           .from(_table)

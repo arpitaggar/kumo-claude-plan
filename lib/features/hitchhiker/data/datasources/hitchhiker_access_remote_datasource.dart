@@ -70,7 +70,7 @@ class HitchhikerAccessRemoteDataSourceImpl
         params: {
           'p_token': token,
           'p_title': title,
-          if (description != null) 'p_description': description,
+          'p_description': ?description,
         },
       );
     } on sb.PostgrestException catch (e) {

@@ -6,9 +6,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../domain/entities/org_cost_field.dart';
+import '../../domain/entities/org_cost_field_option.dart'
+    show OrgCostFieldOption;
 import '../../domain/entities/org_join_code.dart';
 import '../../domain/entities/org_member.dart';
 import '../providers/organization_provider.dart';
+import 'join_organization_page.dart' show JoinOrganizationPage;
 
 /// One selectable department option in the generate-code dialog — flattens
 /// every [CostFieldType.select] field's options into a single list, labelled
@@ -82,7 +85,7 @@ class OrgJoinCodesPage extends ConsumerWidget {
                     initialValue: departmentOptionId,
                     decoration: const InputDecoration(labelText: 'Department'),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('None')),
+                      const DropdownMenuItem(child: Text('None')),
                       for (final d in departments)
                         DropdownMenuItem(
                           value: d.optionId,
@@ -98,7 +101,7 @@ class OrgJoinCodesPage extends ConsumerWidget {
                   initialValue: expiryDuration,
                   decoration: const InputDecoration(labelText: 'Expires'),
                   items: const [
-                    DropdownMenuItem(value: null, child: Text('Never')),
+                    DropdownMenuItem(child: Text('Never')),
                     DropdownMenuItem(
                       value: Duration(days: 1),
                       child: Text('1 day'),
@@ -122,7 +125,7 @@ class OrgJoinCodesPage extends ConsumerWidget {
                     DropdownMenuItem(value: 1, child: Text('1 use')),
                     DropdownMenuItem(value: 5, child: Text('5 uses')),
                     DropdownMenuItem(value: 20, child: Text('20 uses')),
-                    DropdownMenuItem(value: null, child: Text('Unlimited')),
+                    DropdownMenuItem(child: Text('Unlimited')),
                   ],
                   onChanged: (v) => setDialogState(() => maxUses = v),
                 ),
@@ -168,41 +171,40 @@ class OrgJoinCodesPage extends ConsumerWidget {
     });
   }
 
-  Future<void> _showGeneratedCode(BuildContext context, OrgJoinCode code) {
-    return showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Join code'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            QrImageView(data: code.code, size: 200),
-            const SizedBox(height: 16),
-            SelectableText(
-              code.code,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 20,
-                letterSpacing: 2,
+  Future<void> _showGeneratedCode(BuildContext context, OrgJoinCode code) =>
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Join code'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              QrImageView(data: code.code, size: 200),
+              const SizedBox(height: 16),
+              SelectableText(
+                code.code,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 20,
+                  letterSpacing: 2,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: code.code));
-                ctx.showSnackBar('Copied to clipboard');
-              },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy'),
-            ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: code.code));
+                  ctx.showSnackBar('Copied to clipboard');
+                },
+                icon: const Icon(Icons.copy, size: 16),
+                label: const Text('Copy'),
+              ),
+            ],
+          ),
+          actions: [
+            FilledButton(onPressed: () => ctx.pop(), child: const Text('Done')),
           ],
         ),
-        actions: [
-          FilledButton(onPressed: () => ctx.pop(), child: const Text('Done')),
-        ],
-      ),
-    );
-  }
+      );
 
   Future<void> _revoke(
     BuildContext context,
@@ -318,10 +320,11 @@ class OrgJoinCodesPage extends ConsumerWidget {
                   [
                     _statusLabel(code),
                     code.role.name,
-                    if (department != null) department,
-                    code.maxUses != null
-                        ? '${code.usesCount}/${code.maxUses} uses'
-                        : '${code.usesCount} uses',
+                    ?department,
+                    if (code.maxUses != null)
+                      '${code.usesCount}/${code.maxUses} uses'
+                    else
+                      '${code.usesCount} uses',
                   ].join(' · '),
                 ),
                 trailing: code.isActive

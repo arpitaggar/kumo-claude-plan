@@ -60,8 +60,8 @@ class _CreateOrganizationPageState
       ref.invalidate(myOrganizationsProvider);
       context
         ..showSnackBar('$name created')
-        ..pop();
-      context.push('/organizations/${org.id}/members');
+        ..pop()
+        ..push('/organizations/${org.id}/members');
     });
   }
 

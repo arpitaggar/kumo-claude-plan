@@ -9,7 +9,8 @@ import 'weather_service.dart';
 /// (see weather_providers.dart) with no changes needed here or in any other
 /// source's implementation or tests.
 class FallbackWeatherService implements WeatherService {
-  FallbackWeatherService(this.sources) : assert(sources.isNotEmpty);
+  FallbackWeatherService(this.sources)
+    : assert(sources.isNotEmpty, 'sources must not be empty');
 
   final List<WeatherService> sources;
 

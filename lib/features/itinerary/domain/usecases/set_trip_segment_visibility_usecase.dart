@@ -8,6 +8,8 @@ class SetTripSegmentVisibilityUseCase {
 
   final TripSegmentRepository _repository;
 
-  Future<Either<Failure, void>> call(String segmentId, bool isVisible) =>
-      _repository.setSegmentVisibility(segmentId, isVisible);
+  Future<Either<Failure, void>> call(
+    String segmentId, {
+    required bool isVisible,
+  }) => _repository.setSegmentVisibility(segmentId, isVisible: isVisible);
 }

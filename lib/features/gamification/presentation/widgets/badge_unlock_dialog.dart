@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../domain/entities/gamification_badge.dart';
+import '../providers/badge_unlock_notifier.dart' show BadgeUnlockNotifier;
 
 /// Celebratory dialog shown the moment [BadgeUnlockNotifier.checkForNewBadges]
 /// reports one or more newly-earned badges. All of them are listed in one

@@ -37,7 +37,7 @@ final isPremiumUserProvider = Provider<bool>((ref) {
 });
 
 /// Whether any org department the signed-in user belongs to has an
-/// override granting [featureKey] — see
+/// override granting `featureKey` — see
 /// `PremiumFeatureDataSource.hasDepartmentOverride`.
 final departmentFeatureOverrideProvider = FutureProvider.family<bool, String>(
   (ref, featureKey) => ref

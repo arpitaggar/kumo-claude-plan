@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
+import 'met_norway_weather_service.dart' show MetNorwayWeatherService;
+import 'nws_weather_service.dart' show NwsWeatherService;
 import 'weather_condition.dart';
 import 'weather_forecast.dart';
 import 'weather_service.dart';
@@ -84,44 +86,41 @@ class OpenMeteoWeatherService implements WeatherService {
   /// field uses (https://open-meteo.com/en/docs — "WMO Weather interpretation
   /// codes").
   static ({WeatherCondition condition, String description})
-  _describeWeatherCode(int code) {
-    return switch (code) {
-      0 => (condition: WeatherCondition.clear, description: 'Clear sky'),
-      1 => (condition: WeatherCondition.clear, description: 'Mainly clear'),
-      2 => (
-        condition: WeatherCondition.partlyCloudy,
-        description: 'Partly cloudy',
-      ),
-      3 => (condition: WeatherCondition.cloudy, description: 'Overcast'),
-      45 || 48 => (condition: WeatherCondition.fog, description: 'Fog'),
-      51 ||
-      53 ||
-      55 => (condition: WeatherCondition.drizzle, description: 'Drizzle'),
-      56 || 57 => (
-        condition: WeatherCondition.drizzle,
-        description: 'Freezing drizzle',
-      ),
-      61 || 63 || 65 => (condition: WeatherCondition.rain, description: 'Rain'),
-      66 ||
-      67 => (condition: WeatherCondition.rain, description: 'Freezing rain'),
-      71 ||
-      73 ||
-      75 => (condition: WeatherCondition.snow, description: 'Snow fall'),
-      77 => (condition: WeatherCondition.snow, description: 'Snow grains'),
-      80 ||
-      81 ||
-      82 => (condition: WeatherCondition.rain, description: 'Rain showers'),
-      85 ||
-      86 => (condition: WeatherCondition.snow, description: 'Snow showers'),
-      95 => (
-        condition: WeatherCondition.thunderstorm,
-        description: 'Thunderstorm',
-      ),
-      96 || 99 => (
-        condition: WeatherCondition.thunderstorm,
-        description: 'Thunderstorm with hail',
-      ),
-      _ => (condition: WeatherCondition.unknown, description: 'Unknown'),
-    };
-  }
+  _describeWeatherCode(int code) => switch (code) {
+    0 => (condition: WeatherCondition.clear, description: 'Clear sky'),
+    1 => (condition: WeatherCondition.clear, description: 'Mainly clear'),
+    2 => (
+      condition: WeatherCondition.partlyCloudy,
+      description: 'Partly cloudy',
+    ),
+    3 => (condition: WeatherCondition.cloudy, description: 'Overcast'),
+    45 || 48 => (condition: WeatherCondition.fog, description: 'Fog'),
+    51 ||
+    53 ||
+    55 => (condition: WeatherCondition.drizzle, description: 'Drizzle'),
+    56 || 57 => (
+      condition: WeatherCondition.drizzle,
+      description: 'Freezing drizzle',
+    ),
+    61 || 63 || 65 => (condition: WeatherCondition.rain, description: 'Rain'),
+    66 ||
+    67 => (condition: WeatherCondition.rain, description: 'Freezing rain'),
+    71 ||
+    73 ||
+    75 => (condition: WeatherCondition.snow, description: 'Snow fall'),
+    77 => (condition: WeatherCondition.snow, description: 'Snow grains'),
+    80 ||
+    81 ||
+    82 => (condition: WeatherCondition.rain, description: 'Rain showers'),
+    85 || 86 => (condition: WeatherCondition.snow, description: 'Snow showers'),
+    95 => (
+      condition: WeatherCondition.thunderstorm,
+      description: 'Thunderstorm',
+    ),
+    96 || 99 => (
+      condition: WeatherCondition.thunderstorm,
+      description: 'Thunderstorm with hail',
+    ),
+    _ => (condition: WeatherCondition.unknown, description: 'Unknown'),
+  };
 }

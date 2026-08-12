@@ -33,7 +33,7 @@ abstract class TripSegmentRepository {
   /// Patches only the segment's `isVisible` map-display flag — see
   /// `TripSegmentRemoteDataSource.setVisibility`.
   Future<Either<Failure, void>> setSegmentVisibility(
-    String segmentId,
-    bool isVisible,
-  );
+    String segmentId, {
+    required bool isVisible,
+  });
 }

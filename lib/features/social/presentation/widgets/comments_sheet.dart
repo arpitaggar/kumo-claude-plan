@@ -9,15 +9,14 @@ import '../../domain/entities/post_comment.dart';
 import '../providers/social_provider.dart';
 
 /// Opens the comment thread for [postId] as a modal bottom sheet.
-Future<void> showCommentsSheet(BuildContext context, String postId) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => CommentsSheet(postId: postId),
-  );
-}
+Future<void> showCommentsSheet(BuildContext context, String postId) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CommentsSheet(postId: postId),
+    );
 
 class CommentsSheet extends ConsumerStatefulWidget {
   const CommentsSheet({required this.postId, super.key});
