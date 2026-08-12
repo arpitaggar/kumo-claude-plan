@@ -32,7 +32,7 @@ class SendMessageUseCase {
     }
 
     try {
-      return _repository.sendMessage(
+      return await _repository.sendMessage(
         itineraryId: itineraryId,
         senderId: senderId,
         senderName: senderName,

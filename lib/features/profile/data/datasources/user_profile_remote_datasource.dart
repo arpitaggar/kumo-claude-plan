@@ -179,7 +179,7 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
       }
 
       await KumoSupabaseClient.client.rpc('update_profile', params: params);
-      return getOwnProfile();
+      return await getOwnProfile();
     } on sb.PostgrestException catch (e) {
       // The RPC raises human-readable messages for username validation failures
       // (already taken, cooldown, bad format) — surface them directly.

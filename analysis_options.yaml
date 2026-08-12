@@ -14,6 +14,12 @@ analyzer:
     # Vendored package sources (e.g. macOS SPM checkouts of Firebase
     # packages) end up cached here and shouldn't be linted as our code.
     - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   rules:
