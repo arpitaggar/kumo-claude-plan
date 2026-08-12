@@ -4,17 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
-import '../../data/datasources/profile_remote_datasource.dart';
+import '../../domain/entities/profile_result.dart';
 import '../../domain/entities/travel_itinerary.dart';
+import '../../domain/usecases/find_profile_by_email_usecase.dart';
+import '../../domain/usecases/search_profiles_by_name_usecase.dart';
 import '../providers/itinerary_provider.dart';
-
-// ---------------------------------------------------------------------------
-// Local providers
-// ---------------------------------------------------------------------------
-
-final _profileDataSourceProvider = Provider<ProfileRemoteDataSource>(
-  (_) => const ProfileRemoteDataSourceImpl(),
-);
+import '../providers/profile_lookup_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Page
@@ -85,31 +80,24 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
   }
 
   Future<void> _createPendingInvite(String email, GroupMemberRole role) async {
-    try {
-      await ref
-          .read(_profileDataSourceProvider)
-          .createPendingInvitation(
-            itineraryId: widget.itineraryId,
-            invitedEmail: email,
-            role: role.name,
-          );
-      if (!mounted) {
-        return;
-      }
-      context
+    final result = await ref
+        .read(createPendingInvitationUseCaseProvider)
+        .call(
+          itineraryId: widget.itineraryId,
+          invitedEmail: email,
+          role: role.name,
+        );
+    if (!mounted) {
+      return;
+    }
+    result.fold(
+      (failure) => context.showSnackBar(failure.message, isError: true),
+      (_) => context
         ..showSnackBar(
           'Invite saved. $email will join automatically when they sign up.',
         )
-        ..pop();
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      context.showSnackBar(
-        'Failed to save invite. Please try again.',
-        isError: true,
-      );
-    }
+        ..pop(),
+    );
   }
 
   @override
@@ -129,12 +117,12 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
       children: [
         _SearchTab(
           existingMemberIds: _existingMemberIds,
-          dataSource: ref.read(_profileDataSourceProvider),
+          searchUseCase: ref.read(searchProfilesByNameUseCaseProvider),
           onAdd: _addMember,
         ),
         _EmailTab(
           existingMemberIds: _existingMemberIds,
-          dataSource: ref.read(_profileDataSourceProvider),
+          findByEmailUseCase: ref.read(findProfileByEmailUseCaseProvider),
           onAdd: _addMember,
           onPendingInvite: _createPendingInvite,
         ),
@@ -150,12 +138,12 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
 class _SearchTab extends StatefulWidget {
   const _SearchTab({
     required this.existingMemberIds,
-    required this.dataSource,
+    required this.searchUseCase,
     required this.onAdd,
   });
 
   final List<String> existingMemberIds;
-  final ProfileRemoteDataSource dataSource;
+  final SearchProfilesByNameUseCase searchUseCase;
   final Future<void> Function(ProfileResult, GroupMemberRole) onAdd;
 
   @override
@@ -186,30 +174,26 @@ class _SearchTabState extends State<_SearchTab> {
       _isSearching = true;
       _error = null;
     });
-    try {
-      final results = await widget.dataSource.searchByName(
-        query,
-        excludeIds: widget.existingMemberIds,
-      );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
+    final result = await widget.searchUseCase.call(
+      query,
+      excludeIds: widget.existingMemberIds,
+    );
+    if (!mounted) {
+      return;
+    }
+    result.fold(
+      (failure) => setState(() {
+        _isSearching = false;
+        _error = 'Search failed. Please try again.';
+      }),
+      (results) => setState(() {
         _results = results;
         _isSearching = false;
         if (results.isEmpty) {
           _error = 'No discoverable users found for "$query".';
         }
-      });
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isSearching = false;
-        _error = 'Search failed. Please try again.';
-      });
-    }
+      }),
+    );
   }
 
   @override
@@ -297,13 +281,13 @@ class _SearchTabState extends State<_SearchTab> {
 class _EmailTab extends StatefulWidget {
   const _EmailTab({
     required this.existingMemberIds,
-    required this.dataSource,
+    required this.findByEmailUseCase,
     required this.onAdd,
     required this.onPendingInvite,
   });
 
   final List<String> existingMemberIds;
-  final ProfileRemoteDataSource dataSource;
+  final FindProfileByEmailUseCase findByEmailUseCase;
   final Future<void> Function(ProfileResult, GroupMemberRole) onAdd;
   final Future<void> Function(String email, GroupMemberRole role)
   onPendingInvite;
@@ -343,40 +327,37 @@ class _EmailTabState extends State<_EmailTab> {
 
     final email = _emailController.text.trim().toLowerCase();
 
-    try {
-      final profile = await widget.dataSource.findByEmail(email);
-      if (!mounted) {
-        return;
-      }
-
-      if (profile != null) {
-        if (widget.existingMemberIds.contains(profile.id)) {
-          setState(() {
-            _lookupError = '$email is already a member of this trip.';
-            _isSearching = false;
-          });
-          return;
-        }
-        setState(() {
-          _foundProfile = profile;
-          _userExists = true;
-          _isSearching = false;
-        });
-      } else {
-        setState(() {
-          _userExists = false;
-          _isSearching = false;
-        });
-      }
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
+    final result = await widget.findByEmailUseCase.call(email);
+    if (!mounted) {
+      return;
+    }
+    result.fold(
+      (failure) => setState(() {
         _lookupError = 'Lookup failed. Please try again.';
         _isSearching = false;
-      });
-    }
+      }),
+      (profile) {
+        if (profile != null) {
+          if (widget.existingMemberIds.contains(profile.id)) {
+            setState(() {
+              _lookupError = '$email is already a member of this trip.';
+              _isSearching = false;
+            });
+            return;
+          }
+          setState(() {
+            _foundProfile = profile;
+            _userExists = true;
+            _isSearching = false;
+          });
+        } else {
+          setState(() {
+            _userExists = false;
+            _isSearching = false;
+          });
+        }
+      },
+    );
   }
 
   Future<void> _submit() async {

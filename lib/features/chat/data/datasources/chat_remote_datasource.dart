@@ -31,10 +31,6 @@ abstract class ChatRemoteDataSource {
   });
   Future<void> markMessagesRead(String itineraryId);
   Future<List<MessageReadReceiptModel>> getReadReceipts(String messageId);
-  Future<void> upsertPushToken({
-    required String token,
-    required String platform,
-  });
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -216,23 +212,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
             (r) => MessageReadReceiptModel.fromJson(r as Map<String, dynamic>),
           )
           .toList();
-    } on sb.PostgrestException catch (e) {
-      throw ServerException(message: e.message);
-    } catch (e) {
-      throw UnexpectedException(message: e.toString());
-    }
-  }
-
-  @override
-  Future<void> upsertPushToken({
-    required String token,
-    required String platform,
-  }) async {
-    try {
-      await KumoSupabaseClient.client.rpc(
-        'upsert_push_token',
-        params: {'p_token': token, 'p_platform': platform},
-      );
     } on sb.PostgrestException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {

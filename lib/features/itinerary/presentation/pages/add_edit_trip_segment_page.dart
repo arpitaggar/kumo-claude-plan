@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/geocoding/geocoding_service.dart';
 import '../../../../core/maps/route_map_view.dart';
@@ -13,6 +12,7 @@ import '../../domain/entities/transport_mode.dart';
 import '../../domain/entities/trip_segment.dart';
 import '../../domain/entities/waypoint.dart';
 import '../providers/trip_segment_provider.dart';
+import '../widgets/date_time_picker_field.dart';
 import '../widgets/location_search_sheet.dart';
 
 /// Add/edit a single trip segment. If [continueFromSegment] is supplied
@@ -351,13 +351,13 @@ class _AddEditTripSegmentPageState
                 const SizedBox(height: 24),
                 Text('When (optional)', style: context.textTheme.labelLarge),
                 const SizedBox(height: 8),
-                _DateTimePickerField(
+                DateTimePickerField(
                   label: 'Departure',
                   dateTime: _departureTime,
                   onTap: () => _pickDateTime(isDeparture: true),
                 ),
                 const SizedBox(height: 8),
-                _DateTimePickerField(
+                DateTimePickerField(
                   label: 'Arrival',
                   dateTime: _arrivalTime,
                   onTap: () => _pickDateTime(isDeparture: false),
@@ -416,38 +416,6 @@ class _LocationField extends StatelessWidget {
           color: waypoint == null ? context.colorScheme.onSurfaceVariant : null,
         ),
         overflow: TextOverflow.ellipsis,
-      ),
-    ),
-  );
-}
-
-class _DateTimePickerField extends StatelessWidget {
-  const _DateTimePickerField({
-    required this.label,
-    required this.dateTime,
-    required this.onTap,
-  });
-
-  final String label;
-  final DateTime? dateTime;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: InputDecorator(
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.schedule_outlined, size: 18),
-      ),
-      child: Text(
-        dateTime != null
-            ? DateFormat('MMM d, yyyy · h:mm a').format(dateTime!.toLocal())
-            : 'Select',
-        style: context.textTheme.bodyMedium?.copyWith(
-          color: dateTime == null ? context.colorScheme.onSurfaceVariant : null,
-        ),
       ),
     ),
   );

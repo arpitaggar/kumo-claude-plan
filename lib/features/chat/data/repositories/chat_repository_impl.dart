@@ -102,19 +102,4 @@ class ChatRepositoryImpl implements ChatRepository {
       return Left(UnexpectedFailure(e.toString()));
     }
   }
-
-  @override
-  Future<Either<Failure, void>> upsertPushToken({
-    required String token,
-    required String platform,
-  }) async {
-    try {
-      await remoteDataSource.upsertPushToken(token: token, platform: platform);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(UnexpectedFailure(e.toString()));
-    }
-  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
+import '../widgets/legal_section_widgets.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
@@ -26,46 +27,46 @@ class _PolicyContent extends StatelessWidget {
   Widget build(BuildContext context) => const Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      _Heading('Privacy Policy'),
-      _Body('Effective date: 1 July 2026\nLast updated: 1 July 2026'),
+      LegalHeading('Privacy Policy'),
+      LegalBody('Effective date: 1 July 2026\nLast updated: 1 July 2026'),
       SizedBox(height: 8),
-      _Body(
+      LegalBody(
         'Kumo ("we", "us", or "our") is committed to protecting your '
         'personal data. This Privacy Policy explains what information we '
         'collect, how we use it, and your rights under the General Data '
         'Protection Regulation (GDPR) and applicable privacy laws.',
       ),
 
-      _Section('1. Data Controller'),
-      _Body(
+      LegalSection('1. Data Controller'),
+      LegalBody(
         'Kumo is the data controller for personal data collected through '
         'the Kumo mobile application. For enquiries about this policy or '
         'your data rights, contact us at privacy@kumoapp.com.',
       ),
 
-      _Section('2. Data We Collect'),
+      LegalSection('2. Data We Collect'),
       _SubHeading('Account data'),
-      _Body(
+      LegalBody(
         '• Email address — required to create and identify your account.\n'
         '• Display name — optional, used to identify you to collaborators.',
       ),
       _SubHeading('Trip and travel data'),
-      _Body(
+      LegalBody(
         '• Itineraries, schedule items, packing lists, trip notes, and '
         'expense records you create or that are shared with you.\n'
         '• Ratings and comments you post on activities or destinations.\n'
         '• Chat messages sent within trip groups.',
       ),
       _SubHeading('Usage data'),
-      _Body(
+      LegalBody(
         'We do not run third-party analytics or advertising SDKs. '
         'Standard server logs (IP address, request timestamps) are '
         'retained by our infrastructure provider (Supabase) for up to '
         '30 days for security purposes.',
       ),
 
-      _Section('3. Legal Basis for Processing (GDPR)'),
-      _Body(
+      LegalSection('3. Legal Basis for Processing (GDPR)'),
+      LegalBody(
         '• Contract performance (Art. 6(1)(b)) — providing the app '
         'features you signed up for.\n'
         '• Legitimate interests (Art. 6(1)(f)) — preventing fraud, '
@@ -74,8 +75,8 @@ class _PolicyContent extends StatelessWidget {
         '(e.g. marketing emails, if introduced in future).',
       ),
 
-      _Section('4. How We Use Your Data'),
-      _Body(
+      LegalSection('4. How We Use Your Data'),
+      LegalBody(
         '• Authenticate your identity and maintain your session.\n'
         '• Enable real-time collaboration on shared trips.\n'
         '• Generate AI itinerary suggestions on your request (data is '
@@ -84,12 +85,12 @@ class _PolicyContent extends StatelessWidget {
         '• Respond to support requests.',
       ),
 
-      _Section('5. Data Sharing & Sub-processors'),
-      _Body(
+      LegalSection('5. Data Sharing & Sub-processors'),
+      LegalBody(
         'We do not sell your data. We share data only with the following '
         'sub-processors to operate the service:',
       ),
-      _Body(
+      LegalBody(
         '• Supabase, Inc. (USA) — database, authentication, real-time '
         'messaging, and file storage. Data is stored on servers in the '
         'EU (Frankfurt) region.\n'
@@ -101,15 +102,15 @@ class _PolicyContent extends StatelessWidget {
         'infrastructure (if applicable).',
       ),
 
-      _Section('6. International Transfers'),
-      _Body(
+      LegalSection('6. International Transfers'),
+      LegalBody(
         'Supabase stores your data in the EU. Anthropic\'s servers are '
         'in the United States. Transfers to the USA rely on Standard '
         'Contractual Clauses (SCCs) adopted by the European Commission.',
       ),
 
-      _Section('7. Data Retention'),
-      _Body(
+      LegalSection('7. Data Retention'),
+      LegalBody(
         'Your data is retained for as long as your account is active. '
         'When you delete your account, all personal data — including '
         'itineraries, expenses, packing lists, messages, and ratings — '
@@ -117,8 +118,8 @@ class _PolicyContent extends StatelessWidget {
         'statistics (e.g. total trip count) may be retained indefinitely.',
       ),
 
-      _Section('8. Your Rights (GDPR)'),
-      _Body(
+      LegalSection('8. Your Rights (GDPR)'),
+      LegalBody(
         'If you are in the European Economic Area or UK, you have the '
         'right to:\n\n'
         '• Access — request a copy of your personal data.\n'
@@ -135,8 +136,8 @@ class _PolicyContent extends StatelessWidget {
         'your national data protection authority.',
       ),
 
-      _Section('9. Discoverability & Visibility'),
-      _Body(
+      LegalSection('9. Discoverability & Visibility'),
+      LegalBody(
         'Your display name is visible to other users only within trips you '
         'are a member of. You can disable discoverability in Profile → '
         'Privacy Settings so your name does not appear in invite searches. '
@@ -144,69 +145,33 @@ class _PolicyContent extends StatelessWidget {
         'in the Discover feed.',
       ),
 
-      _Section('10. Security'),
-      _Body(
+      LegalSection('10. Security'),
+      LegalBody(
         'We use HTTPS for all data in transit. Authentication tokens are '
         'stored in the platform secure keychain (iOS Keychain / Android '
         'Keystore). Row-Level Security (RLS) policies on our database '
         'ensure users can only access data they own or have been invited to.',
       ),
 
-      _Section('11. Children'),
-      _Body(
+      LegalSection('11. Children'),
+      LegalBody(
         'Kumo is not directed at children under 16. We do not knowingly '
         'collect data from anyone under 16. If you become aware that a '
         'child has provided us with personal data, contact '
         'privacy@kumoapp.com.',
       ),
 
-      _Section('12. Changes to This Policy'),
-      _Body(
+      LegalSection('12. Changes to This Policy'),
+      LegalBody(
         'We may update this policy from time to time. We will notify you '
         'of material changes via an in-app notice or email before the '
         'change takes effect. Continued use after the effective date '
         'constitutes acceptance.',
       ),
 
-      _Section('13. Contact'),
-      _Body('Kumo Privacy\nprivacy@kumoapp.com'),
+      LegalSection('13. Contact'),
+      LegalBody('Kumo Privacy\nprivacy@kumoapp.com'),
     ],
-  );
-}
-
-class _Heading extends StatelessWidget {
-  const _Heading(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(
-      text,
-      style: TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.w700,
-        color: context.colorScheme.onSurface,
-      ),
-    ),
-  );
-}
-
-class _Section extends StatelessWidget {
-  const _Section(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 20, bottom: 6),
-    child: Text(
-      text,
-      style: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w700,
-        color: context.colorScheme.onSurface,
-      ),
-    ),
   );
 }
 
@@ -223,24 +188,6 @@ class _SubHeading extends StatelessWidget {
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: context.colorScheme.onSurfaceVariant,
-      ),
-    ),
-  );
-}
-
-class _Body extends StatelessWidget {
-  const _Body(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 4),
-    child: Text(
-      text,
-      style: TextStyle(
-        fontSize: 13,
-        height: 1.6,
-        color: context.colorScheme.onSurface,
       ),
     ),
   );

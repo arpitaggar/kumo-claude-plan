@@ -5,20 +5,28 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../itinerary/data/datasources/profile_remote_datasource.dart';
+import '../../../itinerary/domain/entities/profile_result.dart';
+import '../../../itinerary/presentation/providers/profile_lookup_provider.dart';
 import '../../../profile/presentation/providers/user_profile_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
 // ---------------------------------------------------------------------------
 
-final _profileDataSourceProvider = Provider<ProfileRemoteDataSource>(
-  (_) => const ProfileRemoteDataSourceImpl(),
-);
-
-final currentUserProfileProvider = FutureProvider.autoDispose<ProfileResult?>(
-  (ref) async => ref.read(_profileDataSourceProvider).getCurrentUserProfile(),
-);
+final currentUserProfileProvider = FutureProvider.autoDispose<ProfileResult?>((
+  ref,
+) async {
+  final result = await ref
+      .read(getCurrentUserProfileResultUseCaseProvider)
+      .call();
+  // A real failure surfaces as AsyncError (caught by the page's `error:`
+  // branch below) rather than being swallowed to null — only "no row for
+  // this user" (a legitimate null from the use case itself) means null.
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (profile) => profile,
+  );
+});
 
 // ---------------------------------------------------------------------------
 // Page
@@ -72,28 +80,27 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
       _isSearchable = value;
       _isSaving = true;
     });
-    try {
-      await ref
-          .read(_profileDataSourceProvider)
-          .updateSearchability(isSearchable: value);
-      if (!mounted) {
-        return;
-      }
-      ref.invalidate(currentUserProfileProvider);
-      context.showSnackBar(
-        value ? 'You are now discoverable.' : 'You are now hidden from search.',
-      );
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      setState(() => _isSearchable = !value);
-      context.showSnackBar('Failed to save. Please try again.', isError: true);
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+    final result = await ref
+        .read(updateSearchabilityUseCaseProvider)
+        .call(isSearchable: value);
+    if (!mounted) {
+      return;
     }
+    result.fold(
+      (failure) {
+        setState(() => _isSearchable = !value);
+        context.showSnackBar(failure.message, isError: true);
+      },
+      (_) {
+        ref.invalidate(currentUserProfileProvider);
+        context.showSnackBar(
+          value
+              ? 'You are now discoverable.'
+              : 'You are now hidden from search.',
+        );
+      },
+    );
+    setState(() => _isSaving = false);
   }
 
   Future<void> _updateVisibility({

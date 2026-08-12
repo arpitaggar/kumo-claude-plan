@@ -71,7 +71,7 @@ class _PrefsBodyState extends ConsumerState<_PrefsBody> {
     setState(() => _state[(channel, category)] = enabled);
 
     final result = await ref
-        .read(userProfileRepositoryProvider)
+        .read(notificationPreferenceRepositoryProvider)
         .upsertNotificationPreference(
           channel: channel,
           category: category,

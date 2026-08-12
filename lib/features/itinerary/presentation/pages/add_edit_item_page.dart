@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../providers/itinerary_provider.dart';
+import '../widgets/date_time_picker_field.dart';
 
 class AddEditItemPage extends ConsumerStatefulWidget {
   const AddEditItemPage({required this.itineraryId, this.itemId, super.key});
@@ -233,13 +233,13 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
                 const SizedBox(height: 24),
                 Text('When', style: context.textTheme.labelLarge),
                 const SizedBox(height: 8),
-                _DateTimePickerField(
+                DateTimePickerField(
                   label: 'Start',
                   dateTime: _startDateTime,
                   onTap: () => _pickDateTime(isStart: true),
                 ),
                 const SizedBox(height: 8),
-                _DateTimePickerField(
+                DateTimePickerField(
                   label: 'End (optional)',
                   dateTime: _endDateTime,
                   onTap: () => _pickDateTime(isStart: false),
@@ -268,36 +268,4 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
       ),
     );
   }
-}
-
-class _DateTimePickerField extends StatelessWidget {
-  const _DateTimePickerField({
-    required this.label,
-    required this.dateTime,
-    required this.onTap,
-  });
-
-  final String label;
-  final DateTime? dateTime;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(12),
-    child: InputDecorator(
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.schedule_outlined, size: 18),
-      ),
-      child: Text(
-        dateTime != null
-            ? DateFormat('MMM d, yyyy · h:mm a').format(dateTime!.toLocal())
-            : 'Select',
-        style: context.textTheme.bodyMedium?.copyWith(
-          color: dateTime == null ? context.colorScheme.onSurfaceVariant : null,
-        ),
-      ),
-    ),
-  );
 }

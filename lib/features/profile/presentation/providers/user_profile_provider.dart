@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/notification_preference_remote_datasource.dart';
 import '../../data/datasources/user_profile_remote_datasource.dart';
+import '../../data/repositories/notification_preference_repository_impl.dart';
 import '../../data/repositories/user_profile_repository_impl.dart';
 import '../../domain/entities/notification_preference.dart';
 import '../../domain/entities/user_profile.dart';
+import '../../domain/repositories/notification_preference_repository.dart';
 import '../../domain/repositories/user_profile_repository.dart';
 
 // ── Infrastructure ──────────────────────────────────────────────────────────
@@ -17,6 +20,18 @@ final userProfileRepositoryProvider = Provider<UserProfileRepository>(
   (ref) =>
       UserProfileRepositoryImpl(ref.watch(userProfileRemoteDataSourceProvider)),
 );
+
+final notificationPreferenceRemoteDataSourceProvider =
+    Provider<NotificationPreferenceRemoteDataSource>(
+      (_) => const NotificationPreferenceRemoteDataSourceImpl(),
+    );
+
+final notificationPreferenceRepositoryProvider =
+    Provider<NotificationPreferenceRepository>(
+      (ref) => NotificationPreferenceRepositoryImpl(
+        ref.watch(notificationPreferenceRemoteDataSourceProvider),
+      ),
+    );
 
 // ── Own profile ─────────────────────────────────────────────────────────────
 
@@ -46,7 +61,7 @@ final profileByIdProvider = FutureProvider.autoDispose
 final notificationPreferencesProvider =
     FutureProvider.autoDispose<List<NotificationPreference>>((ref) async {
       final result = await ref
-          .read(userProfileRepositoryProvider)
+          .read(notificationPreferenceRepositoryProvider)
           .getNotificationPreferences();
       return result.fold((_) => [], (prefs) => prefs);
     });

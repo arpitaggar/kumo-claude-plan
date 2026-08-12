@@ -3,10 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/presentation/providers/auth_provider.dart';
-import '../../features/chat/presentation/providers/chat_provider.dart';
 import '../utils/logger.dart';
 import 'notification_service.dart';
 import 'push_config.dart';
+import 'push_token_datasource.dart';
+
+final pushTokenDataSourceProvider = Provider<PushTokenDataSource>(
+  (ref) => const PushTokenDataSourceImpl(),
+);
 
 /// Created and initialized once per app lifetime. A `FutureProvider` (rather
 /// than plumbing an explicit init call through `main.dart`'s `ProviderScope`)
@@ -30,7 +34,7 @@ final notificationServiceProvider = FutureProvider<NotificationService>((
 ///
 /// Deliberately does *not* handle `FirebaseMessaging.onMessage` (foreground):
 /// every notification this app shows in the foreground goes through
-/// [chatMessageWatcherProvider]'s realtime watch instead. Listening to FCM's
+/// `chatMessageWatcherProvider`'s realtime watch instead. Listening to FCM's
 /// foreground stream here too would just show the same message a second
 /// time. (Tap-opened-from-FCM events *are* handled, but in `main.dart` /
 /// `push_message_handler.dart` for iOS specifically — Android's
@@ -49,7 +53,7 @@ final fcmTokenSyncProvider = Provider<void>((ref) {
   Future<void> register(String token) async {
     try {
       await ref
-          .read(chatRemoteDataSourceProvider)
+          .read(pushTokenDataSourceProvider)
           .upsertPushToken(token: token, platform: isIos ? 'ios' : 'android');
       AppLogger.info('FCM token registered (${token.substring(0, 12)}…)');
     } catch (e, st) {

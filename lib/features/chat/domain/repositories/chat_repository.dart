@@ -29,9 +29,4 @@ abstract class ChatRepository {
   Future<Either<Failure, List<MessageReadReceipt>>> getReadReceipts(
     String messageId,
   );
-
-  Future<Either<Failure, void>> upsertPushToken({
-    required String token,
-    required String platform,
-  });
 }

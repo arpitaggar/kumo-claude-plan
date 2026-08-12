@@ -10,6 +10,7 @@ import '../../../profile/presentation/providers/user_profile_provider.dart';
 import '../../domain/entities/follow_stats.dart';
 import '../../domain/entities/itinerary_post.dart';
 import '../providers/social_provider.dart';
+import '../utils/post_actions.dart';
 import '../widgets/comments_sheet.dart';
 import '../widgets/post_card.dart';
 
@@ -18,49 +19,14 @@ class PublicProfilePage extends ConsumerWidget {
 
   final String userId;
 
-  Future<void> _fork(
-    BuildContext context,
-    WidgetRef ref,
-    ItineraryPost post,
-  ) async {
-    final auth = ref.read(authNotifierProvider);
-    if (auth is! AuthAuthenticated) {
-      return;
-    }
-
-    final result = await ref
-        .read(forkPostUseCaseProvider)
-        .call(
-          postId: post.id,
-          newOwnerId: auth.user.id,
-          newOwnerName: auth.user.displayName ?? auth.user.email,
-        );
-
-    if (!context.mounted) {
-      return;
-    }
-
-    result.fold(
-      (f) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(f.message), backgroundColor: Colors.redAccent),
-      ),
-      (forked) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Added to My Trips!')));
-        context.push('/trip/${forked.id}');
-      },
-    );
-  }
+  /// Now confirms before forking, matching `DiscoverPage` — the two had
+  /// drifted (this page skipped the confirmation dialog) before both were
+  /// unified onto the shared `forkPostWithConfirmation` helper.
+  Future<void> _fork(BuildContext context, WidgetRef ref, ItineraryPost post) =>
+      forkPostWithConfirmation(context: context, ref: ref, post: post);
 
   Future<void> _toggleLike(WidgetRef ref, ItineraryPost post) async {
-    final auth = ref.read(authNotifierProvider);
-    if (auth is! AuthAuthenticated) {
-      return;
-    }
-    await ref
-        .read(toggleLikeUseCaseProvider)
-        .call(postId: post.id, userId: auth.user.id, like: !post.likedByMe);
+    await toggleLike(ref: ref, post: post);
     ref.invalidate(authorPostsProvider(userId));
   }
 

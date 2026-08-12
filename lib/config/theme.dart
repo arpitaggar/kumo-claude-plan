@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'brand.dart';
+import 'theme_provider.dart';
 
 // ─── Themes ───────────────────────────────────────────────────────────────────
 // Two complete themes live here. To add a new one:
@@ -637,6 +638,27 @@ class AppTheme {
     border: onyxOutline,
     navIndicator: onyxGoldColor.withValues(alpha: 0.3),
   );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Lookup table — the single KumoTheme → ThemeData mapping. `MaterialApp`
+  // (main.dart) reads this instead of re-declaring its own switch over every
+  // enum value, which previously had to stay in lockstep with the getters
+  // above by hand.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  static final Map<KumoTheme, ThemeData> all = {
+    KumoTheme.cherryBlossom: light,
+    KumoTheme.goldenHour: goldenHour,
+    KumoTheme.deepVoyage: deepVoyage,
+    KumoTheme.synthwaveTokyo: synthwaveTokyo,
+    KumoTheme.whiteAndCharcoal: whiteAndCharcoal,
+    KumoTheme.warmOatLightBlue: warmOatLightBlue,
+    KumoTheme.sunsetCoral: sunsetCoral,
+    KumoTheme.dawnFlight: dawnFlight,
+    KumoTheme.verdigrisBronze: verdigrisBronze,
+    KumoTheme.cloudSilver: cloudSilver,
+    KumoTheme.onyxGold: onyxGoldTheme,
+  };
 
   // ══════════════════════════════════════════════════════════════════════════
   // Shared builder — keeps component styles DRY across themes
