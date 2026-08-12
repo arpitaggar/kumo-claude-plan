@@ -4,7 +4,7 @@ import 'package:kumo_claude/features/social/data/models/post_comment_model.dart'
 void main() {
   group('PostCommentModel.fromJson', () {
     test('parses all fields', () {
-      final model = PostCommentModel.fromJson({
+      final model = PostCommentModel.fromJson(const {
         'id': 'comment-1',
         'post_id': 'post-1',
         'author_id': 'user-1',
@@ -24,7 +24,7 @@ void main() {
     });
 
     test('defaults authorAvatarUrl to null when absent', () {
-      final model = PostCommentModel.fromJson({
+      final model = PostCommentModel.fromJson(const {
         'id': 'comment-1',
         'post_id': 'post-1',
         'author_id': 'user-1',

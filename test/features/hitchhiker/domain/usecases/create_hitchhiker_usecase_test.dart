@@ -17,7 +17,7 @@ void main() {
     itineraryId: 'trip-1',
     displayName: 'Priya',
     accessToken: 'token-abc',
-    createdAt: DateTime(2026, 1, 1),
+    createdAt: DateTime(2026),
   );
 
   setUp(() {

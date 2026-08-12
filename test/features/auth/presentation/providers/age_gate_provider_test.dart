@@ -88,8 +88,9 @@ void main() {
     // Keep both providers alive/reactive so their async chains actually run
     // and propagate — AuthNotifier's own _checkCurrentUser(), then
     // AgeGateNotifier's _sync() reacting to that resolution.
-    container.listen(authNotifierProvider, (_, _) {});
-    container.listen(ageGateProvider, (_, _) {});
+    container
+      ..listen(authNotifierProvider, (_, _) {})
+      ..listen(ageGateProvider, (_, _) {});
     await Future<void>.delayed(Duration.zero);
     await Future<void>.delayed(Duration.zero);
     return container;
@@ -106,7 +107,7 @@ void main() {
     () async {
       final container = await buildContainer(
         initialUser: _user('user-1'),
-        profile: _profile('user-1', ageVerifiedAt: DateTime.utc(2026, 1, 1)),
+        profile: _profile('user-1', ageVerifiedAt: DateTime.utc(2026)),
       );
 
       expect(container.read(ageGateProvider), isTrue);
@@ -148,7 +149,7 @@ void main() {
   test('re-syncs to null when the user signs out', () async {
     final container = await buildContainer(
       initialUser: _user('user-1'),
-      profile: _profile('user-1', ageVerifiedAt: DateTime.utc(2026, 1, 1)),
+      profile: _profile('user-1', ageVerifiedAt: DateTime.utc(2026)),
     );
     expect(container.read(ageGateProvider), isTrue);
 

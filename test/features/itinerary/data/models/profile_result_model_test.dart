@@ -4,7 +4,7 @@ import 'package:kumo_claude/features/itinerary/data/models/profile_result_model.
 void main() {
   group('ProfileResultModel.fromRow', () {
     test('parses every field', () {
-      final model = ProfileResultModel.fromRow({
+      final model = ProfileResultModel.fromRow(const {
         'id': 'user-1',
         'display_name': 'Alice',
         'email': 'alice@example.com',
@@ -22,7 +22,7 @@ void main() {
     test(
       'defaults displayName to empty and isSearchable to true when absent',
       () {
-        final model = ProfileResultModel.fromRow({
+        final model = ProfileResultModel.fromRow(const {
           'id': 'user-1',
           'email': 'alice@example.com',
         });

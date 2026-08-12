@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/entities/user.dart';
+import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/delete_account_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/login_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';

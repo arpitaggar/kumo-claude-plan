@@ -75,7 +75,7 @@ void main() {
             itineraryId: 'trip-1',
             displayName: 'Priya',
             accessToken: 'tok-1',
-            createdAt: DateTime(2026, 1, 1),
+            createdAt: DateTime(2026),
           ),
         ]),
       );
@@ -95,7 +95,7 @@ void main() {
             itineraryId: 'trip-1',
             displayName: 'Sam',
             accessToken: 'tok-1',
-            createdAt: DateTime(2026, 1, 1),
+            createdAt: DateTime(2026),
             revokedAt: DateTime(2026, 1, 2),
           ),
         ]),
@@ -124,7 +124,7 @@ void main() {
             itineraryId: 'trip-1',
             displayName: 'Priya',
             accessToken: 'tok-1',
-            createdAt: DateTime(2026, 1, 1),
+            createdAt: DateTime(2026),
           ),
         ),
       );
@@ -155,7 +155,7 @@ void main() {
             itineraryId: 'trip-1',
             displayName: 'Priya',
             accessToken: 'tok-1',
-            createdAt: DateTime(2026, 1, 1),
+            createdAt: DateTime(2026),
           ),
         ]),
       );

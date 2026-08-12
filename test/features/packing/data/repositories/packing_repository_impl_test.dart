@@ -20,7 +20,7 @@ void main() {
     isChecked: false,
     addedById: 'user-1',
     addedByName: 'Alice',
-    createdAt: DateTime.utc(2026, 1, 1),
+    createdAt: DateTime.utc(2026),
   );
 
   setUp(() {

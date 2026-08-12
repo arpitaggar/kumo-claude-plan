@@ -2,8 +2,8 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/entities/user.dart';
+import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/delete_account_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/login_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';
@@ -87,7 +87,7 @@ void main() {
             actorId: 'actor-1',
             actorName: 'Alice',
             type: NotificationType.follow,
-            createdAt: DateTime.utc(2026, 6, 1),
+            createdAt: DateTime.utc(2026, 6),
           ),
         ]),
       ),
@@ -121,7 +121,7 @@ void main() {
             type: NotificationType.like,
             postId: 'post-1',
             postTitle: 'Tokyo Summer 2026',
-            createdAt: DateTime.utc(2026, 6, 1),
+            createdAt: DateTime.utc(2026, 6),
           ),
         ]),
       ),

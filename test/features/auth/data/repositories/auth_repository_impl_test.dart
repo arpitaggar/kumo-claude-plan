@@ -20,7 +20,7 @@ void main() {
   final tUser = UserModel(
     id: 'user-1',
     email: 'me@example.com',
-    createdAt: DateTime.utc(2026, 1, 1),
+    createdAt: DateTime.utc(2026),
   );
   final tAdultDob = DateTime.now().subtract(const Duration(days: 365 * 30));
 
@@ -547,7 +547,7 @@ void main() {
   });
 
   group('confirmAge', () {
-    final tDob = DateTime(1990, 1, 1);
+    final tDob = DateTime(1990);
 
     test('returns Right(true) when the datasource reports verified', () async {
       when(() => remote.confirmAge(tDob)).thenAnswer((_) async => true);

@@ -8,8 +8,8 @@ class _StubWeatherService implements WeatherService {
   _StubWeatherService({this.result, this.error});
 
   final WeatherForecast? result;
-  final Object? error;
-  var callCount = 0;
+  final Exception? error;
+  int callCount = 0;
 
   @override
   Future<WeatherForecast?> forecastFor({
@@ -26,7 +26,7 @@ class _StubWeatherService implements WeatherService {
 }
 
 WeatherForecast _forecast(String sourceName) => WeatherForecast(
-  forecastFor: DateTime(2026, 6, 1),
+  forecastFor: DateTime(2026, 6),
   temperatureCelsius: 20,
   condition: WeatherCondition.clear,
   conditionDescription: 'Clear sky',
@@ -42,7 +42,7 @@ void main() {
     final result = await service.forecastFor(
       latitude: 0,
       longitude: 0,
-      date: DateTime(2026, 6, 1),
+      date: DateTime(2026, 6),
     );
 
     expect(result?.sourceName, 'First');
@@ -57,7 +57,7 @@ void main() {
     final result = await service.forecastFor(
       latitude: 0,
       longitude: 0,
-      date: DateTime(2026, 6, 1),
+      date: DateTime(2026, 6),
     );
 
     expect(result?.sourceName, 'Second');
@@ -71,7 +71,7 @@ void main() {
     final result = await service.forecastFor(
       latitude: 0,
       longitude: 0,
-      date: DateTime(2026, 6, 1),
+      date: DateTime(2026, 6),
     );
 
     expect(result?.sourceName, 'Second');
@@ -85,7 +85,7 @@ void main() {
     final result = await service.forecastFor(
       latitude: 0,
       longitude: 0,
-      date: DateTime(2026, 6, 1),
+      date: DateTime(2026, 6),
     );
 
     expect(result, isNull);

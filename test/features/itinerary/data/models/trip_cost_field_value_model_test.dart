@@ -4,7 +4,7 @@ import 'package:kumo_claude/features/itinerary/data/models/trip_cost_field_value
 void main() {
   group('TripCostFieldValueModel.fromJson', () {
     test('parses every field', () {
-      final model = TripCostFieldValueModel.fromJson({
+      final model = TripCostFieldValueModel.fromJson(const {
         'itinerary_id': 'trip-1',
         'field_id': 'field-1',
         'option_id': 'option-1',

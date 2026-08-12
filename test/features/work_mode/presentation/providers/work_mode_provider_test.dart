@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/entities/user.dart';
+import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/delete_account_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/login_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';
@@ -82,8 +82,9 @@ void main() {
     addTearDown(container.dispose);
     // Lets AuthNotifier's own async _checkCurrentUser() resolve, and
     // myOrganizationsProvider resolve, before the test inspects state.
-    container.listen(authNotifierProvider, (_, _) {});
-    container.listen(myOrganizationsProvider, (_, _) {});
+    container
+      ..listen(authNotifierProvider, (_, _) {})
+      ..listen(myOrganizationsProvider, (_, _) {});
     await Future<void>.delayed(Duration.zero);
     return container;
   }
@@ -224,7 +225,7 @@ void main() {
     });
 
     test('is the single organization when the user has exactly one', () async {
-      final org = _org('org-1', name: 'Acme Corp');
+      final org = _org('org-1');
       final container = await buildContainer(
         initialUser: _user('user-1'),
         orgs: [org],

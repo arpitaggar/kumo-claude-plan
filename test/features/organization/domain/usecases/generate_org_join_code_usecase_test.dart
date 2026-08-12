@@ -22,7 +22,7 @@ void main() {
     code: 'ABC123XYZ0',
     usesCount: 0,
     createdBy: 'user-1',
-    createdAt: DateTime.utc(2026, 1, 1),
+    createdAt: DateTime.utc(2026),
   );
 
   setUpAll(() {
@@ -59,7 +59,6 @@ void main() {
           orgId: 'org-1',
           role: OrgMemberRole.member,
           costFieldOptionId: 'option-1',
-          expiresAt: null,
           maxUses: 1,
         ),
       ).called(1);

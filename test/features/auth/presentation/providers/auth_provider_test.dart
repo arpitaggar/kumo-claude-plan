@@ -34,7 +34,7 @@ void main() {
   final tUser = User(
     id: 'user-1',
     email: 'alice@example.com',
-    createdAt: DateTime.utc(2026, 1, 1),
+    createdAt: DateTime.utc(2026),
   );
   final tAdultDob = DateTime.now().subtract(const Duration(days: 365 * 30));
 

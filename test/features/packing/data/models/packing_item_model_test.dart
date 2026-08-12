@@ -4,7 +4,7 @@ import 'package:kumo_claude/features/packing/data/models/packing_item_model.dart
 void main() {
   group('PackingItemModel.fromJson', () {
     test('parses every field', () {
-      final model = PackingItemModel.fromJson({
+      final model = PackingItemModel.fromJson(const {
         'id': 'item-1',
         'itinerary_id': 'trip-1',
         'title': 'Passport',
@@ -26,7 +26,7 @@ void main() {
     });
 
     test('defaults isChecked to false and category to null when absent', () {
-      final model = PackingItemModel.fromJson({
+      final model = PackingItemModel.fromJson(const {
         'id': 'item-1',
         'itinerary_id': 'trip-1',
         'title': 'Passport',
@@ -42,7 +42,7 @@ void main() {
 
   group('PackingItemModel.toJson', () {
     test('round-trips through fromJson', () {
-      final original = PackingItemModel.fromJson({
+      final original = PackingItemModel.fromJson(const {
         'id': 'item-1',
         'itinerary_id': 'trip-1',
         'title': 'Passport',
@@ -66,7 +66,7 @@ void main() {
     });
 
     test('omits category from the JSON map when null', () {
-      final model = PackingItemModel.fromJson({
+      final model = PackingItemModel.fromJson(const {
         'id': 'item-1',
         'itinerary_id': 'trip-1',
         'title': 'Passport',

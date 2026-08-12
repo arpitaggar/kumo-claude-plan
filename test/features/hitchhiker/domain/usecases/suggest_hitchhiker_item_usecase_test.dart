@@ -62,11 +62,7 @@ void main() {
 
   test('allows a null description', () async {
     when(
-      () => mockRepo.suggestItem(
-        token: 'tok-1',
-        title: 'Beach day',
-        description: null,
-      ),
+      () => mockRepo.suggestItem(token: 'tok-1', title: 'Beach day'),
     ).thenAnswer((_) async => const Right(null));
 
     final result = await useCase(token: 'tok-1', title: 'Beach day');

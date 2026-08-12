@@ -156,7 +156,6 @@ void main() {
       when(
         () => mockRepo.fetchExplore(
           query: any(named: 'query'),
-          before: null,
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => Right(firstPage));

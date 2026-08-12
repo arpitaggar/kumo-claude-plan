@@ -21,7 +21,7 @@ void main() {
     itineraryId: 'trip-1',
     tripTitle: 'Tokyo Trip',
     tripDescription: 'Spring adventure',
-    startDate: DateTime(2026, 4, 1),
+    startDate: DateTime(2026, 4),
     endDate: DateTime(2026, 4, 10),
     status: 'active',
     messages: [
@@ -148,11 +148,7 @@ void main() {
         () => mockRepo.getTripView('tok-1'),
       ).thenAnswer((_) async => Right(tView));
       when(
-        () => mockRepo.suggestItem(
-          token: 'tok-1',
-          title: 'Beach day',
-          description: null,
-        ),
+        () => mockRepo.suggestItem(token: 'tok-1', title: 'Beach day'),
       ).thenAnswer((_) async => const Right(null));
 
       await pumpScreen(tester);
@@ -168,11 +164,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        () => mockRepo.suggestItem(
-          token: 'tok-1',
-          title: 'Beach day',
-          description: null,
-        ),
+        () => mockRepo.suggestItem(token: 'tok-1', title: 'Beach day'),
       ).called(1);
     });
   });

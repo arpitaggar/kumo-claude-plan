@@ -9,7 +9,7 @@ import 'package:kumo_claude/features/organization/domain/entities/org_member.dar
 void main() {
   group('OrganizationModel.fromJson', () {
     test('parses all fields', () {
-      final model = OrganizationModel.fromJson({
+      final model = OrganizationModel.fromJson(const {
         'id': 'org-1',
         'name': 'Acme Corp',
         'slug': 'acme-corp',
@@ -22,12 +22,12 @@ void main() {
       expect(model.name, 'Acme Corp');
       expect(model.slug, 'acme-corp');
       expect(model.ownerId, 'user-1');
-      expect(model.createdAt, DateTime.utc(2026, 1, 1));
+      expect(model.createdAt, DateTime.utc(2026));
       expect(model.updatedAt, DateTime.utc(2026, 1, 2));
     });
 
     test('toJson only includes name/slug (server owns the rest)', () {
-      final model = OrganizationModel.fromJson({
+      final model = OrganizationModel.fromJson(const {
         'id': 'org-1',
         'name': 'Acme Corp',
         'slug': 'acme-corp',
@@ -42,7 +42,7 @@ void main() {
 
   group('OrgMemberModel.fromJson', () {
     test('parses a known role', () {
-      final model = OrgMemberModel.fromJson({
+      final model = OrgMemberModel.fromJson(const {
         'id': 'member-1',
         'org_id': 'org-1',
         'user_id': 'user-1',
@@ -56,7 +56,7 @@ void main() {
     });
 
     test('falls back to member for an unrecognised role', () {
-      final model = OrgMemberModel.fromJson({
+      final model = OrgMemberModel.fromJson(const {
         'id': 'member-1',
         'org_id': 'org-1',
         'user_id': 'user-1',
@@ -69,7 +69,7 @@ void main() {
     });
 
     test('defaults userName to empty string when absent', () {
-      final model = OrgMemberModel.fromJson({
+      final model = OrgMemberModel.fromJson(const {
         'id': 'member-1',
         'org_id': 'org-1',
         'user_id': 'user-1',
@@ -83,7 +83,7 @@ void main() {
 
   group('OrgCostFieldOptionModel.fromJson', () {
     test('parses all fields', () {
-      final model = OrgCostFieldOptionModel.fromJson({
+      final model = OrgCostFieldOptionModel.fromJson(const {
         'id': 'option-1',
         'field_id': 'field-1',
         'value': 'Sales',
@@ -98,7 +98,7 @@ void main() {
     });
 
     test('defaults sortOrder to 0 when absent', () {
-      final model = OrgCostFieldOptionModel.fromJson({
+      final model = OrgCostFieldOptionModel.fromJson(const {
         'id': 'option-1',
         'field_id': 'field-1',
         'value': 'Sales',
@@ -111,7 +111,7 @@ void main() {
 
   group('OrgCostFieldModel.fromJson', () {
     test('parses a select field and sorts embedded options by sortOrder', () {
-      final model = OrgCostFieldModel.fromJson({
+      final model = OrgCostFieldModel.fromJson(const {
         'id': 'field-1',
         'org_id': 'org-1',
         'label': 'Department',
@@ -144,7 +144,7 @@ void main() {
     });
 
     test('parses a generated field and orders sourceFieldIds by position', () {
-      final model = OrgCostFieldModel.fromJson({
+      final model = OrgCostFieldModel.fromJson(const {
         'id': 'field-3',
         'org_id': 'org-1',
         'label': 'Cost Center',
@@ -162,7 +162,7 @@ void main() {
     });
 
     test('defaults field_type to select for an unrecognised value', () {
-      final model = OrgCostFieldModel.fromJson({
+      final model = OrgCostFieldModel.fromJson(const {
         'id': 'field-1',
         'org_id': 'org-1',
         'label': 'Department',
@@ -174,7 +174,7 @@ void main() {
     });
 
     test('defaults separator/sortOrder/options/sourceFieldIds when absent', () {
-      final model = OrgCostFieldModel.fromJson({
+      final model = OrgCostFieldModel.fromJson(const {
         'id': 'field-1',
         'org_id': 'org-1',
         'label': 'Department',

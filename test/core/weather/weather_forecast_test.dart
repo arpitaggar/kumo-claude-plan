@@ -4,7 +4,7 @@ import 'package:kumo_claude/core/weather/weather_forecast.dart';
 
 void main() {
   WeatherForecast forecast({double temperatureCelsius = 20}) => WeatherForecast(
-    forecastFor: DateTime(2026, 6, 1),
+    forecastFor: DateTime(2026, 6),
     temperatureCelsius: temperatureCelsius,
     condition: WeatherCondition.clear,
     conditionDescription: 'Clear sky',
@@ -16,9 +16,6 @@ void main() {
   });
 
   test('forecasts differing by one field are not equal', () {
-    expect(
-      forecast(temperatureCelsius: 20),
-      isNot(forecast(temperatureCelsius: 21)),
-    );
+    expect(forecast(), isNot(forecast(temperatureCelsius: 21)));
   });
 }

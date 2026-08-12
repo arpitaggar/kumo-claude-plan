@@ -96,7 +96,7 @@ void main() {
     test(
       'resolves currentUserId from the data source and forwards params',
       () async {
-        final before = DateTime.utc(2026, 1, 1);
+        final before = DateTime.utc(2026);
         when(
           () => dataSource.fetchExplore(
             currentUserId: any(named: 'currentUserId'),
@@ -148,7 +148,7 @@ void main() {
 
   group('fetchFeed', () {
     test('forwards currentUserId/before/limit to the data source', () async {
-      final before = DateTime.utc(2026, 1, 1);
+      final before = DateTime.utc(2026);
       when(
         () => dataSource.fetchFeed(
           currentUserId: any(named: 'currentUserId'),

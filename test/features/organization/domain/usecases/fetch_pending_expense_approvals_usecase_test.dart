@@ -23,7 +23,7 @@ void main() {
     amount: 90,
     currencyCode: 'USD',
     category: 'food',
-    submittedAt: DateTime.utc(2026, 6, 1),
+    submittedAt: DateTime.utc(2026, 6),
   );
 
   setUp(() {

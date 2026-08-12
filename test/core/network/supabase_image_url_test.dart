@@ -23,7 +23,7 @@ void main() {
       const url =
           'https://project.supabase.co/storage/v1/object/public/avatars/uid.jpg';
 
-      final result = transformObjectUrl(url, width: 120, quality: 75);
+      final result = transformObjectUrl(url, width: 120);
 
       expect(
         result,

@@ -4,7 +4,7 @@ import 'package:kumo_claude/features/profile/data/models/user_profile_model.dart
 void main() {
   group('UserProfileModel.fromJson', () {
     test('parses a full row', () {
-      final model = UserProfileModel.fromJson({
+      final model = UserProfileModel.fromJson(const {
         'id': 'user-1',
         'email': 'me@example.com',
         'display_name': 'Alice',
@@ -46,7 +46,7 @@ void main() {
     test('defaults email/displayName to empty string when absent — e.g. '
         "getProfileById's restricted column set for another user's profile "
         '(SEC-008)', () {
-      final model = UserProfileModel.fromJson({
+      final model = UserProfileModel.fromJson(const {
         'id': 'user-1',
         'updated_at': '2026-06-01T00:00:00.000Z',
       });
@@ -57,7 +57,7 @@ void main() {
 
     test('defaults unitsPreference/profileVisibility/contactVisibility/'
         'isSearchable/pushMessagePreviewEnabled when absent', () {
-      final model = UserProfileModel.fromJson({
+      final model = UserProfileModel.fromJson(const {
         'id': 'user-1',
         'updated_at': '2026-06-01T00:00:00.000Z',
       });
@@ -71,7 +71,7 @@ void main() {
 
     test('defaults travelPreferenceTags to an empty list when absent or not '
         'a List', () {
-      final model = UserProfileModel.fromJson({
+      final model = UserProfileModel.fromJson(const {
         'id': 'user-1',
         'updated_at': '2026-06-01T00:00:00.000Z',
       });
@@ -80,7 +80,7 @@ void main() {
     });
 
     test('defaults usernameLastChangedAt to null when absent', () {
-      final model = UserProfileModel.fromJson({
+      final model = UserProfileModel.fromJson(const {
         'id': 'user-1',
         'updated_at': '2026-06-01T00:00:00.000Z',
       });
@@ -90,7 +90,7 @@ void main() {
 
     test('defaults updatedAt to now() when absent', () {
       final before = DateTime.now();
-      final model = UserProfileModel.fromJson({'id': 'user-1'});
+      final model = UserProfileModel.fromJson(const {'id': 'user-1'});
       final after = DateTime.now();
 
       expect(
@@ -104,7 +104,7 @@ void main() {
     });
 
     test('leaves nullable optional fields null when absent', () {
-      final model = UserProfileModel.fromJson({
+      final model = UserProfileModel.fromJson(const {
         'id': 'user-1',
         'updated_at': '2026-06-01T00:00:00.000Z',
       });

@@ -5,7 +5,7 @@ import 'package:kumo_claude/features/organization/domain/entities/org_member.dar
 void main() {
   group('OrgJoinCodeModel.fromJson', () {
     test('parses all fields', () {
-      final model = OrgJoinCodeModel.fromJson({
+      final model = OrgJoinCodeModel.fromJson(const {
         'id': 'code-1',
         'org_id': 'org-1',
         'cost_field_option_id': 'option-1',
@@ -24,18 +24,18 @@ void main() {
       expect(model.costFieldOptionId, 'option-1');
       expect(model.role, OrgMemberRole.admin);
       expect(model.code, 'ABC123XYZ0');
-      expect(model.expiresAt, DateTime.utc(2026, 2, 1));
+      expect(model.expiresAt, DateTime.utc(2026, 2));
       expect(model.maxUses, 5);
       expect(model.usesCount, 2);
       expect(model.revokedAt, DateTime.utc(2026, 1, 15));
       expect(model.createdBy, 'user-1');
-      expect(model.createdAt, DateTime.utc(2026, 1, 1));
+      expect(model.createdAt, DateTime.utc(2026));
     });
 
     test(
       'defaults every nullable field to null/0 when absent from the row',
       () {
-        final model = OrgJoinCodeModel.fromJson({
+        final model = OrgJoinCodeModel.fromJson(const {
           'id': 'code-1',
           'org_id': 'org-1',
           'role': 'member',
@@ -53,7 +53,7 @@ void main() {
     );
 
     test('falls back to member for an unrecognised role', () {
-      final model = OrgJoinCodeModel.fromJson({
+      final model = OrgJoinCodeModel.fromJson(const {
         'id': 'code-1',
         'org_id': 'org-1',
         'role': 'superadmin',

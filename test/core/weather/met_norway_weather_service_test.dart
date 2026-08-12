@@ -13,23 +13,18 @@ Map<String, dynamic> _entry(
   double? temp,
   double? windSpeed,
   String? symbolCode,
-}) {
-  return {
-    'time': time,
-    'data': {
-      'instant': {
-        'details': {
-          if (temp != null) 'air_temperature': temp,
-          if (windSpeed != null) 'wind_speed': windSpeed,
-        },
-      },
-      if (symbolCode != null)
-        'next_6_hours': {
-          'summary': {'symbol_code': symbolCode},
-        },
+}) => {
+  'time': time,
+  'data': {
+    'instant': {
+      'details': {'air_temperature': ?temp, 'wind_speed': ?windSpeed},
     },
-  };
-}
+    if (symbolCode != null)
+      'next_6_hours': {
+        'summary': {'symbol_code': symbolCode},
+      },
+  },
+};
 
 void main() {
   late _MockHttpClient client;
@@ -53,7 +48,7 @@ void main() {
       () => service.forecastFor(
         latitude: 59.9,
         longitude: 10.7,
-        date: DateTime(2026, 6, 1),
+        date: DateTime(2026, 6),
       ),
       throwsException,
     );
@@ -76,7 +71,7 @@ void main() {
       final result = await service.forecastFor(
         latitude: 59.9,
         longitude: 10.7,
-        date: DateTime(2026, 6, 1),
+        date: DateTime(2026, 6),
       );
 
       expect(result, isNull);
@@ -122,7 +117,7 @@ void main() {
     final result = await service.forecastFor(
       latitude: 59.9,
       longitude: 10.7,
-      date: DateTime(2026, 6, 1),
+      date: DateTime(2026, 6),
     );
 
     expect(result, isNotNull);

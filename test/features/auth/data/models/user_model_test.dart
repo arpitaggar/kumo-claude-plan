@@ -5,10 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 void main() {
   group('UserModel.fromSupabaseUser', () {
     test('maps every field from a fully-populated Supabase user', () {
-      final supabaseUser = sb.User(
+      const supabaseUser = sb.User(
         id: 'user-1',
-        appMetadata: const {},
-        userMetadata: const {
+        appMetadata: {},
+        userMetadata: {
           'display_name': 'Alice',
           'avatar_url': 'https://example.com/a.png',
         },
@@ -34,9 +34,9 @@ void main() {
 
     test('defaults displayName/avatarUrl to null and emailVerified to false '
         'when absent', () {
-      final supabaseUser = sb.User(
+      const supabaseUser = sb.User(
         id: 'user-1',
-        appMetadata: const {},
+        appMetadata: {},
         userMetadata: null,
         aud: 'authenticated',
         email: 'alice@example.com',
@@ -52,9 +52,9 @@ void main() {
     });
 
     test('defaults email to empty string when Supabase gives none', () {
-      final supabaseUser = sb.User(
+      const supabaseUser = sb.User(
         id: 'user-1',
-        appMetadata: const {},
+        appMetadata: {},
         userMetadata: null,
         aud: 'authenticated',
         createdAt: '2026-01-01T00:00:00.000Z',
@@ -109,7 +109,7 @@ void main() {
 
   group('UserModel.toJson', () {
     test('round-trips through fromJson', () {
-      final original = UserModel.fromJson({
+      final original = UserModel.fromJson(const {
         'id': 'user-1',
         'email': 'alice@example.com',
         'created_at': '2026-01-01T00:00:00.000Z',

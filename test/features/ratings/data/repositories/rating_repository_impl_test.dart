@@ -20,7 +20,7 @@ void main() {
     stars: 5,
     userId: 'user-1',
     userName: 'Alice',
-    createdAt: DateTime.utc(2026, 1, 1),
+    createdAt: DateTime.utc(2026),
   );
 
   setUp(() {

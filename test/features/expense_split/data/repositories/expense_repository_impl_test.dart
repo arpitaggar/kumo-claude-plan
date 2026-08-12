@@ -13,7 +13,7 @@ void main() {
   late MockExpenseRemoteDataSource dataSource;
   late ExpenseRepositoryImpl repository;
 
-  final tExpense = ExpenseModel.fromJson({
+  final tExpense = ExpenseModel.fromJson(const {
     'id': 'expense-1',
     'itinerary_id': 'it-1',
     'title': 'Dinner',

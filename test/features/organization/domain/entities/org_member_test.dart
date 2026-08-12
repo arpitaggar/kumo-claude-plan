@@ -11,7 +11,7 @@ void main() {
   });
 
   test('two members with the same fields are equal', () {
-    final joinedAt = DateTime.utc(2026, 1, 1);
+    final joinedAt = DateTime.utc(2026);
     const id = 'member-1';
     final a = OrgMember(
       id: id,

@@ -45,12 +45,6 @@ void main() {
         senderId: 'user-1',
         senderName: 'Alice',
         content: 'Hello',
-        attachmentStoragePath: null,
-        attachmentUrl: null,
-        attachmentFileName: null,
-        attachmentMimeType: null,
-        attachmentSizeBytes: null,
-        attachmentKind: null,
       ),
     ).called(1);
     expect(result, const Right<Failure, void>(null));

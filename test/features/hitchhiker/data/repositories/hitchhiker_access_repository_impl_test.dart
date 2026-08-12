@@ -13,7 +13,7 @@ void main() {
   late MockHitchhikerAccessRemoteDataSource remote;
   late HitchhikerAccessRepositoryImpl repository;
 
-  final tView = HitchhikerTripView(
+  const tView = HitchhikerTripView(
     hitchhikerId: 'hh-1',
     displayName: 'Priya',
     itineraryId: 'trip-1',
@@ -22,8 +22,8 @@ void main() {
     startDate: null,
     endDate: null,
     status: 'active',
-    messages: const [],
-    suggestions: const [],
+    messages: [],
+    suggestions: [],
   );
 
   setUp(() {
@@ -104,11 +104,7 @@ void main() {
   group('suggestItem', () {
     test('returns Right(null) on success', () async {
       when(
-        () => remote.suggestItem(
-          token: 'tok-1',
-          title: 'Nonna\'s',
-          description: null,
-        ),
+        () => remote.suggestItem(token: 'tok-1', title: 'Nonna\'s'),
       ).thenAnswer((_) async {});
 
       final result = await repository.suggestItem(

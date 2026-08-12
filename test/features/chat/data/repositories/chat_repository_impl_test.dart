@@ -20,7 +20,7 @@ void main() {
     senderId: 'user-1',
     senderName: 'Alice',
     content: 'Hello',
-    createdAt: DateTime.utc(2026, 1, 1),
+    createdAt: DateTime.utc(2026),
   );
 
   setUpAll(() {

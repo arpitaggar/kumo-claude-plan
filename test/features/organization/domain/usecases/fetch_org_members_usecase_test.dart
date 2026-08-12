@@ -19,7 +19,7 @@ void main() {
     userId: 'user-1',
     userName: 'Alice',
     role: OrgMemberRole.admin,
-    joinedAt: DateTime.utc(2026, 1, 1),
+    joinedAt: DateTime.utc(2026),
   );
 
   setUp(() {

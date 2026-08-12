@@ -4,7 +4,7 @@ import 'package:kumo_claude/features/gamification/data/models/xp_event_model.dar
 void main() {
   group('XpEventModel.fromJson', () {
     test('parses every field', () {
-      final model = XpEventModel.fromJson({
+      final model = XpEventModel.fromJson(const {
         'id': 'evt-1',
         'user_id': 'user-1',
         'amount': 30,

@@ -3,7 +3,7 @@ import 'package:kumo_claude/features/organization/domain/entities/organization.d
 
 void main() {
   test('two organizations with the same fields are equal', () {
-    final createdAt = DateTime.utc(2026, 1, 1);
+    final createdAt = DateTime.utc(2026);
     final a = Organization(
       id: 'org-1',
       name: 'Acme Corp',
@@ -25,7 +25,7 @@ void main() {
   });
 
   test('organizations with different ids are not equal', () {
-    final createdAt = DateTime.utc(2026, 1, 1);
+    final createdAt = DateTime.utc(2026);
     final a = Organization(
       id: 'org-1',
       name: 'Acme Corp',
@@ -48,7 +48,7 @@ void main() {
 
   test('organizations differing only in defaultApprovalThreshold are not '
       'equal', () {
-    final createdAt = DateTime.utc(2026, 1, 1);
+    final createdAt = DateTime.utc(2026);
     final a = Organization(
       id: 'org-1',
       name: 'Acme Corp',

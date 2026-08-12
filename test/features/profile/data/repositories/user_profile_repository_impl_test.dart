@@ -22,7 +22,7 @@ void main() {
     contactVisibility: 'collaborators_only',
     unitsPreference: 'metric',
     travelPreferenceTags: const [],
-    updatedAt: DateTime.utc(2026, 1, 1),
+    updatedAt: DateTime.utc(2026),
   );
 
   setUp(() {
@@ -166,18 +166,6 @@ void main() {
           () => dataSource.updateProfile(
             displayName: 'Alice B',
             username: 'aliceb',
-            bio: null,
-            city: null,
-            country: null,
-            timezone: null,
-            preferredCurrency: null,
-            preferredLanguage: null,
-            unitsPreference: null,
-            travelPreferenceTags: null,
-            profileVisibility: null,
-            contactVisibility: null,
-            avatarUrl: null,
-            pushMessagePreviewEnabled: null,
           ),
         ).called(1);
       },

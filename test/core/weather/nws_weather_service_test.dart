@@ -48,7 +48,7 @@ void main() {
         final result = await service.forecastFor(
           latitude: 48.1351,
           longitude: 11.5820,
-          date: DateTime(2026, 6, 1),
+          date: DateTime(2026, 6),
         );
 
         expect(result, isNull);
@@ -60,9 +60,9 @@ void main() {
 
       expect(
         () => service.forecastFor(
-          latitude: 39.0,
-          longitude: -95.0,
-          date: DateTime(2026, 6, 1),
+          latitude: 39,
+          longitude: -95,
+          date: DateTime(2026, 6),
         ),
         throwsException,
       );
@@ -119,9 +119,9 @@ void main() {
       );
 
       final result = await service.forecastFor(
-        latitude: 39.0,
-        longitude: -95.0,
-        date: DateTime(2026, 6, 1),
+        latitude: 39,
+        longitude: -95,
+        date: DateTime(2026, 6),
       );
 
       expect(result, isNotNull);
@@ -164,9 +164,9 @@ void main() {
       );
 
       final result = await service.forecastFor(
-        latitude: 39.0,
-        longitude: -95.0,
-        date: DateTime(2026, 6, 1),
+        latitude: 39,
+        longitude: -95,
+        date: DateTime(2026, 6),
       );
 
       expect(result, isNull);

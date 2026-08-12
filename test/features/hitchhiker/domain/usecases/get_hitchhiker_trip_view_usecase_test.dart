@@ -13,7 +13,7 @@ void main() {
   late MockHitchhikerAccessRepository mockRepo;
   late GetHitchhikerTripViewUseCase useCase;
 
-  final tView = HitchhikerTripView(
+  const tView = HitchhikerTripView(
     hitchhikerId: 'hh-1',
     displayName: 'Priya',
     itineraryId: 'trip-1',
@@ -22,8 +22,8 @@ void main() {
     startDate: null,
     endDate: null,
     status: 'active',
-    messages: const [],
-    suggestions: const [],
+    messages: [],
+    suggestions: [],
   );
 
   setUp(() {
@@ -34,7 +34,7 @@ void main() {
   test('delegates to repository.getTripView with the given token', () async {
     when(
       () => mockRepo.getTripView('tok-1'),
-    ).thenAnswer((_) async => Right(tView));
+    ).thenAnswer((_) async => const Right(tView));
 
     await useCase('tok-1');
 
@@ -44,7 +44,7 @@ void main() {
   test('returns Right(view) on success', () async {
     when(
       () => mockRepo.getTripView(any()),
-    ).thenAnswer((_) async => Right(tView));
+    ).thenAnswer((_) async => const Right(tView));
 
     final result = await useCase('tok-1');
 

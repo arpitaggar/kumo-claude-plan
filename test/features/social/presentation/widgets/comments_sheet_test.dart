@@ -2,8 +2,8 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/entities/user.dart';
+import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/delete_account_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/login_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';
@@ -64,7 +64,7 @@ void main() {
           socialRepositoryProvider.overrideWithValue(mockRepo),
           authNotifierProvider.overrideWith((ref) => _buildAuthNotifier(_user)),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           home: Scaffold(body: CommentsSheet(postId: 'post-1')),
         ),
       ),
@@ -83,7 +83,7 @@ void main() {
             authorId: 'user-2',
             authorName: 'Bob',
             content: 'What a great trip!',
-            createdAt: DateTime.utc(2026, 6, 1),
+            createdAt: DateTime.utc(2026, 6),
           ),
         ]),
       ),
@@ -118,7 +118,7 @@ void main() {
             authorId: 'user-1',
             authorName: 'Me',
             content: 'My comment',
-            createdAt: DateTime.utc(2026, 6, 1),
+            createdAt: DateTime.utc(2026, 6),
           ),
           PostComment(
             id: 'comment-other',

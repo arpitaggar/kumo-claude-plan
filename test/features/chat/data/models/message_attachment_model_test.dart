@@ -5,7 +5,7 @@ import 'package:kumo_claude/features/chat/data/models/message_read_receipt_model
 void main() {
   group('MessageAttachmentModel.fromJson', () {
     test('parses all fields, remapping public_url to url', () {
-      final model = MessageAttachmentModel.fromJson({
+      final model = MessageAttachmentModel.fromJson(const {
         'id': 'a1',
         'kind': 'image',
         'public_url': 'https://example.com/a.jpg',
@@ -23,7 +23,7 @@ void main() {
     });
 
     test('coerces a double size_bytes to int', () {
-      final model = MessageAttachmentModel.fromJson({
+      final model = MessageAttachmentModel.fromJson(const {
         'id': 'a1',
         'kind': 'file',
         'public_url': 'https://example.com/a.pdf',
@@ -39,7 +39,7 @@ void main() {
 
   group('MessageReadReceiptModel.fromJson', () {
     test('parses all fields', () {
-      final model = MessageReadReceiptModel.fromJson({
+      final model = MessageReadReceiptModel.fromJson(const {
         'user_id': 'user-1',
         'display_name': 'Alice',
         'avatar_url': 'https://example.com/a.png',
@@ -53,7 +53,7 @@ void main() {
     });
 
     test('defaults displayName to empty string when absent', () {
-      final model = MessageReadReceiptModel.fromJson({
+      final model = MessageReadReceiptModel.fromJson(const {
         'user_id': 'user-1',
         'read_at': '2026-06-01T12:00:00.000Z',
       });
@@ -62,7 +62,7 @@ void main() {
     });
 
     test('leaves avatarUrl null when absent', () {
-      final model = MessageReadReceiptModel.fromJson({
+      final model = MessageReadReceiptModel.fromJson(const {
         'user_id': 'user-1',
         'display_name': 'Alice',
         'read_at': '2026-06-01T12:00:00.000Z',

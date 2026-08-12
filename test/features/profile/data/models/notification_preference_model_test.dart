@@ -4,7 +4,7 @@ import 'package:kumo_claude/features/profile/data/models/notification_preference
 void main() {
   group('NotificationPreferenceModel.fromJson', () {
     test('parses channel/category/enabled', () {
-      final model = NotificationPreferenceModel.fromJson({
+      final model = NotificationPreferenceModel.fromJson(const {
         'channel': 'push',
         'category': 'trip_invites',
         'enabled': true,
@@ -16,7 +16,7 @@ void main() {
     });
 
     test('parses enabled: false', () {
-      final model = NotificationPreferenceModel.fromJson({
+      final model = NotificationPreferenceModel.fromJson(const {
         'channel': 'email',
         'category': 'marketing_engagement',
         'enabled': false,

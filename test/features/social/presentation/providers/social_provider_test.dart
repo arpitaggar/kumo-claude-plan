@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/entities/user.dart';
+import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/delete_account_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/login_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';
@@ -143,7 +143,6 @@ void main() {
       when(
         () => mockRepo.fetchExplore(
           query: any(named: 'query'),
-          before: null,
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => Right(firstPage));
@@ -184,7 +183,6 @@ void main() {
         when(
           () => mockRepo.fetchExplore(
             query: any(named: 'query'),
-            before: null,
             limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => Right(pages[0]));
@@ -253,7 +251,7 @@ void main() {
     test(
       'refresh() re-fetches the first page in place, not a loading state',
       () async {
-        final firstLoad = [_post('post-1', DateTime.utc(2026, 1))];
+        final firstLoad = [_post('post-1', DateTime.utc(2026))];
         final afterRefresh = [_post('post-2', DateTime.utc(2026, 2))];
         var callCount = 0;
         when(
@@ -347,7 +345,6 @@ void main() {
       verify(
         () => mockRepo.fetchFeed(
           currentUserId: 'user-1',
-          before: null,
           limit: any(named: 'limit'),
         ),
       ).called(1);

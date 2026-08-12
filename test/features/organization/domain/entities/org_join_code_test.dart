@@ -15,7 +15,7 @@ void main() {
     code: 'ABC123XYZ0',
     usesCount: usesCount,
     createdBy: 'user-1',
-    createdAt: DateTime.utc(2026, 1, 1),
+    createdAt: DateTime.utc(2026),
     expiresAt: expiresAt,
     maxUses: maxUses,
     revokedAt: revokedAt,
@@ -104,7 +104,7 @@ void main() {
       code: 'DIFFERENT1',
       usesCount: 0,
       createdBy: 'user-1',
-      createdAt: DateTime.utc(2026, 1, 1),
+      createdAt: DateTime.utc(2026),
     );
     expect(a, isNot(b));
   });

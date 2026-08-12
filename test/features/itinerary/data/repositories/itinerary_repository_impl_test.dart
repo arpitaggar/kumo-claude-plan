@@ -18,7 +18,7 @@ void main() {
   late MockItineraryLocalDataSource local;
   late ItineraryRepositoryImpl repository;
 
-  final tItinerary = ItineraryModel.fromJson({
+  final tItinerary = ItineraryModel.fromJson(const {
     'id': 'it-1',
     'title': 'Chiang Mai Trip',
     'owner_id': 'user-1',

@@ -5,7 +5,7 @@ import 'package:kumo_claude/features/notifications/domain/entities/app_notificat
 void main() {
   group('AppNotificationModel.fromJson', () {
     test('parses a like notification with all fields present', () {
-      final model = AppNotificationModel.fromJson({
+      final model = AppNotificationModel.fromJson(const {
         'id': 'n-1',
         'actor_id': 'actor-1',
         'actor_name': 'Alice',
@@ -29,7 +29,7 @@ void main() {
     });
 
     test('parses a follow notification with no post fields', () {
-      final model = AppNotificationModel.fromJson({
+      final model = AppNotificationModel.fromJson(const {
         'id': 'n-2',
         'actor_id': 'actor-2',
         'actor_name': 'Bob',
@@ -49,7 +49,7 @@ void main() {
     });
 
     test('parses new_post type from its wire representation', () {
-      final model = AppNotificationModel.fromJson({
+      final model = AppNotificationModel.fromJson(const {
         'id': 'n-3',
         'actor_id': 'actor-3',
         'actor_name': 'Carol',

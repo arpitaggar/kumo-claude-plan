@@ -33,7 +33,7 @@ void main() {
     final early = segment(
       id: 'early',
       orderIndex: 1,
-      departureTime: DateTime.utc(2026, 6, 1),
+      departureTime: DateTime.utc(2026, 6),
     );
 
     final sorted = [late, early]..sort(compareSegmentsChronologically);
@@ -46,7 +46,7 @@ void main() {
     final a = segment(
       id: 'a',
       orderIndex: 1,
-      departureTime: DateTime.utc(2026, 6, 1),
+      departureTime: DateTime.utc(2026, 6),
     );
     final b = segment(
       id: 'b',
@@ -68,7 +68,7 @@ void main() {
     final early = segment(
       id: 'early',
       orderIndex: 1,
-      arrivalTime: DateTime.utc(2026, 6, 1),
+      arrivalTime: DateTime.utc(2026, 6),
     );
 
     final sorted = [late, early]..sort(compareSegmentsChronologically);
@@ -100,9 +100,9 @@ void main() {
 
   test('deleting a segment never changes the relative order of the rest', () {
     final segments = [
-      segment(id: 'x', orderIndex: 0, departureTime: DateTime.utc(2026, 1, 1)),
-      segment(id: 'y', orderIndex: 1, departureTime: DateTime.utc(2026, 2, 1)),
-      segment(id: 'z', orderIndex: 2, departureTime: DateTime.utc(2026, 3, 1)),
+      segment(id: 'x', orderIndex: 0, departureTime: DateTime.utc(2026)),
+      segment(id: 'y', orderIndex: 1, departureTime: DateTime.utc(2026, 2)),
+      segment(id: 'z', orderIndex: 2, departureTime: DateTime.utc(2026, 3)),
     ];
     final before = [...segments]..sort(compareSegmentsChronologically);
 

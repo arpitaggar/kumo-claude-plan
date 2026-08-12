@@ -27,8 +27,8 @@ void main() {
     name: 'Acme Corp',
     slug: 'acme-corp',
     ownerId: 'user-1',
-    createdAt: DateTime.utc(2026, 1, 1),
-    updatedAt: DateTime.utc(2026, 1, 1),
+    createdAt: DateTime.utc(2026),
+    updatedAt: DateTime.utc(2026),
   );
 
   final tMember = OrgMemberModel(
@@ -37,7 +37,7 @@ void main() {
     userId: 'user-2',
     userName: 'Bob',
     role: OrgMemberRole.member,
-    joinedAt: DateTime.utc(2026, 1, 1),
+    joinedAt: DateTime.utc(2026),
   );
 
   final tApproval = PendingExpenseApprovalModel(
@@ -50,7 +50,7 @@ void main() {
     amount: 90,
     currencyCode: 'USD',
     category: 'food',
-    submittedAt: DateTime.utc(2026, 6, 1),
+    submittedAt: DateTime.utc(2026, 6),
   );
 
   const tField = OrgCostFieldModel(
@@ -77,7 +77,7 @@ void main() {
     code: 'ABC123XYZ0',
     usesCount: 0,
     createdBy: 'user-1',
-    createdAt: DateTime.utc(2026, 1, 1),
+    createdAt: DateTime.utc(2026),
   );
 
   setUpAll(() {
@@ -841,7 +841,7 @@ void main() {
   });
 
   group('fetchFeatureOverrides', () {
-    final tOverride = OrgFeatureOverrideModel(
+    const tOverride = OrgFeatureOverrideModel(
       id: 'ovr-1',
       costFieldOptionId: 'option-1',
       featureKey: 'google_maps',

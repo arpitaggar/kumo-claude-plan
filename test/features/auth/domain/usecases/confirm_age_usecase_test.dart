@@ -11,7 +11,7 @@ void main() {
   late MockAuthRepository mockRepo;
   late ConfirmAgeUseCase useCase;
 
-  final tDob = DateTime(1990, 1, 1);
+  final tDob = DateTime(1990);
 
   setUp(() {
     mockRepo = MockAuthRepository();

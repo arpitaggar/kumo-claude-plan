@@ -37,19 +37,13 @@ void main() {
 
   test('passes a null threshold through to clear it', () async {
     when(
-      () => mockRepo.setOrgDefaultApprovalThreshold(
-        orgId: 'org-1',
-        threshold: null,
-      ),
+      () => mockRepo.setOrgDefaultApprovalThreshold(orgId: 'org-1'),
     ).thenAnswer((_) async => const Right(null));
 
     await useCase(orgId: 'org-1');
 
     verify(
-      () => mockRepo.setOrgDefaultApprovalThreshold(
-        orgId: 'org-1',
-        threshold: null,
-      ),
+      () => mockRepo.setOrgDefaultApprovalThreshold(orgId: 'org-1'),
     ).called(1);
   });
 
