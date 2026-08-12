@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/network/supabase_image_url.dart';
 import '../../../../shared/extensions/context_extensions.dart';
+import '../../../../shared/widgets/kumo_avatar.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/domain/entities/user_profile.dart';
 import '../../../profile/presentation/providers/user_profile_provider.dart';
@@ -164,26 +164,20 @@ class _ProfileBody extends ConsumerWidget {
         Center(
           child: Column(
             children: [
-              CircleAvatar(
+              KumoAvatar(
+                sourceUrl: profile.avatarUrl,
                 radius: 44,
                 backgroundColor: context.colorScheme.primaryContainer,
-                backgroundImage: profile.avatarUrl != null
-                    ? NetworkImage(
-                        resizedImageUrl(profile.avatarUrl, width: 120),
-                      )
-                    : null,
-                child: profile.avatarUrl == null
-                    ? Text(
-                        profile.displayName.isNotEmpty
-                            ? profile.displayName[0].toUpperCase()
-                            : '?',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w700,
-                          color: context.colorScheme.primary,
-                        ),
-                      )
-                    : null,
+                fallback: Text(
+                  profile.displayName.isNotEmpty
+                      ? profile.displayName[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    color: context.colorScheme.primary,
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               Text(

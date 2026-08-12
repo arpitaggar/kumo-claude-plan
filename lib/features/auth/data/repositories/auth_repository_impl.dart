@@ -21,12 +21,14 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, User>> signUp({
     required String email,
     required String password,
+    required DateTime dateOfBirth,
     String? displayName,
   }) async {
     try {
       final user = await remoteDataSource.signUp(
         email: email,
         password: password,
+        dateOfBirth: dateOfBirth,
         displayName: displayName,
       );
       await localDataSource.cacheUser(user);
@@ -216,6 +218,30 @@ class AuthRepositoryImpl implements AuthRepository {
       await remoteDataSource.deleteAccount();
       await localDataSource.clearCachedUser();
       return const Right(null);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> exportOwnData() async {
+    try {
+      final data = await remoteDataSource.exportOwnData();
+      return Right(data);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> confirmAge(DateTime dateOfBirth) async {
+    try {
+      final verified = await remoteDataSource.confirmAge(dateOfBirth);
+      return Right(verified);
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message));
     } catch (e) {

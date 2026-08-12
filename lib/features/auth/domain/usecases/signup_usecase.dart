@@ -15,11 +15,13 @@ class SignupUseCase {
   Future<Either<Failure, User>> call({
     required String email,
     required String password,
+    required DateTime dateOfBirth,
     String? displayName,
   }) async {
     try {
       AuthValidators.validateEmail(email);
       AuthValidators.validatePassword(password);
+      AuthValidators.validateAge18Plus(dateOfBirth);
       if (displayName != null && displayName.isNotEmpty) {
         Validators.validateNonEmpty(displayName, 'Display name');
       }
@@ -29,6 +31,7 @@ class SignupUseCase {
     return _repository.signUp(
       email: email,
       password: password,
+      dateOfBirth: dateOfBirth,
       displayName: displayName,
     );
   }

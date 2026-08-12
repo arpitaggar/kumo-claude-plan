@@ -8,6 +8,7 @@ abstract class AuthRemoteDataSource {
   Future<UserModel> signUp({
     required String email,
     required String password,
+    required DateTime dateOfBirth,
     String? displayName,
   });
 
@@ -30,6 +31,15 @@ abstract class AuthRemoteDataSource {
   bool isAuthenticated();
 
   Future<void> deleteAccount();
+
+  Future<Map<String, dynamic>> exportOwnData();
+
+  /// Completes the age gate for an already-created (invite-path) account —
+  /// see `stage44_age_gate.sql`'s `confirm_age_and_finish_signup()` for why
+  /// this exists as a separate step instead of being checked at signup for
+  /// every path. Returns `true` if verified 18+, `false` if the account was
+  /// just rejected (and deleted server-side) for being under 18.
+  Future<bool> confirmAge(DateTime dateOfBirth);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -39,13 +49,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<UserModel> signUp({
     required String email,
     required String password,
+    required DateTime dateOfBirth,
     String? displayName,
   }) async {
     try {
+      // date_of_birth is read once by the server-side age-gate trigger
+      // (stage44_age_gate.sql) and stripped out of raw_user_meta_data
+      // before the row is ever persisted — see that migration's header
+      // comment. Sent as a plain date string (no time/zone component).
       final response = await KumoSupabaseClient.auth.signUp(
         email: email,
         password: password,
-        data: displayName != null ? {'display_name': displayName} : null,
+        data: {
+          if (displayName != null) 'display_name': displayName,
+          'date_of_birth': dateOfBirth.toIso8601String().split('T').first,
+        },
       );
       final user = response.user;
       if (user == null) {
@@ -195,6 +213,35 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await KumoSupabaseClient.client.rpc('delete_user');
       await KumoSupabaseClient.auth.signOut();
+    } on sb.AuthException catch (e) {
+      throw AuthException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> exportOwnData() async {
+    try {
+      final result = await KumoSupabaseClient.client.rpc('export_own_data');
+      return result as Map<String, dynamic>;
+    } on sb.AuthException catch (e) {
+      throw AuthException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<bool> confirmAge(DateTime dateOfBirth) async {
+    try {
+      final result = await KumoSupabaseClient.client.rpc(
+        'confirm_age_and_finish_signup',
+        params: {
+          'p_date_of_birth': dateOfBirth.toIso8601String().split('T').first,
+        },
+      );
+      return result == 'verified';
     } on sb.AuthException catch (e) {
       throw AuthException(message: e.message);
     } catch (e) {

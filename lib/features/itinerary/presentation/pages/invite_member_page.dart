@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../hitchhiker/presentation/widgets/hitchhiker_tab.dart';
 import '../../domain/entities/profile_result.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/usecases/find_profile_by_email_usecase.dart';
@@ -31,7 +32,7 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -106,9 +107,14 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
       title: const Text('Invite Traveller'),
       bottom: TabBar(
         controller: _tabController,
+        isScrollable: true,
         tabs: const [
           Tab(icon: Icon(Icons.search), text: 'Search people'),
           Tab(icon: Icon(Icons.email_outlined), text: 'Invite by email'),
+          Tab(
+            icon: Icon(Icons.person_add_alt_outlined),
+            text: 'Add Hitchhiker',
+          ),
         ],
       ),
     ),
@@ -126,6 +132,7 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
           onAdd: _addMember,
           onPendingInvite: _createPendingInvite,
         ),
+        HitchhikerTab(itineraryId: widget.itineraryId),
       ],
     ),
   );

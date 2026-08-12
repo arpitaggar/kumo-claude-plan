@@ -8,9 +8,10 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/network/signed_storage_url.dart';
 import '../../../../core/network/supabase_client.dart';
-import '../../../../core/network/supabase_image_url.dart';
 import '../../../../shared/extensions/context_extensions.dart';
+import '../../../../shared/widgets/kumo_avatar.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../itinerary/presentation/providers/itinerary_provider.dart';
@@ -907,74 +908,107 @@ class _MessageBubble extends StatelessWidget {
 
 // ── Image attachment bubble ───────────────────────────────────────────────────
 
-class _ImageAttachmentBubble extends StatelessWidget {
+class _ImageAttachmentBubble extends ConsumerWidget {
   const _ImageAttachmentBubble({required this.attachment});
 
   final MessageAttachment attachment;
 
+  static const _placeholder = SizedBox(
+    width: 160,
+    height: 160,
+    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+  );
+
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: () => Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _FullScreenImageViewer(url: attachment.url),
-      ),
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 220, minWidth: 160),
-        child: Image.network(
-          // Bubble thumbnail only — tapping opens _FullScreenImageViewer at
-          // full resolution below, unresized.
-          resizedImageUrl(attachment.url, width: 360),
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) {
-              return child;
-            }
-            return Container(
-              width: 160,
-              height: 160,
-              color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
-              alignment: Alignment.center,
-              child: const CircularProgressIndicator(strokeWidth: 2),
-            );
-          },
-          errorBuilder: (context, error, stack) => Container(
-            width: 160,
-            height: 120,
-            color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
-            alignment: Alignment.center,
-            child: Icon(
-              Icons.broken_image_outlined,
-              color: context.colorScheme.onSurfaceVariant,
+  Widget build(BuildContext context, WidgetRef ref) {
+    // chat-attachments is a private bucket — attachment.url (built via
+    // getPublicUrl(), see signed_storage_url.dart) must be exchanged for a
+    // signed URL before it will actually resolve.
+    final resolvedUrl = ref
+        .watch(signedStorageUrlProvider(attachment.url))
+        .valueOrNull;
+
+    return GestureDetector(
+      onTap: resolvedUrl == null
+          ? null
+          : () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    _FullScreenImageViewer(sourceUrl: attachment.url),
+              ),
             ),
-          ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 220, minWidth: 160),
+          child: resolvedUrl == null
+              ? Container(
+                  width: 160,
+                  height: 160,
+                  color: context.colorScheme.outlineVariant.withValues(
+                    alpha: 0.3,
+                  ),
+                  alignment: Alignment.center,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Image.network(
+                  // Bubble thumbnail only — tapping opens
+                  // _FullScreenImageViewer at full resolution, unresized.
+                  resolvedUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) {
+                      return child;
+                    }
+                    return _placeholder;
+                  },
+                  errorBuilder: (context, error, stack) => Container(
+                    width: 160,
+                    height: 120,
+                    color: context.colorScheme.outlineVariant.withValues(
+                      alpha: 0.3,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
-class _FullScreenImageViewer extends StatelessWidget {
-  const _FullScreenImageViewer({required this.url});
+class _FullScreenImageViewer extends ConsumerWidget {
+  const _FullScreenImageViewer({required this.sourceUrl});
 
-  final String url;
+  final String sourceUrl;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.black,
-    appBar: AppBar(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final resolvedUrl = ref
+        .watch(signedStorageUrlProvider(sourceUrl))
+        .valueOrNull;
+    return Scaffold(
       backgroundColor: Colors.black,
-      iconTheme: const IconThemeData(color: Colors.white),
-    ),
-    body: Center(child: InteractiveViewer(child: Image.network(url))),
-  );
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: resolvedUrl == null
+            ? const CircularProgressIndicator()
+            : InteractiveViewer(child: Image.network(resolvedUrl)),
+      ),
+    );
+  }
 }
 
 // ── File attachment chip ──────────────────────────────────────────────────────
 
-class _FileAttachmentChip extends StatelessWidget {
+class _FileAttachmentChip extends ConsumerWidget {
   const _FileAttachmentChip({required this.attachment, required this.isMe});
 
   final MessageAttachment attachment;
@@ -997,8 +1031,13 @@ class _FileAttachmentChip extends StatelessWidget {
     return Icons.insert_drive_file_outlined;
   }
 
-  Future<void> _open(BuildContext context) async {
-    final uri = Uri.tryParse(attachment.url);
+  Future<void> _open(BuildContext context, WidgetRef ref) async {
+    // chat-attachments is a private bucket — resolve a signed URL before
+    // handing off to the OS, since the raw stored URL no longer resolves.
+    final resolvedUrl = await ref.read(
+      signedStorageUrlProvider(attachment.url).future,
+    );
+    final uri = resolvedUrl == null ? null : Uri.tryParse(resolvedUrl);
     if (uri == null ||
         !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
@@ -1008,14 +1047,14 @@ class _FileAttachmentChip extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final bg = isMe ? context.colorScheme.primary : context.colorScheme.surface;
     final fg = isMe
         ? context.colorScheme.surface
         : context.colorScheme.onSurface;
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: () => _open(context),
+      onTap: () => _open(context, ref),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         constraints: const BoxConstraints(minWidth: 180),
@@ -1209,18 +1248,14 @@ class _ReadReceiptRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-    leading: CircleAvatar(
+    leading: KumoAvatar(
+      sourceUrl: receipt.avatarUrl,
       radius: 18,
-      backgroundImage: receipt.avatarUrl != null
-          ? NetworkImage(resizedImageUrl(receipt.avatarUrl, width: 64))
-          : null,
-      child: receipt.avatarUrl == null
-          ? Text(
-              receipt.displayName.isNotEmpty
-                  ? receipt.displayName[0].toUpperCase()
-                  : '?',
-            )
-          : null,
+      fallback: Text(
+        receipt.displayName.isNotEmpty
+            ? receipt.displayName[0].toUpperCase()
+            : '?',
+      ),
     ),
     title: Text(receipt.displayName),
     trailing: Text(

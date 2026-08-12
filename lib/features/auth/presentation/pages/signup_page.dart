@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../config/brand.dart';
 import '../../../../config/theme_provider.dart';
+import '../../../../core/error/exception.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../domain/validators/auth_validators.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/email_input_field.dart';
 import '../widgets/password_input_field.dart';
@@ -26,9 +29,37 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _agreedToTerms = false;
+  DateTime? _dateOfBirth;
 
   late final TapGestureRecognizer _privacyTap;
   late final TapGestureRecognizer _termsTap;
+
+  /// Client-side mirror of the server-side gate (see
+  /// `AuthValidators.validateAge18Plus`'s doc comment) — fast feedback only,
+  /// not the security boundary.
+  String? get _dateOfBirthError {
+    try {
+      AuthValidators.validateAge18Plus(_dateOfBirth);
+      return null;
+    } on ValidationException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final eighteenYearsAgo = DateTime(now.year - 18, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateOfBirth ?? eighteenYearsAgo,
+      firstDate: DateTime(now.year - 100),
+      lastDate: now,
+      helpText: 'Date of birth',
+    );
+    if (picked != null) {
+      setState(() => _dateOfBirth = picked);
+    }
+  }
 
   @override
   void initState() {
@@ -51,7 +82,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!(_formKey.currentState?.validate() ?? false) ||
+        _dateOfBirthError != null) {
+      setState(() {}); // surface the DOB error text if it wasn't shown yet
       return;
     }
     await ref
@@ -59,6 +92,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         .signup(
           email: _emailController.text.trim(),
           password: _passwordController.text,
+          dateOfBirth: _dateOfBirth!,
           displayName: _nameController.text.trim().isEmpty
               ? null
               : _nameController.text.trim(),
@@ -154,6 +188,36 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 14),
+
+                // Date of birth — Kumo accounts require the holder to be
+                // 18+ (server-enforced, see AuthValidators.validateAge18Plus
+                // doc comment). Anyone younger participates as a Hitchhiker
+                // on someone else's trip instead of creating an account.
+                InkWell(
+                  onTap: _pickDateOfBirth,
+                  borderRadius: BorderRadius.circular(4),
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: 'Date of birth',
+                      prefixIcon: const Icon(Icons.cake_outlined),
+                      suffixIcon: const Icon(Icons.calendar_today_outlined),
+                      errorText: _dateOfBirth == null
+                          ? null
+                          : _dateOfBirthError,
+                    ),
+                    child: Text(
+                      _dateOfBirth == null
+                          ? 'Select your date of birth'
+                          : DateFormat.yMMMd().format(_dateOfBirth!),
+                      style: TextStyle(
+                        color: _dateOfBirth == null
+                            ? context.colorScheme.onSurfaceVariant
+                            : context.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
 
                 // Consent checkbox
@@ -208,7 +272,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 const SizedBox(height: 20),
 
                 ElevatedButton(
-                  onPressed: _agreedToTerms ? _submit : null,
+                  onPressed: _agreedToTerms && _dateOfBirthError == null
+                      ? _submit
+                      : null,
                   child: const Text('Create Account'),
                 ),
                 const SizedBox(height: 16),

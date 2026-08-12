@@ -13,7 +13,9 @@ import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../domain/usecases/confirm_age_usecase.dart';
 import '../../domain/usecases/delete_account_usecase.dart';
+import '../../domain/usecases/export_own_data_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/send_password_reset_email_usecase.dart';
@@ -65,6 +67,14 @@ final logoutUseCaseProvider = Provider<LogoutUseCase>(
 
 final deleteAccountUseCaseProvider = Provider<DeleteAccountUseCase>(
   (ref) => DeleteAccountUseCase(ref.watch(authRepositoryProvider)),
+);
+
+final exportOwnDataUseCaseProvider = Provider<ExportOwnDataUseCase>(
+  (ref) => ExportOwnDataUseCase(ref.watch(authRepositoryProvider)),
+);
+
+final confirmAgeUseCaseProvider = Provider<ConfirmAgeUseCase>(
+  (ref) => ConfirmAgeUseCase(ref.watch(authRepositoryProvider)),
 );
 
 final sendPasswordResetEmailUseCaseProvider =
@@ -164,12 +174,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signup({
     required String email,
     required String password,
+    required DateTime dateOfBirth,
     String? displayName,
   }) async {
     state = const AuthLoading();
     final result = await signupUseCase(
       email: email,
       password: password,
+      dateOfBirth: dateOfBirth,
       displayName: displayName,
     );
     result.fold(

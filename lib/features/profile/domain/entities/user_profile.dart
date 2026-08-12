@@ -31,6 +31,7 @@ class UserProfile extends Equatable {
     this.preferredCurrency,
     this.preferredLanguage,
     this.usernameLastChangedAt,
+    this.ageVerifiedAt,
   });
 
   final String id;
@@ -67,6 +68,13 @@ class UserProfile extends Equatable {
   final DateTime? usernameLastChangedAt;
   final DateTime updatedAt;
 
+  /// When this identity cleared the 18+ age gate. Null means the Captain/Crew
+  /// account exists but hasn't been verified yet — the app must force
+  /// `/confirm-age` rather than grant real access. See
+  /// `docs/supabase_migrations/stage44_age_gate.sql` and
+  /// `lib/features/auth/presentation/providers/age_gate_provider.dart`.
+  final DateTime? ageVerifiedAt;
+
   /// Whether push-notification banners for chat messages show the message
   /// text, or a generic "New message" placeholder.
   final bool pushMessagePreviewEnabled;
@@ -102,6 +110,7 @@ class UserProfile extends Equatable {
     DateTime? usernameLastChangedAt,
     DateTime? updatedAt,
     bool? pushMessagePreviewEnabled,
+    DateTime? ageVerifiedAt,
   }) => UserProfile(
     id: id ?? this.id,
     email: email ?? this.email,
@@ -123,6 +132,7 @@ class UserProfile extends Equatable {
     updatedAt: updatedAt ?? this.updatedAt,
     pushMessagePreviewEnabled:
         pushMessagePreviewEnabled ?? this.pushMessagePreviewEnabled,
+    ageVerifiedAt: ageVerifiedAt ?? this.ageVerifiedAt,
   );
 
   @override
@@ -146,5 +156,6 @@ class UserProfile extends Equatable {
     usernameLastChangedAt,
     updatedAt,
     pushMessagePreviewEnabled,
+    ageVerifiedAt,
   ];
 }

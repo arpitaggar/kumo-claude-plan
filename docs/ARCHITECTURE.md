@@ -429,6 +429,86 @@ CREATE TABLE audit_log (
 CREATE INDEX idx_audit_user_timestamp ON audit_log (user_id, timestamp DESC);
 ```
 
+### 5. **Trip Roles: Captain / Crew / Hitchhiker, and the 18+ Age Gate**
+
+> **2026-08-12 note, real and shipped** (unlike most of the rest of this
+> document — see the top-of-file callout): `docs/supabase_migrations/
+> stage44_age_gate.sql` and `stage45_hitchhikers.sql`.
+
+Every participant on a Kumo trip is one of exactly three roles:
+
+| Role | What it is | Identity | Where it lives |
+|---|---|---|---|
+| **Captain** | The trip owner | Full account, 18+ | `itineraries.owner_id` |
+| **Crew** | A full-account collaborator invited onto someone else's trip | Full account, 18+, own `user_id`, own login, cross-trip identity | `itineraries.members` (`GroupMember`/`GroupMemberRole` — the pre-existing member model, unchanged) |
+| **Hitchhiker** | A non-account collaborator, scoped to exactly one trip | **No account at all** | `trip_hitchhikers` |
+
+`lib/features/itinerary/domain/entities/trip_role.dart` exposes this as
+`enum TripRole { captain, crew, hitchhiker }` plus `resolveTripRole(...)` and
+an `isHitchhiker(TripRole)` guard, usable anywhere a feature needs to gate
+on which tier a participant is.
+
+#### Why Hitchhiker exists — this is regulatory, not cosmetic
+
+Kumo requires every full account holder (Captain or Crew) to be 18 or older,
+enforced server-side: a `BEFORE INSERT` trigger on `auth.users`
+(`enforce_signup_age_gate()`) computes age from a date-of-birth value
+supplied at signup and rejects the row outright if under 18 — no account is
+ever created, not a limited/downgraded one. Raw DOB is never persisted
+beyond that check: the trigger strips it out of `raw_user_meta_data` before
+the row is written, keeping only a boolean pass/fail fact
+(`profiles.age_verified_at`).
+
+Minors — and any adult who'd rather not create an account at all — still
+need to participate in trip planning. That's what **Hitchhiker** is: added
+by a Captain with nothing but a first name, no email/phone/DOB, no
+`auth.users` row, no `user_id`, ever. Access is a bearer token
+(`trip_hitchhikers.access_token`), validated by `SECURITY DEFINER` RPCs
+(`create_hitchhiker`, `revoke_hitchhiker`, `hitchhiker_get_trip_view`,
+`hitchhiker_send_message`, `hitchhiker_suggest_item`) rather than Row-Level
+Security, since RLS is built entirely around `auth.uid()` and a Hitchhiker
+never has one — deliberately, not as an implementation shortcut: even
+Supabase's built-in *anonymous* auth accounts were considered and rejected
+for this, because they'd still create an `auth.users` row, weakening the
+"zero identity-system rows for anyone under 18" claim down to "anonymized
+rows." Revocation (`revoked_at`) is immediate and invalidates the token for
+every future call.
+
+This two-tier split is what keeps Kumo outside:
+- **COPPA** (US) — no data is collected from or about anyone under 13, because
+  no independent record of a Hitchhiker's age, identity, or activity exists
+  outside the one trip they were added to.
+- **UK/EU Age Appropriate Design Code** — which applies to *any* under-18
+  user with their own account/data profile, not just under-13s. Hitchhikers
+  never have one.
+- **GDPR's variable 13–16 digital-consent thresholds** — moot when there's
+  no independent data subject to obtain consent from in the first place.
+
+**Do not "simplify" this later.** Merging Hitchhiker into Crew — e.g. giving
+it a `user_id`, an optional email field, or a path to being looked up
+outside its one trip — silently reintroduces the exact minor-data-controller
+obligations this design exists to avoid. Every table that would need to
+change to make that possible (`trip_hitchhikers`, `messages.hitchhiker_id`,
+the RPC surface) has a comment saying so at the point it'd break; this
+section is the "why," not just the "don't."
+
+Structural exclusion, not a checklist: Hitchhikers cannot appear in the
+publishing/discovery layer (`itinerary_posts`), marketing email sends,
+push/notification preferences, or gamification (`xp_events`) — every one of
+those tables has a hard foreign key to `auth.users`/`profiles`, and a
+Hitchhiker never has either. There's nothing to "remember to exclude"; it's
+not reachable by construction.
+
+**Hitchhiker → Crew promotion:** considered, not built. Feasible in
+principle — a Hitchhiker who turns 18 or wants their own account would go
+through the normal signup flow (age gate included) and a Captain would
+separately add them as Crew; there's no automatic "convert this Hitchhiker
+row into a user" migration path, and building one would mean designing a
+safe way to carry forward their trip history, which is more scope than this
+pass warranted. If this becomes a real product ask, the age-gated signup
+flow and the Hitchhiker roster are both already in place to build it on top
+of.
+
 ---
 
 ## Future B2B Scalability Plan

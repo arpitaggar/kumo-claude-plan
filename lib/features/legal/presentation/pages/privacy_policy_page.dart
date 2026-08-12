@@ -115,19 +115,26 @@ class _PolicyContent extends StatelessWidget {
         'When you delete your account, all personal data — including '
         'itineraries, expenses, packing lists, messages, and ratings — '
         'is permanently deleted within 30 days. Aggregated, anonymised '
-        'statistics (e.g. total trip count) may be retained indefinitely.',
+        'statistics (e.g. total trip count) may be retained indefinitely. '
+        'If you forward a trip-related email (e.g. a flight confirmation) '
+        "to your trip's Kumo email alias, we keep a metadata-only record "
+        '(sender address, subject line, forward count — never the message '
+        'body) for up to 90 days to support delivery troubleshooting, then '
+        'delete it automatically.',
       ),
 
       LegalSection('8. Your Rights (GDPR)'),
       LegalBody(
         'If you are in the European Economic Area or UK, you have the '
         'right to:\n\n'
-        '• Access — request a copy of your personal data.\n'
+        '• Access & Portability — download a machine-readable (JSON) copy of '
+        'your profile, trips, expenses, packing lists, ratings, sent '
+        'messages, and published posts via Profile → Privacy → Download my '
+        'data.\n'
         '• Rectification — correct inaccurate data via Profile → Edit Profile.\n'
         '• Erasure ("right to be forgotten") — delete your account and all '
         'associated data via Profile → Privacy → Delete Account.\n'
         '• Restriction — request we limit processing in certain circumstances.\n'
-        '• Portability — export your expense data as CSV via the Expenses tab.\n'
         '• Objection — object to processing based on legitimate interests.\n'
         '• Withdraw consent — where processing is based on consent, you may '
         'withdraw at any time without affecting prior lawfulness.\n\n'

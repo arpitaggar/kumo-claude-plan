@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/network/supabase_image_url.dart';
 import '../../../../shared/extensions/context_extensions.dart';
+import '../../../../shared/widgets/kumo_avatar.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/user_profile_provider.dart';
@@ -692,28 +692,29 @@ class _AvatarHeader extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          CircleAvatar(
-            radius: 56,
-            backgroundColor: colorScheme.primaryContainer,
-            backgroundImage: avatarUrl != null && !uploading
-                ? NetworkImage(resizedImageUrl(avatarUrl, width: 150))
-                : null,
-            child: uploading
-                ? CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: colorScheme.onPrimaryContainer,
-                  )
-                : avatarUrl == null
-                ? Text(
-                    _initials(),
-                    style: TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onPrimaryContainer,
-                    ),
-                  )
-                : null,
-          ),
+          if (uploading)
+            CircleAvatar(
+              radius: 56,
+              backgroundColor: colorScheme.primaryContainer,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: colorScheme.onPrimaryContainer,
+              ),
+            )
+          else
+            KumoAvatar(
+              sourceUrl: avatarUrl,
+              radius: 56,
+              backgroundColor: colorScheme.primaryContainer,
+              fallback: Text(
+                _initials(),
+                style: TextStyle(
+                  fontSize: 38,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
           Positioned(
             bottom: 0,
             right: 0,

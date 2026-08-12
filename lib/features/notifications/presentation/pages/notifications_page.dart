@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
+import '../../../../shared/widgets/kumo_avatar.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/app_notification.dart';
 import '../providers/notifications_provider.dart';
@@ -165,19 +166,15 @@ class _NotificationTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
-            CircleAvatar(
+            KumoAvatar(
+              sourceUrl: notification.actorAvatarUrl,
               radius: 22,
               backgroundColor: context.colorScheme.primaryContainer,
-              backgroundImage: notification.actorAvatarUrl != null
-                  ? NetworkImage(notification.actorAvatarUrl!)
-                  : null,
-              child: notification.actorAvatarUrl == null
-                  ? Icon(
-                      _icon,
-                      size: 18,
-                      color: context.colorScheme.onPrimaryContainer,
-                    )
-                  : null,
+              fallback: Icon(
+                _icon,
+                size: 18,
+                color: context.colorScheme.onPrimaryContainer,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(

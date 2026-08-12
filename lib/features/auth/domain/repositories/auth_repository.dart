@@ -36,9 +36,13 @@ abstract class AuthRepository {
   ///   (user) => print('Signed up: ${user.email}'),
   /// );
   /// ```
+  /// [dateOfBirth] is required for every full-account (Captain/Crew) signup —
+  /// server-enforced 18+ gate, see `stage44_age_gate.sql`. Never persisted
+  /// beyond the pass/fail fact — see that migration's header comment.
   Future<Either<Failure, User>> signUp({
     required String email,
     required String password,
+    required DateTime dateOfBirth,
     String? displayName,
   });
 
@@ -190,4 +194,16 @@ abstract class AuthRepository {
   /// Calls the `delete_user` Supabase RPC (SECURITY DEFINER) which removes the
   /// auth.users row. All app data is removed via ON DELETE CASCADE on the DB.
   Future<Either<Failure, void>> deleteAccount();
+
+  /// Returns a machine-readable snapshot of the current user's own data
+  /// (profile, itineraries, expenses, packing items, ratings, sent messages,
+  /// published posts) via the `export_own_data` Supabase RPC — GDPR Art. 20 /
+  /// CCPA data-portability support.
+  Future<Either<Failure, Map<String, dynamic>>> exportOwnData();
+
+  /// Completes the age gate for an invite-created account whose
+  /// `age_verified_at` is still null. Returns `Right(true)` if 18+,
+  /// `Right(false)` if just rejected (account deleted server-side — the
+  /// caller must sign out and stop treating this session as valid).
+  Future<Either<Failure, bool>> confirmAge(DateTime dateOfBirth);
 }

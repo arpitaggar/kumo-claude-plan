@@ -111,9 +111,11 @@ serve(async (req) => {
       })
 
       if (!res.ok) {
-        const err = await res.text()
-        console.error('Resend error:', err)
-        return json({ sent: false, method: 'resend', error: err }, 502)
+        // Don't log/return the raw Resend response body — validation-error
+        // bodies commonly echo the request payload back (including the
+        // recipient's email address), which would put PII into function logs.
+        console.error('Resend error:', res.status, res.statusText)
+        return json({ sent: false, method: 'resend', error: 'Failed to send invite email' }, 502)
       }
 
       return json({ sent: true, method: 'resend' })

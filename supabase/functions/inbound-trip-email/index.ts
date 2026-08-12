@@ -176,9 +176,11 @@ serve(async (req) => {
     })
 
     if (!res.ok) {
-      const err = await res.text()
-      console.error('Resend error:', err)
-      return json({ received: true, forwarded: false, error: err }, 502)
+      // Don't log/return the raw Resend response body — validation-error
+      // bodies commonly echo the request payload back (including trip
+      // members' email addresses), which would put PII into function logs.
+      console.error('Resend error:', res.status, res.statusText)
+      return json({ received: true, forwarded: false, error: 'Failed to forward email' }, 502)
     }
 
     await supabaseAdmin.from('trip_email_forward_log').insert({

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
+import '../../../../shared/widgets/kumo_avatar.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/post_comment.dart';
 import '../providers/social_provider.dart';
@@ -220,23 +221,19 @@ class _CommentTile extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
+        KumoAvatar(
+          sourceUrl: comment.authorAvatarUrl,
           radius: 16,
           backgroundColor: context.colorScheme.primaryContainer,
-          backgroundImage: comment.authorAvatarUrl != null
-              ? NetworkImage(comment.authorAvatarUrl!)
-              : null,
-          child: comment.authorAvatarUrl == null
-              ? Text(
-                  comment.authorName.isNotEmpty
-                      ? comment.authorName[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: context.colorScheme.onPrimaryContainer,
-                  ),
-                )
-              : null,
+          fallback: Text(
+            comment.authorName.isNotEmpty
+                ? comment.authorName[0].toUpperCase()
+                : '?',
+            style: TextStyle(
+              fontSize: 12,
+              color: context.colorScheme.onPrimaryContainer,
+            ),
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(

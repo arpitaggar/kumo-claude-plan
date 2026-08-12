@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/presentation/pages/confirm_age_page.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/password_reset_page.dart';
 import '../features/auth/presentation/pages/signup_page.dart';
 import '../features/auth/presentation/pages/update_password_page.dart';
+import '../features/auth/presentation/providers/age_gate_provider.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/chat/presentation/pages/chat_page.dart';
 import '../features/expense_split/presentation/pages/add_expense_page.dart';
 import '../features/gamification/presentation/pages/achievements_page.dart';
+import '../features/hitchhiker/presentation/pages/hitchhiker_screen.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/itinerary/domain/entities/trip_segment.dart';
 import '../features/itinerary/presentation/pages/add_edit_item_page.dart';
@@ -81,6 +84,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             const NoTransitionPage(child: SplashPage()),
       ),
 
+      // ── Hitchhiker (no shell, no auth — see _RouterNotifier.redirect) ──────
+      GoRoute(
+        path: '/hitchhiker/:token',
+        pageBuilder: (context, state) => NoTransitionPage(
+          child: HitchhikerScreen(token: state.pathParameters['token']!),
+        ),
+      ),
+
       // ── Auth (no shell) ────────────────────────────────────────────────────
       GoRoute(
         path: '/login',
@@ -109,6 +120,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/legal/terms',
         pageBuilder: (context, state) => _slidePage(const TermsPage(), state),
+      ),
+      GoRoute(
+        path: '/confirm-age',
+        pageBuilder: (context, state) =>
+            const NoTransitionPage(child: ConfirmAgePage()),
       ),
 
       // ── Onboarding (no shell) ──────────────────────────────────────────────
@@ -315,7 +331,8 @@ class _RouterNotifier extends ChangeNotifier {
         authNotifierProvider,
         (prev, next) => notifyListeners(),
       )
-      ..listen<bool?>(onboardingProvider, (prev, next) => notifyListeners());
+      ..listen<bool?>(onboardingProvider, (prev, next) => notifyListeners())
+      ..listen<bool?>(ageGateProvider, (prev, next) => notifyListeners());
   }
 
   final Ref _ref;
@@ -323,13 +340,36 @@ class _RouterNotifier extends ChangeNotifier {
   String? redirect(BuildContext context, GoRouterState state) {
     final authState = _ref.read(authNotifierProvider);
     final onboardingState = _ref.read(onboardingProvider);
+    final ageGateState = _ref.read(ageGateProvider);
     final isAuthenticated = authState is AuthAuthenticated;
     final isPasswordRecovery = authState is AuthPasswordRecovery;
+    // Only ever true for an invite-created (Crew) account that hasn't
+    // completed confirm_age_and_finish_signup() yet — direct signup can't
+    // reach an authenticated state at all without passing the age gate
+    // first (see stage44_age_gate.sql). Takes priority over every other
+    // authenticated route, including onboarding and deep links: nothing
+    // beyond /confirm-age should be reachable until this resolves.
+    final needsAgeConfirmation = isAuthenticated && ageGateState == false;
     final loc = state.matchedLocation;
 
     // Splash handles its own navigation — never redirect away from it.
     if (loc == '/splash') {
       return null;
+    }
+
+    // A Hitchhiker has no account and no session at all (see
+    // docs/ARCHITECTURE.md) — this route must be reachable completely
+    // independent of whatever auth state this device happens to be in, and
+    // must never redirect to /login, /onboarding, or /confirm-age. Checked
+    // before any of those gates, not just excluded from isOnAuthRoute below.
+    if (loc.startsWith('/hitchhiker/')) {
+      return null;
+    }
+    // kumo://hitchhiker?token=XYZ — same custom-scheme convention as the
+    // kumo://join deep link just below.
+    if (state.uri.host == 'hitchhiker' || state.uri.path == '/hitchhiker') {
+      final token = state.uri.queryParameters['token'];
+      return token != null && token.isNotEmpty ? '/hitchhiker/$token' : null;
     }
 
     // kumo://join?code=XYZ — org self-serve join-code deep link (stage35's
@@ -348,6 +388,7 @@ class _RouterNotifier extends ChangeNotifier {
     // whole deep-link path has no device/simulator available to verify
     // against in this environment — see Checklist.md.
     if (isAuthenticated &&
+        !needsAgeConfirmation &&
         (state.uri.host == 'join' || state.uri.path == '/join')) {
       final code = state.uri.queryParameters['code'];
       return code != null && code.isNotEmpty
@@ -368,6 +409,9 @@ class _RouterNotifier extends ChangeNotifier {
     }
     if (!isAuthenticated && !isOnAuthRoute) {
       return '/login';
+    }
+    if (needsAgeConfirmation) {
+      return loc == '/confirm-age' ? null : '/confirm-age';
     }
     if (isAuthenticated && isOnAuthRoute) {
       return onboardingState == false ? '/onboarding' : '/home';

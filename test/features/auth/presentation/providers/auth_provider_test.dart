@@ -36,6 +36,7 @@ void main() {
     email: 'alice@example.com',
     createdAt: DateTime.utc(2026, 1, 1),
   );
+  final tAdultDob = DateTime.now().subtract(const Duration(days: 365 * 30));
 
   AuthNotifier buildNotifier({Either<Failure, User?>? currentUser}) {
     when(
@@ -136,11 +137,16 @@ void main() {
         () => signupUseCase(
           email: any(named: 'email'),
           password: any(named: 'password'),
+          dateOfBirth: any(named: 'dateOfBirth'),
           displayName: any(named: 'displayName'),
         ),
       ).thenAnswer((_) async => Right(tUser));
 
-      await notifier.signup(email: 'alice@example.com', password: 'hunter22');
+      await notifier.signup(
+        email: 'alice@example.com',
+        password: 'hunter22',
+        dateOfBirth: tAdultDob,
+      );
 
       expect(notifier.state, isA<AuthAuthenticated>());
     });
@@ -153,11 +159,16 @@ void main() {
         () => signupUseCase(
           email: any(named: 'email'),
           password: any(named: 'password'),
+          dateOfBirth: any(named: 'dateOfBirth'),
           displayName: any(named: 'displayName'),
         ),
       ).thenAnswer((_) async => const Left(ServerFailure('Email taken')));
 
-      await notifier.signup(email: 'alice@example.com', password: 'hunter22');
+      await notifier.signup(
+        email: 'alice@example.com',
+        password: 'hunter22',
+        dateOfBirth: tAdultDob,
+      );
 
       expect(notifier.state, isA<AuthError>());
       expect((notifier.state as AuthError).message, 'Email taken');

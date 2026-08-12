@@ -22,9 +22,11 @@ void main() {
     email: 'me@example.com',
     createdAt: DateTime.utc(2026, 1, 1),
   );
+  final tAdultDob = DateTime.now().subtract(const Duration(days: 365 * 30));
 
   setUpAll(() {
     registerFallbackValue(tUser);
+    registerFallbackValue(tAdultDob);
   });
 
   setUp(() {
@@ -42,6 +44,7 @@ void main() {
         () => remote.signUp(
           email: any(named: 'email'),
           password: any(named: 'password'),
+          dateOfBirth: any(named: 'dateOfBirth'),
           displayName: any(named: 'displayName'),
         ),
       ).thenAnswer((_) async => tUser);
@@ -50,6 +53,7 @@ void main() {
       final result = await repository.signUp(
         email: 'me@example.com',
         password: 'password123',
+        dateOfBirth: tAdultDob,
       );
 
       verify(() => local.cacheUser(tUser)).called(1);
@@ -61,6 +65,7 @@ void main() {
         () => remote.signUp(
           email: any(named: 'email'),
           password: any(named: 'password'),
+          dateOfBirth: any(named: 'dateOfBirth'),
           displayName: any(named: 'displayName'),
         ),
       ).thenThrow(AuthException(message: 'email already registered'));
@@ -68,6 +73,7 @@ void main() {
       final result = await repository.signUp(
         email: 'me@example.com',
         password: 'password123',
+        dateOfBirth: tAdultDob,
       );
 
       result.fold(
@@ -81,6 +87,7 @@ void main() {
         () => remote.signUp(
           email: any(named: 'email'),
           password: any(named: 'password'),
+          dateOfBirth: any(named: 'dateOfBirth'),
           displayName: any(named: 'displayName'),
         ),
       ).thenThrow(NetworkException.noInternet());
@@ -88,6 +95,7 @@ void main() {
       final result = await repository.signUp(
         email: 'me@example.com',
         password: 'password123',
+        dateOfBirth: tAdultDob,
       );
 
       result.fold(
@@ -102,6 +110,7 @@ void main() {
         () => remote.signUp(
           email: any(named: 'email'),
           password: any(named: 'password'),
+          dateOfBirth: any(named: 'dateOfBirth'),
           displayName: any(named: 'displayName'),
         ),
       ).thenAnswer((_) async => tUser);
@@ -113,6 +122,7 @@ void main() {
       final result = await repository.signUp(
         email: 'me@example.com',
         password: 'password123',
+        dateOfBirth: tAdultDob,
       );
 
       result.fold((_) => fail('expected Right'), (user) => expect(user, tUser));
@@ -124,6 +134,7 @@ void main() {
         () => remote.signUp(
           email: any(named: 'email'),
           password: any(named: 'password'),
+          dateOfBirth: any(named: 'dateOfBirth'),
           displayName: any(named: 'displayName'),
         ),
       ).thenAnswer((_) async => tUser);
@@ -135,6 +146,7 @@ void main() {
       final result = await repository.signUp(
         email: 'me@example.com',
         password: 'password123',
+        dateOfBirth: tAdultDob,
       );
 
       result.fold(
@@ -154,6 +166,7 @@ void main() {
         () => remote.signUp(
           email: any(named: 'email'),
           password: any(named: 'password'),
+          dateOfBirth: any(named: 'dateOfBirth'),
           displayName: any(named: 'displayName'),
         ),
       ).thenAnswer((_) async => tUser);
@@ -167,6 +180,7 @@ void main() {
       final result = await repository.signUp(
         email: 'me@example.com',
         password: 'password123',
+        dateOfBirth: tAdultDob,
       );
 
       result.fold(
@@ -490,6 +504,43 @@ void main() {
 
       result.fold(
         (f) => expect(f, isA<AuthFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('exportOwnData', () {
+    test('returns Right(data) on success', () async {
+      final data = <String, dynamic>{
+        'profile': {'id': 'user-1'},
+      };
+      when(() => remote.exportOwnData()).thenAnswer((_) async => data);
+
+      final result = await repository.exportOwnData();
+
+      result.fold((_) => fail('expected Right'), (d) => expect(d, data));
+    });
+
+    test('maps AuthException to AuthFailure', () async {
+      when(
+        () => remote.exportOwnData(),
+      ).thenThrow(AuthException.sessionExpired());
+
+      final result = await repository.exportOwnData();
+
+      result.fold(
+        (f) => expect(f, isA<AuthFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+
+    test('maps unexpected errors to UnexpectedFailure', () async {
+      when(() => remote.exportOwnData()).thenThrow(Exception('boom'));
+
+      final result = await repository.exportOwnData();
+
+      result.fold(
+        (f) => expect(f, isA<UnexpectedFailure>()),
         (_) => fail('expected Left'),
       );
     });

@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
@@ -68,6 +71,7 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
   late bool _isSearchable;
   bool _isSaving = false;
   bool _visibilitySaving = false;
+  bool _exporting = false;
 
   @override
   void initState() {
@@ -121,6 +125,22 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
     result.fold(
       (f) => context.showSnackBar(f.message, isError: true),
       (_) => ref.invalidate(userProfileProvider),
+    );
+  }
+
+  Future<void> _downloadMyData() async {
+    setState(() => _exporting = true);
+    final result = await ref.read(exportOwnDataUseCaseProvider).call();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _exporting = false);
+    result.fold(
+      (failure) => context.showSnackBar(failure.message, isError: true),
+      (data) {
+        final json = const JsonEncoder.withIndent('  ').convert(data);
+        Share.share(json, subject: 'My Kumo data export');
+      },
     );
   }
 
@@ -309,6 +329,31 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
           title: const Text('Terms of Service'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/legal/terms'),
+        ),
+
+        // ── Your data ────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
+          child: Text(
+            'Your data',
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.primary,
+            ),
+          ),
+        ),
+        ListTile(
+          leading: _exporting
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download_outlined),
+          title: const Text('Download my data'),
+          subtitle: const Text(
+            'Get a copy of your profile, trips, expenses, and messages as JSON.',
+          ),
+          onTap: _exporting ? null : _downloadMyData,
         ),
 
         // ── Danger zone ──────────────────────────────────────────────────

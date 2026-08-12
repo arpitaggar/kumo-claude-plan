@@ -85,18 +85,40 @@ void main() {
       expect(btn.onPressed, isNull);
     });
 
-    testWidgets('Create Account button enabled after ticking consent', (
-      tester,
-    ) async {
+    testWidgets('shows a mandatory date of birth field', (tester) async {
       await tester.pumpWidget(await authScope(const SignupPage()));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(Checkbox));
-      await tester.pump();
-      final btn = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Create Account'),
-      );
-      expect(btn.onPressed, isNotNull);
+      expect(find.text('Date of birth'), findsOneWidget);
+      expect(find.text('Select your date of birth'), findsOneWidget);
     });
+
+    testWidgets('tapping the date of birth field opens the native date '
+        'picker', (tester) async {
+      await tester.pumpWidget(await authScope(const SignupPage()));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Select your date of birth'));
+      await tester.tap(find.text('Select your date of birth'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DatePickerDialog), findsOneWidget);
+    });
+
+    testWidgets(
+      'Create Account button stays disabled after ticking consent alone '
+      '(date of birth is also required — see AuthValidators.validateAge18Plus '
+      'and signup_usecase_test.dart for the age-gate logic itself; the '
+      'native date picker isn\'t driven here since it\'s a platform dialog)',
+      (tester) async {
+        await tester.pumpWidget(await authScope(const SignupPage()));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byType(Checkbox));
+        await tester.tap(find.byType(Checkbox));
+        await tester.pump();
+        final btn = tester.widget<ElevatedButton>(
+          find.widgetWithText(ElevatedButton, 'Create Account'),
+        );
+        expect(btn.onPressed, isNull);
+      },
+    );
 
     testWidgets('shows Privacy Policy in consent text', (tester) async {
       await tester.pumpWidget(await authScope(const SignupPage()));

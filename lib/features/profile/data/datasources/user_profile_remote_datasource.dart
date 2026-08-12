@@ -43,8 +43,11 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
       'is_searchable, username_last_changed_at, updated_at, '
       'push_message_preview_enabled';
 
-  // Only ever used for the caller's own row.
-  static const _ownCols = '$_publicCols, email';
+  // Only ever used for the caller's own row. age_verified_at backs the
+  // client-side age gate (see lib/features/auth/presentation/providers/
+  // age_gate_provider.dart) — nobody else's business, so it's excluded from
+  // _publicCols above.
+  static const _ownCols = '$_publicCols, email, age_verified_at';
 
   @override
   Future<UserProfileModel> getOwnProfile() async {

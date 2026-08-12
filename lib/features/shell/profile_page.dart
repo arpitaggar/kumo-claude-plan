@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../config/theme_provider.dart';
 import '../../core/maps/kumo_map_provider.dart';
-import '../../core/network/supabase_image_url.dart';
 import '../../core/premium/premium_feature.dart';
 import '../../core/premium/premium_providers.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
@@ -12,6 +11,7 @@ import '../../features/gamification/presentation/widgets/gamification_card.dart'
 import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
 import '../../features/work_mode/presentation/providers/work_mode_provider.dart';
 import '../../shared/extensions/context_extensions.dart';
+import '../../shared/widgets/kumo_avatar.dart';
 
 // Per-provider display metadata used in the map provider picker.
 const _kMapProviderMeta = {
@@ -111,26 +111,20 @@ class ProfilePage extends ConsumerWidget {
           Center(
             child: Column(
               children: [
-                CircleAvatar(
+                KumoAvatar(
+                  sourceUrl: user?.avatarUrl,
                   radius: 44,
                   backgroundColor: context.colorScheme.primaryContainer,
-                  backgroundImage: user?.avatarUrl != null
-                      ? NetworkImage(
-                          resizedImageUrl(user!.avatarUrl, width: 120),
-                        )
-                      : null,
-                  child: user?.avatarUrl == null
-                      ? Text(
-                          user?.displayName?.isNotEmpty == true
-                              ? user!.displayName![0].toUpperCase()
-                              : user?.email[0].toUpperCase() ?? '?',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w700,
-                            color: context.colorScheme.primary,
-                          ),
-                        )
-                      : null,
+                  fallback: Text(
+                    user?.displayName?.isNotEmpty == true
+                        ? user!.displayName![0].toUpperCase()
+                        : user?.email[0].toUpperCase() ?? '?',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      color: context.colorScheme.primary,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(

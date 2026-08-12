@@ -43,4 +43,41 @@ class AuthValidators {
     }
     return true;
   }
+
+  /// Client-side mirror of the server-side age gate (see
+  /// `docs/supabase_migrations/stage44_age_gate.sql`'s
+  /// `enforce_signup_age_gate()` trigger, which is the actual enforcement —
+  /// this check exists only to give a fast, friendly error before ever
+  /// hitting the network; it is not the security boundary.
+  ///
+  /// Full Kumo accounts (Captain or Crew) require the holder to be 18+.
+  /// Anyone younger participates as a Hitchhiker instead — see
+  /// docs/ARCHITECTURE.md.
+  ///
+  /// @throws ValidationException if [dateOfBirth] is null, in the future, or
+  /// implies an age under 18.
+  static bool validateAge18Plus(DateTime? dateOfBirth) {
+    if (dateOfBirth == null) {
+      throw ValidationException(message: 'Date of birth is required');
+    }
+    final now = DateTime.now();
+    if (dateOfBirth.isAfter(now)) {
+      throw ValidationException(
+        message: 'Date of birth cannot be in the future',
+      );
+    }
+    var age = now.year - dateOfBirth.year;
+    final hadBirthdayThisYear =
+        (now.month > dateOfBirth.month) ||
+        (now.month == dateOfBirth.month && now.day >= dateOfBirth.day);
+    if (!hadBirthdayThisYear) {
+      age -= 1;
+    }
+    if (age < 18) {
+      throw ValidationException(
+        message: 'Kumo accounts require you to be 18 or older',
+      );
+    }
+    return true;
+  }
 }

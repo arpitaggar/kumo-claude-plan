@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/network/supabase_image_url.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
+import '../../../../shared/widgets/kumo_avatar.dart';
 import '../../../itinerary/domain/entities/trip_theme.dart';
 import '../../../itinerary/presentation/extensions/trip_theme_context_extension.dart';
 import '../../domain/entities/itinerary_post.dart';
@@ -60,24 +60,15 @@ class PostCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                         child: Row(
                           children: [
-                            CircleAvatar(
+                            KumoAvatar(
+                              sourceUrl: post.authorAvatarUrl,
                               radius: 14,
-                              backgroundImage: post.authorAvatarUrl != null
-                                  ? NetworkImage(
-                                      resizedImageUrl(
-                                        post.authorAvatarUrl,
-                                        width: 48,
-                                      ),
-                                    )
-                                  : null,
-                              child: post.authorAvatarUrl == null
-                                  ? Text(
-                                      post.authorName.isNotEmpty
-                                          ? post.authorName[0].toUpperCase()
-                                          : '?',
-                                      style: const TextStyle(fontSize: 12),
-                                    )
-                                  : null,
+                              fallback: Text(
+                                post.authorName.isNotEmpty
+                                    ? post.authorName[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(fontSize: 12),
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Text(
