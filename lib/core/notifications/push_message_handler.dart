@@ -1,9 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../config/router.dart';
+import 'notification_tap_events.dart';
 
 const _channelId = 'chat_messages';
 const _channelName = 'Chat Messages';
@@ -124,26 +123,24 @@ Future<void> _showSocialBackgroundNotification(
   );
 }
 
-/// Navigates to the relevant screen when the user taps an iOS push
+/// Emits a [NotificationTapEvent] when the user taps an iOS push
 /// notification — whether that opened the app from backgrounded
 /// (`FirebaseMessaging.onMessageOpenedApp`) or fully killed
 /// (`FirebaseMessaging.instance.getInitialMessage`). Android doesn't need
 /// this: its notifications are always shown via flutter_local_notifications,
 /// whose own tap callback (`NotificationService._onTap`) already covers both
 /// cases. `data['kind']` picks chat vs. social, same as the background
-/// handler above.
+/// handler above. Navigation itself happens wherever `notificationTaps` is
+/// subscribed (`main.dart`), not here — see `notification_tap_events.dart`.
 void handleIosPushTap(RemoteMessage message) {
-  final context = rootNavigatorKey.currentContext;
-  if (context == null) {
-    return;
-  }
-
   if (message.data['kind'] == 'social') {
     final actorId = message.data['actorId'] as String?;
     if (actorId == null) {
       return;
     }
-    GoRouter.of(context).go('/u/$actorId');
+    emitNotificationTap(
+      NotificationTapEvent(kind: NotificationTapKind.social, id: actorId),
+    );
     return;
   }
 
@@ -151,5 +148,7 @@ void handleIosPushTap(RemoteMessage message) {
   if (tripId == null) {
     return;
   }
-  GoRouter.of(context).go('/trip/$tripId/chat');
+  emitNotificationTap(
+    NotificationTapEvent(kind: NotificationTapKind.chat, id: tripId),
+  );
 }

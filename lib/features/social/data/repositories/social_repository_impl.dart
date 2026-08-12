@@ -6,7 +6,6 @@ import '../../../../core/error/exception.dart';
 import '../../../../core/error/failure.dart';
 import '../../../itinerary/domain/entities/travel_itinerary.dart';
 import '../../../itinerary/domain/entities/trip_segment.dart';
-import '../../domain/entities/follow_stats.dart';
 import '../../domain/entities/itinerary_post.dart';
 import '../../domain/entities/post_comment.dart';
 import '../../domain/repositories/social_repository.dart';
@@ -145,48 +144,6 @@ class SocialRepositoryImpl implements SocialRepository {
         like: like,
       );
       return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
-    } catch (e) {
-      return Left(UnexpectedFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> toggleFollow({
-    required String followerId,
-    required String followeeId,
-    required bool follow,
-  }) async {
-    try {
-      await _remoteDataSource.toggleFollow(
-        followerId: followerId,
-        followeeId: followeeId,
-        follow: follow,
-      );
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
-    } catch (e) {
-      return Left(UnexpectedFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, FollowStats>> fetchFollowStats({
-    required String userId,
-    required String currentUserId,
-  }) async {
-    try {
-      final result = await _remoteDataSource.fetchFollowStats(
-        userId: userId,
-        currentUserId: currentUserId,
-      );
-      return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } on NetworkException catch (e) {

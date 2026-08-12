@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../../core/network/supabase_client.dart';
 import '../../../../core/network/supabase_image_url.dart';
@@ -277,54 +276,55 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
 
     setState(() => _isUploadingAttachment = true);
-    try {
-      final ext = fileName.contains('.') ? fileName.split('.').last : 'bin';
-      final storagePath = '${authState.user.id}/${const Uuid().v4()}.$ext';
 
-      await KumoSupabaseClient.client.storage
-          .from('chat-attachments')
-          .uploadBinary(
-            storagePath,
-            bytes,
-            fileOptions: FileOptions(contentType: mimeType),
-          );
-      final publicUrl = KumoSupabaseClient.client.storage
-          .from('chat-attachments')
-          .getPublicUrl(storagePath);
+    final ext = fileName.contains('.') ? fileName.split('.').last : 'bin';
+    final uploadResult = await ref
+        .read(chatRepositoryProvider)
+        .uploadAttachment(
+          bytes: bytes,
+          userId: authState.user.id,
+          fileExtension: ext,
+          mimeType: mimeType,
+        );
 
-      final caption = _inputController.text.trim();
-
-      final result = await ref
-          .read(sendMessageUseCaseProvider)
-          .call(
-            itineraryId: widget.itineraryId,
-            senderId: authState.user.id,
-            senderName: authState.user.displayName ?? authState.user.email,
-            content: caption,
-            attachmentStoragePath: storagePath,
-            attachmentUrl: publicUrl,
-            attachmentFileName: fileName,
-            attachmentMimeType: mimeType,
-            attachmentSizeBytes: bytes.length,
-            attachmentKind: kind,
-          );
-
-      if (!mounted) {
-        return;
-      }
-      result.fold(
-        (failure) => context.showSnackBar(failure.message, isError: true),
-        (_) => _inputController.clear(),
-      );
-    } catch (_) {
+    final upload = uploadResult.fold((failure) {
       if (mounted) {
-        context.showSnackBar('Could not send attachment', isError: true);
+        context.showSnackBar(failure.message, isError: true);
       }
-    } finally {
+      return null;
+    }, (u) => u);
+
+    if (upload == null) {
       if (mounted) {
         setState(() => _isUploadingAttachment = false);
       }
+      return;
     }
+
+    final caption = _inputController.text.trim();
+    final result = await ref
+        .read(sendMessageUseCaseProvider)
+        .call(
+          itineraryId: widget.itineraryId,
+          senderId: authState.user.id,
+          senderName: authState.user.displayName ?? authState.user.email,
+          content: caption,
+          attachmentStoragePath: upload.storagePath,
+          attachmentUrl: upload.publicUrl,
+          attachmentFileName: fileName,
+          attachmentMimeType: mimeType,
+          attachmentSizeBytes: bytes.length,
+          attachmentKind: kind,
+        );
+
+    if (!mounted) {
+      return;
+    }
+    result.fold(
+      (failure) => context.showSnackBar(failure.message, isError: true),
+      (_) => _inputController.clear(),
+    );
+    setState(() => _isUploadingAttachment = false);
   }
 
   Future<void> _loadEarlier(List<Message> currentMessages) async {

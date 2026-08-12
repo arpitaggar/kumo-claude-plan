@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/avatar_remote_datasource.dart';
 import '../../data/datasources/notification_preference_remote_datasource.dart';
 import '../../data/datasources/user_profile_remote_datasource.dart';
+import '../../data/repositories/avatar_repository_impl.dart';
 import '../../data/repositories/notification_preference_repository_impl.dart';
 import '../../data/repositories/user_profile_repository_impl.dart';
 import '../../domain/entities/notification_preference.dart';
 import '../../domain/entities/user_profile.dart';
+import '../../domain/repositories/avatar_repository.dart';
 import '../../domain/repositories/notification_preference_repository.dart';
 import '../../domain/repositories/user_profile_repository.dart';
 
@@ -32,6 +35,14 @@ final notificationPreferenceRepositoryProvider =
         ref.watch(notificationPreferenceRemoteDataSourceProvider),
       ),
     );
+
+final avatarRemoteDataSourceProvider = Provider<AvatarRemoteDataSource>(
+  (_) => const AvatarRemoteDataSourceImpl(),
+);
+
+final avatarRepositoryProvider = Provider<AvatarRepository>(
+  (ref) => AvatarRepositoryImpl(ref.watch(avatarRemoteDataSourceProvider)),
+);
 
 // ── Own profile ─────────────────────────────────────────────────────────────
 

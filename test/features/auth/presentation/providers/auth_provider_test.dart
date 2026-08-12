@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kumo_claude/core/error/failure.dart';
-import 'package:kumo_claude/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:kumo_claude/features/auth/domain/entities/user.dart';
+import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/delete_account_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/login_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';
@@ -12,7 +12,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_helpers.dart';
 
-class MockAuthRepository extends Mock implements AuthRepositoryImpl {}
+class MockAuthRepository extends Mock implements AuthRepository {}
 
 class MockLoginUseCase extends Mock implements LoginUseCase {}
 

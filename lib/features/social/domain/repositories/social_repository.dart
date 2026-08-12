@@ -3,7 +3,6 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/error/failure.dart';
 import '../../../itinerary/domain/entities/travel_itinerary.dart';
 import '../../../itinerary/domain/entities/trip_segment.dart';
-import '../entities/follow_stats.dart';
 import '../entities/itinerary_post.dart';
 import '../entities/post_comment.dart';
 
@@ -60,17 +59,6 @@ abstract class SocialRepository {
     required String postId,
     required String userId,
     required bool like,
-  });
-
-  Future<Either<Failure, void>> toggleFollow({
-    required String followerId,
-    required String followeeId,
-    required bool follow,
-  });
-
-  Future<Either<Failure, FollowStats>> fetchFollowStats({
-    required String userId,
-    required String currentUserId,
   });
 
   /// Deletes [postId]. RLS restricts this to the post's own author — see

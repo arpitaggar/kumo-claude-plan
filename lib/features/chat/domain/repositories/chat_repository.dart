@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failure.dart';
@@ -29,4 +31,14 @@ abstract class ChatRepository {
   Future<Either<Failure, List<MessageReadReceipt>>> getReadReceipts(
     String messageId,
   );
+
+  /// Uploads chat-attachment bytes and returns the storage path (persisted
+  /// alongside the message row) and its public URL.
+  Future<Either<Failure, ({String storagePath, String publicUrl})>>
+  uploadAttachment({
+    required Uint8List bytes,
+    required String userId,
+    required String fileExtension,
+    required String mimeType,
+  });
 }

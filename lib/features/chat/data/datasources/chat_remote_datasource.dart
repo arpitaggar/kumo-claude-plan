@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:uuid/uuid.dart';
 
@@ -31,6 +33,13 @@ abstract class ChatRemoteDataSource {
   });
   Future<void> markMessagesRead(String itineraryId);
   Future<List<MessageReadReceiptModel>> getReadReceipts(String messageId);
+
+  Future<({String storagePath, String publicUrl})> uploadAttachment({
+    required Uint8List bytes,
+    required String userId,
+    required String fileExtension,
+    required String mimeType,
+  });
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -213,6 +222,33 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           )
           .toList();
     } on sb.PostgrestException catch (e) {
+      throw ServerException(message: e.message);
+    } catch (e) {
+      throw UnexpectedException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<({String storagePath, String publicUrl})> uploadAttachment({
+    required Uint8List bytes,
+    required String userId,
+    required String fileExtension,
+    required String mimeType,
+  }) async {
+    try {
+      final storagePath = '$userId/${const Uuid().v4()}.$fileExtension';
+      await KumoSupabaseClient.client.storage
+          .from('chat-attachments')
+          .uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: sb.FileOptions(contentType: mimeType),
+          );
+      final publicUrl = KumoSupabaseClient.client.storage
+          .from('chat-attachments')
+          .getPublicUrl(storagePath);
+      return (storagePath: storagePath, publicUrl: publicUrl);
+    } on sb.StorageException catch (e) {
       throw ServerException(message: e.message);
     } catch (e) {
       throw UnexpectedException(message: e.toString());

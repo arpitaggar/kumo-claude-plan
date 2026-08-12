@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kumo_claude/core/error/exception.dart';
 import 'package:kumo_claude/core/error/failure.dart';
@@ -20,6 +22,10 @@ void main() {
     content: 'Hello',
     createdAt: DateTime.utc(2026, 1, 1),
   );
+
+  setUpAll(() {
+    registerFallbackValue(Uint8List(0));
+  });
 
   setUp(() {
     dataSource = MockChatRemoteDataSource();
@@ -63,5 +69,60 @@ void main() {
         );
       },
     );
+  });
+
+  group('uploadAttachment', () {
+    final tBytes = Uint8List.fromList([1, 2, 3]);
+
+    test('returns Right(storagePath, publicUrl) on success', () async {
+      when(
+        () => dataSource.uploadAttachment(
+          bytes: tBytes,
+          userId: 'user-1',
+          fileExtension: 'jpg',
+          mimeType: 'image/jpeg',
+        ),
+      ).thenAnswer(
+        (_) async => (
+          storagePath: 'user-1/abc.jpg',
+          publicUrl: 'https://example.com/abc.jpg',
+        ),
+      );
+
+      final result = await repository.uploadAttachment(
+        bytes: tBytes,
+        userId: 'user-1',
+        fileExtension: 'jpg',
+        mimeType: 'image/jpeg',
+      );
+
+      result.fold((_) => fail('expected Right'), (upload) {
+        expect(upload.storagePath, 'user-1/abc.jpg');
+        expect(upload.publicUrl, 'https://example.com/abc.jpg');
+      });
+    });
+
+    test('maps ServerException to ServerFailure', () async {
+      when(
+        () => dataSource.uploadAttachment(
+          bytes: any(named: 'bytes'),
+          userId: any(named: 'userId'),
+          fileExtension: any(named: 'fileExtension'),
+          mimeType: any(named: 'mimeType'),
+        ),
+      ).thenThrow(ServerException(message: 'upload failed'));
+
+      final result = await repository.uploadAttachment(
+        bytes: tBytes,
+        userId: 'user-1',
+        fileExtension: 'jpg',
+        mimeType: 'image/jpeg',
+      );
+
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
   });
 }

@@ -33,8 +33,8 @@ class _PasswordResetPageState extends ConsumerState<PasswordResetPage> {
     }
     setState(() => _isLoading = true);
     final result = await ref
-        .read(authRepositoryProvider)
-        .sendPasswordResetEmail(_emailController.text.trim());
+        .read(sendPasswordResetEmailUseCaseProvider)
+        .call(_emailController.text.trim());
     if (!mounted) {
       return;
     }

@@ -345,7 +345,7 @@ Item #12 (the last-*numbered*, not last-*remaining*, item) from `docs/SOLID_AUDI
 - 🟡 **`TransportMode` → rendering fan-out — deliberately left alone.** Re-examined and found this doesn't match the `KumoTheme` shape: only 2 of the 4 files actually switch on `TransportMode` itself; the other 2 (`route_line_painter.dart`, `route_marker_bitmaps.dart`) switch on the *derived* `RouteTexture` enum, and per `lib/core/maps/CLAUDE.md`'s own documentation their per-map-engine tick/tread-drawing code is **deliberately** kept independently-derived (different coordinate conventions per engine, cross-checked against source SVGs via external scripts specifically so the two don't drift by hand-transcription error) rather than shared. Collapsing it would fight that documented design and is unverifiable here (no device/simulator to visually confirm route rendering on either map engine) — a real correctness risk for a stylistic win. Marked 🟡 partially fixed rather than ✅ in `docs/SOLID_AUDIT.md`, with the reasoning recorded inline so it isn't silently dropped.
 - **Remaining after this round:** #2 (split `SocialRepository`), #3 (Auth's mixed DIP story), #4 (`InviteMemberPage`/`PrivacySettingsPage` bypassing usecases), #7 (`edit_profile_page.dart`/`chat_page.dart` direct-Supabase calls), #8 (decouple `core/notifications` from `config/router.dart`), #11 (`ChatRepository.upsertPushToken`, `UserProfileRepository` notification-preference split).
 
-**Verification:** `flutter analyze` — clean (265 issues, unchanged baseline, no new). `flutter test` — **952/952 passing** (+2 from the 950 baseline above). `dart format lib/ test/` — clean. Not yet committed.
+**Verification:** `flutter analyze` — clean (265 issues, unchanged baseline, no new). `flutter test` — **952/952 passing** (+2 from the 950 baseline above). `dart format lib/ test/` — clean. Committed as `c0d3029` (together with rounds 5–6 below).
 
 ## SOLID audit cleanup, round 5 — item #11 (2026-08-12)
 
@@ -357,7 +357,7 @@ Two ISP fixes, both genuinely fat/misplaced interface members flagged by the aud
 - Updated `docs/SOLID_AUDIT.md`'s ISP section (both findings marked ✅ Fixed) and ranked priority list (#11 marked ✅ Fixed).
 - **Remaining after this round:** #2 (split `SocialRepository`), #3 (Auth's mixed DIP story), #4 (`InviteMemberPage`/`PrivacySettingsPage` bypassing usecases), #7 (`edit_profile_page.dart`/`chat_page.dart` direct-Supabase calls), #8 (decouple `core/notifications` from `config/router.dart`).
 
-**Verification:** `flutter analyze` — clean (no new issues beyond the existing baseline; fixed one incidental `comment_references` info in `notification_providers.dart`'s doc comment, a broken doc-link left over from removing the now-unneeded `chat_provider.dart` import). `flutter test` — **952/952 passing**, unchanged count (9 tests moved, not added/removed). `dart format lib/ test/` — clean. Not yet committed.
+**Verification:** `flutter analyze` — clean (no new issues beyond the existing baseline; fixed one incidental `comment_references` info in `notification_providers.dart`'s doc comment, a broken doc-link left over from removing the now-unneeded `chat_provider.dart` import). `flutter test` — **952/952 passing**, unchanged count (9 tests moved, not added/removed). `dart format lib/ test/` — clean. Committed as `c0d3029` (together with round 6 below).
 
 ## SOLID audit cleanup, round 6 — item #4 (2026-08-12)
 
@@ -371,4 +371,51 @@ Two ISP fixes, both genuinely fat/misplaced interface members flagged by the aud
 - Updated `docs/SOLID_AUDIT.md`'s DIP and ISP sections (3 findings marked ✅ Fixed) and ranked priority list (#4 marked ✅ Fixed).
 - **Remaining after this round:** #2 (split `SocialRepository`), #3 (Auth's mixed DIP story), #7 (`edit_profile_page.dart`/`chat_page.dart` direct-Supabase calls), #8 (decouple `core/notifications` from `config/router.dart`).
 
-**Verification:** `flutter analyze` — clean, no new issues. `flutter test` — **975/975 passing** (+23 from the 952 baseline above). `dart format lib/ test/` — clean. Not yet committed.
+**Verification:** `flutter analyze` clean, `flutter test` 975/975 passing. Committed as `c0d3029` (together with rounds 3–5 above).
+
+## SOLID audit cleanup, round 7 — item #2 (2026-08-12)
+
+- [x] **Split `SocialRepository`'s follow graph into a new `FollowRepository`.** The interface had actually grown to 12 methods by the time this was picked up (comments were added after the finding was originally written — same kind of stale count already corrected for the concrete-repository-provider finding earlier in this session). New `lib/features/social/domain/repositories/follow_repository.dart` (`toggleFollow`/`fetchFollowStats`) + `lib/features/social/data/repositories/follow_repository_impl.dart`. Deliberately **shares** `SocialRemoteDataSource` rather than getting its own datasource — `fetchFeed` also reads the `follows` table to resolve which authors' posts belong in the following feed, so the two concerns are genuinely coupled at the data layer even though they're cleanly separable at the repository/domain layer.
+- [x] **Comments stayed on `SocialRepository`, not a third split.** They're conceptually a post concern (a post's comment thread) with no "no consumer needs both" argument as strong as the follow graph had — `SocialRepository` is now 10 methods (publish/fetch/fork/like/delete/comments), down from 12, no longer bundling the one concern that actually had a concrete no-shared-consumer case (`PublicProfilePage`'s follow toggle vs. `DiscoverPage`'s publish flow).
+- [x] **Retyped both follow usecases.** `ToggleFollowUseCase`/`FetchFollowStatsUseCase` now depend on `FollowRepository`; new `followRepositoryProvider` added in `social_provider.dart` alongside the existing `socialRepositoryProvider`.
+- Test coverage split to match: new `follow_repository_impl_test.dart` (4 tests) and `fetch_follow_stats_usecase_test.dart` (2 tests, moved out of the combined `fetch_social_reads_usecase_test.dart`); `toggle_follow_usecase_test.dart` retyped to mock `FollowRepository` instead of `SocialRepository`.
+- Updated `docs/SOLID_AUDIT.md`'s ISP section and cross-cutting-themes note (both marked ✅ Fixed) and ranked priority list (#2 marked ✅ Fixed).
+- **Remaining after this round:** #3 (Auth's mixed DIP story), #7 (`edit_profile_page.dart`/`chat_page.dart` direct-Supabase calls), #8 (decouple `core/notifications` from `config/router.dart`).
+
+**Verification:** `flutter analyze` — clean, no new issues. `flutter test` — **977/977 passing** (+2 from the 975 baseline above). `dart format lib/ test/` — clean. Not yet committed.
+
+## SOLID audit cleanup, round 8 — item #3 (2026-08-12)
+
+Scoped exactly to what the finding asked for — the retype plus the one missing usecase, not a full usecase-per-operation pass over `AuthNotifier`.
+
+- [x] **Retyped `authRepositoryProvider`/`AuthNotifier.repository`.** `Provider<AuthRepositoryImpl>` → `Provider<AuthRepository>`, `AuthRepositoryImpl` field → `AuthRepository` field. Pure type-annotation change — `AuthRepositoryImpl` already implemented the full abstract interface, so `getCurrentUser`/`resetPassword`/`updateProfile` (still called directly from `AuthNotifier`, not usecase-wrapped) compiled with zero changes.
+- [x] **New `SendPasswordResetEmailUseCase`.** `password_reset_page.dart` now calls it instead of reaching for `ref.read(authRepositoryProvider)` directly — matches every sibling auth flow (`login`/`signup`/`logout`/`deleteAccount`).
+- [x] **13 test files retyped their `AuthRepository` mock.** All of them constructed a real `AuthNotifier` (per this codebase's established pattern for testing anything behind `authNotifierProvider`) via `class MockAuthRepository extends Mock implements AuthRepositoryImpl {}` — retyped to `implements AuthRepository` for consistency with the production retype. None of these would actually have broken left as-is (a mock of the concrete class is still a valid `AuthRepository`), but leaving them pointed at the concrete class after retyping the real provider would have been a stale, misleading pattern for the next person copying it.
+- New `send_password_reset_email_usecase_test.dart` (3 tests). Existing `PasswordResetPage` coverage in `auth_pages_test.dart` (4 tests) still passes unchanged.
+- Updated `docs/SOLID_AUDIT.md`'s DIP section (2 findings marked ✅ Fixed) and ranked priority list (#3 marked ✅ Fixed) — explicitly recorded the scope decision (not touching `AuthNotifier`'s remaining direct repository calls) so it reads as a deliberate choice, not an oversight.
+- **Remaining after this round:** #7 (`edit_profile_page.dart`/`chat_page.dart` direct-Supabase calls), #8 (decouple `core/notifications` from `config/router.dart`).
+
+**Verification:** `flutter analyze` — clean, no new issues. `flutter test` — **980/980 passing** (+3 from the 977 baseline above). `dart format lib/ test/` — clean. Not yet committed.
+
+## SOLID audit cleanup, round 9 — item #7 (2026-08-12)
+
+- [x] **`edit_profile_page.dart`'s avatar upload extracted.** New `AvatarRepository`/`AvatarRepositoryImpl` + `AvatarRemoteDataSource`/`Impl` (`lib/features/profile/domain/repositories/`, `lib/features/profile/data/`) own the `avatars` bucket upload + cache-busted public-URL construction. `_pickAndUpload` now calls `ref.read(avatarRepositoryProvider).uploadAvatar(...)` and folds the `Either` result — the page's `package:supabase_flutter` import is gone entirely, it no longer touches Supabase at all.
+- [x] **`chat_page.dart`'s attachment upload extracted.** `ChatRepository` gained a 5th method, `uploadAttachment` (returns a `({String storagePath, String publicUrl})` record) — still a cohesive, chat-message-scoped interface, not a re-fattening of the repository I just split in round 7. `_uploadAndSend` now calls `ref.read(chatRepositoryProvider).uploadAttachment(...)`, matching this file's existing convention of reading `chatRepositoryProvider`/`chatRemoteDataSourceProvider` directly for operations that aren't `sendMessage` (the one usecase this feature has). The `uuid` package import is now unused in this file and was removed (attachment path generation moved into the datasource, which already had its own `uuid` import for message IDs).
+- 🟡 **Deliberately left two of the four originally-bundled call sites untouched.** `chat_page.dart`'s realtime typing-indicator channel (`KumoSupabaseClient.client.channel(...)`, stateful, widget-lifecycle-bound, zero existing test coverage — abstracting it behind a repository would mean either leaking `RealtimeChannel` into the domain layer or a real redesign of the typing-indicator feature) and `auth_provider.dart`'s `onAuthStateChange` listener (that's `AuthNotifier` itself, the app's own auth abstraction boundary, listening to the SDK to drive its state machine — not "presentation reaching past its repository" in the same sense as the other two). Recorded in `docs/SOLID_AUDIT.md` as 🟡 partially fixed rather than silently dropped.
+- New tests: `chat_repository_impl_test.dart` gained an `uploadAttachment` group (2 tests, needed a `registerFallbackValue(Uint8List(0))` for mocktail's `any()` matcher on the new `bytes` param); new `avatar_repository_impl_test.dart` (3 tests).
+- Updated `docs/SOLID_AUDIT.md`'s SRP row, DIP section (2 findings, one fully fixed + one partially), and ranked priority list (#7 marked 🟡 partially fixed with the scope decision recorded inline).
+- **Remaining after this round:** #8 (decouple `core/notifications` from `config/router.dart`) — the last item on the original list.
+
+**Verification:** `flutter analyze` — clean, no new issues. `flutter test` — **985/985 passing** (+5 from the 980 baseline above). `dart format lib/ test/` — clean. Not yet committed.
+
+## SOLID audit cleanup, round 10 — item #8, ranked list closed out (2026-08-12)
+
+The last item on `docs/SOLID_AUDIT.md`'s ranked priority list.
+
+- [x] **New `notification_tap_events.dart`.** `NotificationTapEvent` (`NotificationTapKind.chat`/`.social` + id) broadcast over a module-level `Stream`. `NotificationService._onTap` and `push_message_handler.dart`'s `handleIosPushTap` both now just parse their payload and call `emitNotificationTap(...)` — neither imports `config/router.dart` or `go_router` anymore.
+- [x] **`main.dart` owns the one navigation decision.** Subscribes once (`notificationTaps.listen(_navigateForNotificationTap)`) and maps kind→route in exactly one place — previously duplicated (and would drift) between the two files above.
+- [x] **Bonus: `handleIosPushTap` became properly unit-testable.** The existing `push_message_handler_test.dart` could previously only assert `returnsNormally` (no navigator mounted in a test, so the old code's actual `GoRouter.of(context).go(...)` call was structurally unreachable — the assertion never really exercised the routing logic). It now asserts the emitted `NotificationTapEvent`'s `kind`/`id` directly, a real behavioral check.
+- Updated `docs/SOLID_AUDIT.md`'s DIP section and ranked priority list (#8 marked ✅ Fixed), plus a closing 2026-08-12 addendum summarizing the full list's status: **10 of 12 items fully fixed, 2 partially fixed with the remaining scope documented inline** (not silently left open). One smaller, not-formally-ranked item (`WorkModeNotifier`/`OnboardingNotifier` structural duplication, noted in the 2026-08-11 addendum) stays open for a future pass.
+- **This closes out `docs/SOLID_AUDIT.md`'s ranked priority list** — the last item from the original "complete the remaining 10 cleanup tasks" request.
+
+**Verification:** `flutter analyze` — clean, no new issues. `flutter test` — **985/985 passing**, unchanged count (4 existing tests in `push_message_handler_test.dart` strengthened, not added). `dart format lib/ test/` — clean. Not yet committed.

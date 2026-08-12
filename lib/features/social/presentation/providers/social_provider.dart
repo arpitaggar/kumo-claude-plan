@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/error/failure.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/social_remote_datasource.dart';
+import '../../data/repositories/follow_repository_impl.dart';
 import '../../data/repositories/social_repository_impl.dart';
 import '../../domain/entities/follow_stats.dart';
 import '../../domain/entities/itinerary_post.dart';
 import '../../domain/entities/post_comment.dart';
+import '../../domain/repositories/follow_repository.dart';
 import '../../domain/repositories/social_repository.dart';
 import '../../domain/usecases/add_post_comment_usecase.dart';
 import '../../domain/usecases/delete_post_comment_usecase.dart';
@@ -30,6 +32,10 @@ final socialRemoteDataSourceProvider = Provider<SocialRemoteDataSource>(
 
 final socialRepositoryProvider = Provider<SocialRepository>(
   (ref) => SocialRepositoryImpl(ref.watch(socialRemoteDataSourceProvider)),
+);
+
+final followRepositoryProvider = Provider<FollowRepository>(
+  (ref) => FollowRepositoryImpl(ref.watch(socialRemoteDataSourceProvider)),
 );
 
 // ── Use-case providers ───────────────────────────────────────────────────────
@@ -59,11 +65,11 @@ final toggleLikeUseCaseProvider = Provider<ToggleLikeUseCase>(
 );
 
 final toggleFollowUseCaseProvider = Provider<ToggleFollowUseCase>(
-  (ref) => ToggleFollowUseCase(ref.watch(socialRepositoryProvider)),
+  (ref) => ToggleFollowUseCase(ref.watch(followRepositoryProvider)),
 );
 
 final fetchFollowStatsUseCaseProvider = Provider<FetchFollowStatsUseCase>(
-  (ref) => FetchFollowStatsUseCase(ref.watch(socialRepositoryProvider)),
+  (ref) => FetchFollowStatsUseCase(ref.watch(followRepositoryProvider)),
 );
 
 final deletePostUseCaseProvider = Provider<DeletePostUseCase>(

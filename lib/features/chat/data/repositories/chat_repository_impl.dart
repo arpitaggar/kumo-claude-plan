@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 
@@ -96,6 +97,29 @@ class ChatRepositoryImpl implements ChatRepository {
     try {
       final models = await remoteDataSource.getReadReceipts(messageId);
       return Right(models);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ({String storagePath, String publicUrl})>>
+  uploadAttachment({
+    required Uint8List bytes,
+    required String userId,
+    required String fileExtension,
+    required String mimeType,
+  }) async {
+    try {
+      final result = await remoteDataSource.uploadAttachment(
+        bytes: bytes,
+        userId: userId,
+        fileExtension: fileExtension,
+        mimeType: mimeType,
+      );
+      return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {

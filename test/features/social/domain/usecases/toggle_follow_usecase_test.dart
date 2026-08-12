@@ -1,18 +1,18 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kumo_claude/core/error/failure.dart';
-import 'package:kumo_claude/features/social/domain/repositories/social_repository.dart';
+import 'package:kumo_claude/features/social/domain/repositories/follow_repository.dart';
 import 'package:kumo_claude/features/social/domain/usecases/toggle_follow_usecase.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockSocialRepository extends Mock implements SocialRepository {}
+class MockFollowRepository extends Mock implements FollowRepository {}
 
 void main() {
-  late MockSocialRepository mockRepo;
+  late MockFollowRepository mockRepo;
   late ToggleFollowUseCase useCase;
 
   setUp(() {
-    mockRepo = MockSocialRepository();
+    mockRepo = MockFollowRepository();
     useCase = ToggleFollowUseCase(mockRepo);
   });
 

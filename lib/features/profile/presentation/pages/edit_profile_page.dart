@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/network/supabase_image_url.dart';
 import '../../../../shared/extensions/context_extensions.dart';
@@ -181,41 +180,24 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
     setState(() => _uploadingAvatar = true);
 
-    try {
-      final supabase = Supabase.instance.client;
-      final userId = supabase.auth.currentUser?.id;
-      if (userId == null) {
-        throw Exception('Not authenticated');
-      }
+    final bytes = await file.readAsBytes();
+    final ext = file.path.split('.').last.toLowerCase();
 
-      final bytes = await file.readAsBytes();
-      final ext = file.path.split('.').last.toLowerCase();
-      final path = '$userId/avatar.$ext';
+    final result = await ref
+        .read(avatarRepositoryProvider)
+        .uploadAvatar(bytes: bytes, fileExtension: ext);
 
-      await supabase.storage
-          .from('avatars')
-          .uploadBinary(
-            path,
-            bytes,
-            fileOptions: FileOptions(contentType: 'image/$ext', upsert: true),
-          );
-
-      final url =
-          '${supabase.storage.from('avatars').getPublicUrl(path)}'
-          '?t=${DateTime.now().millisecondsSinceEpoch}';
-
-      if (mounted) {
-        setState(() => _avatarUrl = url);
-      }
-    } catch (e) {
-      if (mounted) {
-        context.showSnackBar('Upload failed: $e', isError: true);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _uploadingAvatar = false);
-      }
+    if (!mounted) {
+      return;
     }
+    result.fold(
+      (failure) => context.showSnackBar(
+        'Upload failed: ${failure.message}',
+        isError: true,
+      ),
+      (url) => setState(() => _avatarUrl = url),
+    );
+    setState(() => _uploadingAvatar = false);
   }
 
   Future<void> _enterAvatarUrl() async {

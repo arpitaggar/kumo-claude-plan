@@ -12,9 +12,11 @@ import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/delete_account_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
+import '../../domain/usecases/send_password_reset_email_usecase.dart';
 import '../../domain/usecases/signup_usecase.dart';
 
 // ---------------------------------------------------------------------------
@@ -38,7 +40,7 @@ final authLocalDataSourceProvider = Provider<AuthLocalDataSource>(
   (ref) => AuthLocalDataSourceImpl(ref.watch(secureStorageProvider)),
 );
 
-final authRepositoryProvider = Provider<AuthRepositoryImpl>(
+final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => AuthRepositoryImpl(
     remoteDataSource: ref.watch(authRemoteDataSourceProvider),
     localDataSource: ref.watch(authLocalDataSourceProvider),
@@ -64,6 +66,11 @@ final logoutUseCaseProvider = Provider<LogoutUseCase>(
 final deleteAccountUseCaseProvider = Provider<DeleteAccountUseCase>(
   (ref) => DeleteAccountUseCase(ref.watch(authRepositoryProvider)),
 );
+
+final sendPasswordResetEmailUseCaseProvider =
+    Provider<SendPasswordResetEmailUseCase>(
+      (ref) => SendPasswordResetEmailUseCase(ref.watch(authRepositoryProvider)),
+    );
 
 // ---------------------------------------------------------------------------
 // Auth state
@@ -125,7 +132,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final SignupUseCase signupUseCase;
   final LogoutUseCase logoutUseCase;
   final DeleteAccountUseCase deleteAccountUseCase;
-  final AuthRepositoryImpl repository;
+  final AuthRepository repository;
   StreamSubscription<sb.AuthState>? _authSubscription;
 
   @override

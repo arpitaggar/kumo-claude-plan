@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config/brand.dart';
@@ -10,14 +11,33 @@ import 'config/router.dart';
 import 'config/theme.dart';
 import 'config/theme_provider.dart';
 import 'core/network/supabase_client.dart';
+import 'core/notifications/notification_tap_events.dart';
 import 'core/notifications/push_config.dart';
 import 'core/notifications/push_message_handler.dart';
 import 'core/utils/logger.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/chat/presentation/providers/chat_provider.dart';
 
+/// The one place that turns a [NotificationTapEvent] into an actual
+/// navigation — `core/notifications` (`NotificationService`,
+/// `push_message_handler.dart`) only ever emits these, never imports
+/// `config/router.dart` itself. See `notification_tap_events.dart`.
+void _navigateForNotificationTap(NotificationTapEvent event) {
+  final context = rootNavigatorKey.currentContext;
+  if (context == null) {
+    return;
+  }
+  switch (event.kind) {
+    case NotificationTapKind.chat:
+      GoRouter.of(context).go('/trip/${event.id}/chat');
+    case NotificationTapKind.social:
+      GoRouter.of(context).go('/u/${event.id}');
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  notificationTaps.listen(_navigateForNotificationTap);
 
   try {
     await KumoSupabaseClient.initialize();

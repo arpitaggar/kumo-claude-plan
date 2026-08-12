@@ -1,12 +1,12 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failure.dart';
-import '../repositories/social_repository.dart';
+import '../repositories/follow_repository.dart';
 
 class ToggleFollowUseCase {
   const ToggleFollowUseCase(this._repository);
 
-  final SocialRepository _repository;
+  final FollowRepository _repository;
 
   Future<Either<Failure, void>> call({
     required String followerId,

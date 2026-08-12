@@ -1,8 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../config/router.dart';
+import 'notification_tap_events.dart';
 
 /// Wraps [FlutterLocalNotificationsPlugin] for the two notification kinds
 /// this app shows: a new chat message, and social activity (likes, follows,
@@ -156,17 +155,16 @@ class NotificationService {
     if (sepIndex == -1) {
       return;
     }
-    final kind = payload.substring(0, sepIndex);
+    final kindStr = payload.substring(0, sepIndex);
     final id = payload.substring(sepIndex + 1);
-    final context = rootNavigatorKey.currentContext;
-    if (context == null) {
+    final kind = switch (kindStr) {
+      'chat' => NotificationTapKind.chat,
+      'social' => NotificationTapKind.social,
+      _ => null,
+    };
+    if (kind == null) {
       return;
     }
-    switch (kind) {
-      case 'chat':
-        GoRouter.of(context).go('/trip/$id/chat');
-      case 'social':
-        GoRouter.of(context).go('/u/$id');
-    }
+    emitNotificationTap(NotificationTapEvent(kind: kind, id: id));
   }
 }
