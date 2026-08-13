@@ -119,8 +119,15 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
   static const _costFieldsTable = 'org_cost_fields';
   static const _costFieldOptionsTable = 'org_cost_field_options';
   static const _costFieldSourcesTable = 'org_cost_field_sources';
+  // org_cost_field_sources has two FKs to org_cost_fields
+  // (generated_field_id, source_field_id — see stage30_org_cost_fields.sql),
+  // so PostgREST can't auto-resolve which one embeds "this field's list of
+  // source fields" without the `!generated_field_id` hint — omitting it
+  // throws "more than one relationship was found" on every call, since it's
+  // a query-planning error, not a data-dependent one.
   static const _costFieldsEmbedSelect =
-      '*, org_cost_field_options(*), org_cost_field_sources(source_field_id, position)';
+      '*, org_cost_field_options(*), '
+      'org_cost_field_sources!generated_field_id(source_field_id, position)';
   static const _joinCodesTable = 'org_join_codes';
   static const _featureOverridesTable = 'org_feature_overrides';
 
