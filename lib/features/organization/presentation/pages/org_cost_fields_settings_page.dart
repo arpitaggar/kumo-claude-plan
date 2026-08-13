@@ -417,20 +417,6 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (fields) {
-          if (fields.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'No cost-tracking fields yet — add one to let members tag '
-                  'their trips (e.g. Department, Project).',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-                ),
-              ),
-            );
-          }
-
           final byId = {for (final f in fields) f.id: f};
           final sorted = [...fields]
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
@@ -439,8 +425,11 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            // +1 for the leading org-wide threshold card.
-            itemCount: sorted.length + 1,
+            // +1 for the leading org-wide threshold card, always shown —
+            // setting a default threshold shouldn't require configuring a
+            // cost field first. +1 more for the empty-state message when
+            // there are no fields yet.
+            itemCount: sorted.length + 1 + (sorted.isEmpty ? 1 : 0),
             itemBuilder: (context, i) {
               if (i == 0) {
                 return Card(
@@ -455,6 +444,19 @@ class OrgCostFieldsSettingsPage extends ConsumerWidget {
                     ),
                     trailing: const Icon(Icons.edit_outlined, size: 18),
                     onTap: () => _editDefaultThreshold(context, ref, org),
+                  ),
+                );
+              }
+              if (sorted.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 24),
+                  child: Text(
+                    'No cost-tracking fields yet — add one to let members '
+                    'tag their trips (e.g. Department, Project).',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 );
               }

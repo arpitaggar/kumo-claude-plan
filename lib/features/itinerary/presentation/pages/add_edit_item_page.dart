@@ -102,24 +102,13 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
     });
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(TravelItinerary itinerary) async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
     if (_startDateTime == null) {
       context.showSnackBar(
         'Please select a start date and time',
-        isError: true,
-      );
-      return;
-    }
-
-    final itinerary = ref
-        .read(itineraryStreamProvider(widget.itineraryId))
-        .value;
-    if (itinerary == null) {
-      context.showSnackBar(
-        'Trip data not available, please try again',
         isError: true,
       );
       return;
@@ -160,17 +149,28 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
 
   @override
   Widget build(BuildContext context) {
+    final itineraryAsync = ref.watch(
+      itineraryStreamProvider(widget.itineraryId),
+    );
+
+    return itineraryAsync.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text(e.toString())),
+      ),
+      data: (itinerary) => _buildForm(context, itinerary),
+    );
+  }
+
+  Widget _buildForm(BuildContext context, TravelItinerary itinerary) {
     if (widget.itemId != null) {
-      final itinerary = ref
-          .watch(itineraryStreamProvider(widget.itineraryId))
-          .value;
-      if (itinerary != null) {
-        final item = itinerary.items
-            .where((i) => i.id == widget.itemId)
-            .firstOrNull;
-        if (item != null) {
-          _initFromItem(item);
-        }
+      final item = itinerary.items
+          .where((i) => i.id == widget.itemId)
+          .firstOrNull;
+      if (item != null) {
+        _initFromItem(item);
       }
     }
 
@@ -256,7 +256,7 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
                 ),
                 const SizedBox(height: 40),
                 ElevatedButton(
-                  onPressed: _submit,
+                  onPressed: () => _submit(itinerary),
                   child: Text(
                     widget.itemId != null ? 'Save Changes' : 'Add Activity',
                   ),

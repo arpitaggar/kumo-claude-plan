@@ -103,40 +103,59 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Invite Traveller'),
-      bottom: TabBar(
-        controller: _tabController,
-        isScrollable: true,
-        tabs: const [
-          Tab(icon: Icon(Icons.search), text: 'Search people'),
-          Tab(icon: Icon(Icons.email_outlined), text: 'Invite by email'),
-          Tab(
-            icon: Icon(Icons.person_add_alt_outlined),
-            text: 'Add Hitchhiker',
-          ),
-        ],
+  Widget build(BuildContext context) {
+    final itineraryAsync = ref.watch(
+      itineraryStreamProvider(widget.itineraryId),
+    );
+
+    // Guards against _addMember/_createPendingInvite's underlying .read()
+    // silently no-opping (no error shown at all) if a caller ever reaches
+    // this page before the itinerary has loaded — the tabs below aren't
+    // built until data is guaranteed present, matching how AddExpensePage
+    // gates its own form on the same provider.
+    return itineraryAsync.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text(e.toString())),
       ),
-    ),
-    body: TabBarView(
-      controller: _tabController,
-      children: [
-        _SearchTab(
-          existingMemberIds: _existingMemberIds,
-          searchUseCase: ref.read(searchProfilesByNameUseCaseProvider),
-          onAdd: _addMember,
+      data: (_) => Scaffold(
+        appBar: AppBar(
+          title: const Text('Invite Traveller'),
+          bottom: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabs: const [
+              Tab(icon: Icon(Icons.search), text: 'Search people'),
+              Tab(icon: Icon(Icons.email_outlined), text: 'Invite by email'),
+              Tab(
+                icon: Icon(Icons.person_add_alt_outlined),
+                text: 'Add Hitchhiker',
+              ),
+            ],
+          ),
         ),
-        _EmailTab(
-          existingMemberIds: _existingMemberIds,
-          findByEmailUseCase: ref.read(findProfileByEmailUseCaseProvider),
-          onAdd: _addMember,
-          onPendingInvite: _createPendingInvite,
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _SearchTab(
+              existingMemberIds: _existingMemberIds,
+              searchUseCase: ref.read(searchProfilesByNameUseCaseProvider),
+              onAdd: _addMember,
+            ),
+            _EmailTab(
+              existingMemberIds: _existingMemberIds,
+              findByEmailUseCase: ref.read(findProfileByEmailUseCaseProvider),
+              onAdd: _addMember,
+              onPendingInvite: _createPendingInvite,
+            ),
+            HitchhikerTab(itineraryId: widget.itineraryId),
+          ],
         ),
-        HitchhikerTab(itineraryId: widget.itineraryId),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

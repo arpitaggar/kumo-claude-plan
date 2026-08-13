@@ -179,7 +179,17 @@ class OrgJoinCodesPage extends ConsumerWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              QrImageView(data: code.code, size: 200),
+              // AlertDialog wraps content in IntrinsicWidth, and
+              // QrImageView's paint area is a bare LayoutBuilder — asking it
+              // for an intrinsic width throws in debug (and silently
+              // collapses to 0 in release). The fixed-size SizedBox has
+              // tight width, so RenderConstrainedBox answers the intrinsics
+              // query itself without ever delegating into QrImageView.
+              SizedBox(
+                width: 200,
+                height: 200,
+                child: QrImageView(data: code.code, size: 200),
+              ),
               const SizedBox(height: 16),
               SelectableText(
                 code.code,
