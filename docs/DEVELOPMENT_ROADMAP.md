@@ -1,11 +1,11 @@
 # Kumo Development Roadmap
 
 **Project:** Kumo — Collaborative Travel Super-App  
-**Current Version:** 2.1 (as-built)  
-**Previous Version:** 1.0 (original plan) → 2.0 (Stage 1–19, through masked trip email)  
+**Current Version:** 2.2 (as-built)  
+**Previous Version:** 1.0 (original plan) → 2.0 (Stage 1–19, through masked trip email) → 2.1 (Stage 20–23, through gamification)  
 **Target Launch:** Q3 2026
 
-> **2026-08-11 refresh:** This doc was last substantively written before the social feed grew into a real social product surface and before any B2B/org work existed (Stage 19 and earlier only). Stages 20–23 below cover everything shipped since — see `Checklist.md` (repo root) for the full, continuously-updated day-by-day log this doc summarizes; that file is the actual source of truth going forward, not this one.
+> **2026-08-11 refresh, updated 2026-08-13:** This doc was last substantively written before the social feed grew into a real social product surface and before any B2B/org work existed (Stage 19 and earlier only). Stages 20–24 below cover everything shipped since — see `docs/Checklist.md` for the full, continuously-updated day-by-day log this doc summarizes; that file is the actual source of truth going forward, not this one. (`docs/Checklist.md` itself moved from the repo root to `docs/` on 2026-08-13 — every cross-reference to it in this repo was updated to match.)
 
 ---
 
@@ -225,7 +225,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 ### Stage 20 — Real Social Feed: Publish, Likes, Follows, Comments, Notifications ✅
 
-**Note on numbering:** this stage's own migrations are numbered stage33–38 in `docs/supabase_migrations/`; the roadmap-stage number here is this doc's own sequence, continuing from Stage 19. Full day-by-day detail lives in `Checklist.md`, not duplicated here.
+**Note on numbering:** this stage's own migrations are numbered stage33–38 in `docs/supabase_migrations/`; the roadmap-stage number here is this doc's own sequence, continuing from Stage 19. Full day-by-day detail lives in `docs/Checklist.md`, not duplicated here.
 
 **Shipped:** The Stage 6 "read-only Discover feed" grew into a real social product surface. Publishing an itinerary now snapshots it into `itinerary_posts` (with fork lineage back to the original if forked from someone else's post), likes and follows with their own tables and rate limits, author-only delete/unpublish, a full comment thread per post (bottom-sheet UI, not a new route), and an in-app + push notification system (`lib/features/notifications/`) covering likes/follows/new-posts/comments — with its own unread badge and mark-read-on-open flow. Explore search is now real server-side search (`pg_trgm`) instead of a 50-post client-side filter, and both feed tabs use cursor pagination with a bounded in-memory window (`PostFeedNotifier`, capped at 200 posts) instead of unbounded "Load more" accumulation.
 
@@ -237,7 +237,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 ### Stage 21 — Organizations & Minimal B2B Foundation ✅ (subset of the original B2B vision)
 
-**Note on numbering:** migrations stage28–32 (RLS hardening) and stage39 (department overrides) — again, see `Checklist.md` for the day-by-day breakdown; this entry is the high-level summary.
+**Note on numbering:** migrations stage28–32 (RLS hardening) and stage39 (department overrides) — again, see `docs/Checklist.md` for the day-by-day breakdown; this entry is the high-level summary.
 
 **Shipped:** A real, minimal organization layer: `organizations`/`org_members` with roles, trips taggable to an org (`itineraries.org_id`, owner-only, only to an org you belong to — RLS-enforced, not just UI-restricted), an expense-approval workflow with admin review, configurable cost-tracking fields per org (including a `select`-type department field and a `generated` cost-center-code field), and a self-serve join-code system (QR display/scan, manual entry, and a `kumo://join?code=...` deep link) so a new member can get into an org without an admin doing it by hand. Stage 39 added per-department auto-approval thresholds (an expense strictly under the threshold auto-approves on submit) and per-department feature-flag overrides (a premium-gating exception, e.g. "everyone in Sales gets Google Maps regardless of trial status").
 
@@ -255,7 +255,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 **vs. v1.0:** Not in the original plan. A UX layer on top of Stage 21's org substrate, not new backend capability — purely client-side (theme/filter/banner), no new tables or RLS.
 
-**Follow-up audit pass (same day):** found and fixed one real bug (org management was accidentally gated on "Work Mode currently on" instead of "user has an org," locking org-admin tasks like generating a join code behind first switching into Work Mode) and corrected a stale code comment that cited an RLS grant already removed in Stage 21's security pass. See `Checklist.md`'s 2026-08-11 audit-round entry for the full writeup.
+**Follow-up audit pass (same day):** found and fixed one real bug (org management was accidentally gated on "Work Mode currently on" instead of "user has an org," locking org-admin tasks like generating a join code behind first switching into Work Mode) and corrected a stale code comment that cited an RLS grant already removed in Stage 21's security pass. See `docs/Checklist.md`'s 2026-08-11 audit-round entry for the full writeup.
 
 ---
 
@@ -271,6 +271,20 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 ---
 
+### Stage 24 — 18+ Age Gate + Hitchhiker Non-Account Collaborator Role 🔧
+
+**Shipped:** A legal/data-privacy compliance audit (2026-08-12, separate from the security/scalability/SOLID audits) found the trip-membership model had no age floor and no way for a minor or account-averse guest to participate without becoming a full data subject. Two-tier fix: (1) a server-side `BEFORE INSERT` trigger on `auth.users` rejects signup outright for anyone under 18 — no account of any kind is ever created — with a `/confirm-age` completion step for invite-created accounts, which can't check DOB at creation time; (2) a new **Hitchhiker** trip role — a non-account collaborator added by a Captain with just a first name, authenticated via token-based `SECURITY DEFINER` RPCs rather than Supabase Auth (anonymous auth was considered and rejected — it would still create an `auth.users` row). Full rationale in `docs/ARCHITECTURE.md`'s "Trip Roles" section and `lib/features/hitchhiker/CLAUDE.md`.
+
+**vs. v1.0:** Not in the original plan — a compliance-driven addition. Keeps Kumo outside COPPA, the UK/EU Age Appropriate Design Code, and GDPR's minor-consent thresholds by construction: Hitchhikers can't reach `itinerary_posts`, push preferences, or `xp_events`, since every one of those tables FKs to `auth.users`/`profiles`, which a Hitchhiker never has.
+
+**Also in this pass:** private `avatars`/`chat-attachments` Storage buckets (previously `public=true`, readable by anyone with the object URL) + a signed-URL resolution layer; the GDPR data-export RPC wired to a "Download my data" UI action; stopped logging raw third-party error bodies in two Edge Functions; a 90-day retention purge for the trip-email forwarding log.
+
+**Deliberately not built:** Hitchhiker → Crew promotion (no automatic row-conversion path); rate limiting on the Hitchhiker token RPCs (`docs/SECURITY_AUDIT.md` SEC-034 — accepted risk, token entropy + instant revocability judged sufficient for now).
+
+**🔧 Not yet deployed:** `docs/SECURITY_AUDIT.md` SEC-033 — the invite-created-account path's age gate is currently enforced only by the Flutter router redirect, not by any RLS policy or RPC check, flagged for a product decision rather than fixed unilaterally. **SQL migrations:** `docs/supabase_migrations/stage42_trip_email_log_retention.sql` through `stage45_hitchhikers.sql` — **not yet confirmed run against the live database.** `stage43` (private buckets) and the app build depending on it must ship together, or an old client gets a 403 on avatar/attachment URLs.
+
+---
+
 ## What Remains (Deferred / Not Implemented)
 
 | Feature | Why Deferred |
@@ -280,7 +294,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Invite email (Resend branded) | Needs Resend account + domain — Supabase built-in fallback works today |
 | GitHub Pages for legal docs | Enable in repo Settings → Pages → /docs; submit URL to app stores |
 | WCAG 2.1 full accessibility audit | Partial (send button + dots done); full audit deferred |
-| Widget + integration tests | Domain/model/legal/organization/social/work-mode/gamification coverage now substantial (950 tests as of 2026-08-11, across three dedicated coverage-gap passes); still no end-to-end integration test suite, and neither the join-code deep link, Work Mode's retheme/banner/filtering, nor gamification's card/dialog/grid has ever been smoke-tested on a real device or simulator (none available in this dev environment) |
+| Widget + integration tests | Domain/model/legal/organization/social/work-mode/gamification/hitchhiker coverage now substantial (1081 tests as of 2026-08-13, across four dedicated coverage-gap passes); still no end-to-end integration test suite, and neither the join-code deep link, Work Mode's retheme/banner/filtering, gamification's card/dialog/grid, nor the Hitchhiker screen/age-gate flow has ever been smoke-tested on a real device or simulator (none available in this dev environment) |
 | Concierge AI mode (agents, streaming) | Requires backend agent infrastructure |
 | Virtual Debit Card (Stripe Issuing) | Legal/compliance review required |
 | Full B2B admin portal (dashboard, travel-policy engine) | Stage 21 shipped the minimal real substrate (orgs, expense approval, cost fields, join codes, department overrides); the admin-facing surface on top of it is explicitly left to a future admin portal or an external system (e.g. SAP), not this app |
@@ -288,6 +302,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Google Maps route rendering (live) | Code-complete behind the map-provider abstraction (Stage 18); needs a real Google Cloud Maps API key dropped into the gitignored `google_maps_api.xml` (Android) / `Secrets.xcconfig` (iOS) — currently builds with a placeholder key so tiles won't render |
 | Masked trip email (live) | Code-complete (Stage 19); needs a domain + inbound-email provider (Cloudflare Email Routing / Postmark / Mailgun) wired to `inbound-trip-email`, plus the `INBOUND_WEBHOOK_SECRET` secret set — see that stage's entry above |
 | SEC-014 (Firebase key rotation) | The one open finding in `docs/SECURITY_AUDIT.md` that can't be closed by a code change — a manual Firebase console action |
+| SEC-033 (invite-path age gate is app-side only) | `docs/SECURITY_AUDIT.md` — a real, verified gap flagged for a product decision on scope (which write paths need a DB-level `age_verified_at` check), not fixed unilaterally |
 | Background job/queue infrastructure | `docs/SCALABILITY_AUDIT.md` SCALE-002 — the prerequisite for the *proper* long-term version of the like-counter and for scaling push fan-out past trip-sized groups; not justified until real fan-out traffic shows up |
 | Architecture cleanup backlog | `docs/SOLID_AUDIT.md`'s ranked list — a 2026-08-11 pass is working through all 12 items; check that doc for current status. Incremental, non-blocking, tracked there rather than here |
 
@@ -319,34 +334,37 @@ Jun–Jul 2026
 ├── Stage 20: Real Social Feed               ✅                   Aug 2026
 ├── Stage 21: Organizations / Minimal B2B    ✅                   Aug 2026
 ├── Stage 22: Work Mode Toggle               ✅                   Aug 2026
-└── Stage 23: Gamification (XP/Badges)       ✅                   Aug 2026
+├── Stage 23: Gamification (XP/Badges)       ✅                   Aug 2026
+└── Stage 24: Age Gate + Hitchhiker Role     🔧                   Aug 2026
 ```
 
 ---
 
 ## Quality Gates
 
-- `flutter analyze` — zero warnings/errors; ~265 info-level style nits tolerated (same bar applied consistently across the codebase — see `docs/SOLID_AUDIT.md`/`Checklist.md` for what those are) ✅
+- `flutter analyze` — zero warnings/errors; 11 info-level style nits tolerated, all deliberate `one_member_abstracts` (down from ~265 after a 2026-08-13 cleanup pass — see `docs/SOLID_AUDIT.md`/`docs/Checklist.md` for what those are) ✅
 - No secrets committed to git (`.env` in `.gitignore`, API keys in Supabase secrets) ✅
-- Supabase RLS enabled on all tables, and independently security-reviewed twice (2026-08-05, 2026-08-09) — see `docs/SECURITY_AUDIT.md` ✅
-- Every SQL migration, through `stage41_gamification_rate_limits.sql`, is confirmed live against the production database (2026-08-11) ✅
+- Supabase RLS enabled on all tables, and independently security-reviewed multiple times (2026-08-05, 2026-08-09, 2026-08-13) — see `docs/SECURITY_AUDIT.md` ✅
+- Every SQL migration through `stage41_gamification_rate_limits.sql` is confirmed live against the production database (2026-08-11); `stage42`–`stage45` (Stage 24, age gate + Hitchhiker) are **not yet confirmed live** — see Outstanding below ⚠️
 - Clean Architecture layer boundaries respected — audited (`docs/SOLID_AUDIT.md`), no domain-layer framework leaks anywhere including the newest features ✅
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
 - Signup consent checkbox before account creation ✅
-- **950 unit/widget tests passing** (up from 227) ✅
+- **1081 unit/widget tests passing** (up from 227) ✅
 - Scalability audit complete — every finding fixed-and-live, explicitly decided, or documented as not-yet-justified at this app's actual scale (`docs/SCALABILITY_AUDIT.md`) ✅
 
 Outstanding:
 - SEC-014: rotate the Firebase key via the Firebase console (the one open security finding that isn't a code change)
+- SEC-033: the invite-created-account age gate is enforced only by the Flutter router, not by any RLS/RPC check — flagged for a product decision on scope, see `docs/SECURITY_AUDIT.md`
+- Run `stage42_trip_email_log_retention.sql` through `stage45_hitchhikers.sql` against the live database (Stage 24); `stage43` (private storage buckets) and the app build depending on it must ship together
 - Deploy/redeploy the Edge Functions with their secrets set: `generate-itinerary` (Katha AI, `ANTHROPIC_API_KEY`), `send-message-push` (push notifications, `FIREBASE_SERVICE_ACCOUNT_KEY`), and `invite-email` — all three also still need the `ALLOWED_ORIGIN` secret from SEC-002; ship a Flutter build via `--dart-define-from-file=env.local.json` to go with it
 - Drop a real Google Maps API key into the gitignored native config files to make that map provider actually render (Stage 18)
 - Wire up an inbound-email provider + `INBOUND_WEBHOOK_SECRET`, then deploy `inbound-trip-email`, to make masked trip email actually receive mail (Stage 19)
 - Enable GitHub Pages → submit legal URLs to App Store Connect / Google Play Console
-- No end-to-end integration test suite; the join-code deep link, Work Mode (Stage 22), and gamification's card/dialog/grid (Stage 23) have never been smoke-tested on a real device or simulator — none available in this dev environment
+- No end-to-end integration test suite; the join-code deep link, Work Mode (Stage 22), gamification's card/dialog/grid (Stage 23), and the Hitchhiker screen/age-gate flow (Stage 24) have never been smoke-tested on a real device or simulator — none available in this dev environment
 - No formal WCAG 2.1 accessibility audit
 - Solo development; no PR review process
 
 ---
 
-**End of Development Roadmap v2.1** — see `Checklist.md` for the continuously-updated day-by-day log this document summarizes.
+**End of Development Roadmap v2.2** — see `docs/Checklist.md` for the continuously-updated day-by-day log this document summarizes.

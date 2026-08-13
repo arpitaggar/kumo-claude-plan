@@ -1,6 +1,6 @@
 # lib/features/notifications
 
-Added 2026-08-10 — loads only when working under lib/features/notifications/. Second of three explicitly-deferred Stage 22 social-feed items (unpublish/delete was the first, see lib/features/social/ and Checklist.md; comments — stage38, adding the `comment` notification type below — was the third).
+Added 2026-08-10 — loads only when working under lib/features/notifications/. Second of three explicitly-deferred Stage 22 social-feed items (unpublish/delete was the first, see lib/features/social/ and docs/Checklist.md; comments — stage38, adding the `comment` notification type below — was the third).
 
 ### Social notifications: in-app feed + push for likes, follows, new posts, comments
 

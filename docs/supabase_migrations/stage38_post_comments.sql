@@ -3,7 +3,7 @@
 --
 -- Third and last of the three explicitly-deferred Stage 22 social-feed items
 -- (unpublish/delete was stage36, activity notifications stage37 — see
--- Checklist.md for both).
+-- docs/Checklist.md for both).
 --
 -- Safe to re-run: uses IF NOT EXISTS / CREATE OR REPLACE / DROP IF EXISTS.
 -- =============================================================================

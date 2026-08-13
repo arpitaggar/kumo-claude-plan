@@ -386,7 +386,7 @@ class _RouterNotifier extends ChangeNotifier {
     // provider write from inside redirect() or threading a query param
     // through every intermediate redirect hop (onboarding, etc.), and this
     // whole deep-link path has no device/simulator available to verify
-    // against in this environment — see Checklist.md.
+    // against in this environment — see docs/Checklist.md.
     if (isAuthenticated &&
         !needsAgeConfirmation &&
         (state.uri.host == 'join' || state.uri.path == '/join')) {

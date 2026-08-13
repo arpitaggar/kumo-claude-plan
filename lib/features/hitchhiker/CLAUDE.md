@@ -23,7 +23,7 @@ Hitchhiker-side (token only, granted to `anon` — **no session is ever expected
 - `hitchhiker_send_message(p_token, p_content)` — inserts into `messages` with `hitchhiker_id` set, `sender_id` null.
 - `hitchhiker_suggest_item(p_token, p_title, p_description)` — inserts into `itinerary_suggestions`.
 
-No rate limiting on the token-authenticated RPCs yet — deliberately deferred (documented in the migration, same posture as `docs/SECURITY_AUDIT.md` SEC-021's like/follow deferral). `access_token` is a random UUID shared only with the one person the Captain invited, and instantly revocable.
+No rate limiting on the token-authenticated RPCs yet — deliberately deferred (documented in the migration, same posture as `docs/SECURITY_AUDIT.md` SEC-021's like/follow deferral; tracked as its own finding, SEC-034). `access_token` is a random UUID shared only with the one person the Captain invited, and instantly revocable.
 
 ### Flutter layer
 

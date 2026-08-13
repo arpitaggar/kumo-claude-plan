@@ -4,7 +4,7 @@
 --
 -- Second of two follow-ups explicitly flagged as deferred in the stage35
 -- join-code work (the other, a kumo://join deep link, is stage38's sibling
--- — see Checklist.md). Builds on org_members.cost_field_option_id
+-- — see docs/Checklist.md). Builds on org_members.cost_field_option_id
 -- (stage35) — this pass only gets people into the right org + department;
 -- this stage is what department membership actually *does*.
 --

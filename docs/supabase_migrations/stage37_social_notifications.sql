@@ -3,7 +3,7 @@
 -- new posts from people you follow.
 --
 -- Second of three explicitly-deferred Stage 22 social-feed items (see that
--- stage's Checklist.md entry — unpublish/delete was the first, stage36).
+-- stage's docs/Checklist.md entry — unpublish/delete was the first, stage36).
 --
 -- Safe to re-run: uses IF NOT EXISTS / CREATE OR REPLACE / DROP IF EXISTS.
 -- =============================================================================
