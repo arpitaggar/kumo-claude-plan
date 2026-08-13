@@ -94,6 +94,41 @@ void main() {
       final model = MessageModel.fromJson(baseJson());
       expect(model.createdAt.isUtc, isTrue);
     });
+
+    test('falls back to hitchhiker_id for senderId when sender_id is null '
+        '(Hitchhiker-authored message, see stage45_hitchhikers.sql)', () {
+      final json = baseJson()
+        ..['sender_id'] = null
+        ..['sender_name'] = 'Priya'
+        ..['hitchhiker_id'] = 'hh-1';
+      final model = MessageModel.fromJson(json);
+      expect(model.senderId, 'hh-1');
+      expect(model.senderName, 'Priya');
+    });
+
+    test(
+      'two different Hitchhikers on the same trip get distinct senderIds',
+      () {
+        final first = MessageModel.fromJson(
+          baseJson()
+            ..['sender_id'] = null
+            ..['hitchhiker_id'] = 'hh-1',
+        );
+        final second = MessageModel.fromJson(
+          baseJson()
+            ..['sender_id'] = null
+            ..['hitchhiker_id'] = 'hh-2',
+        );
+        expect(first.senderId, isNot(equals(second.senderId)));
+      },
+    );
+
+    test('senderId is an empty string, not a crash, when both sender_id and '
+        'hitchhiker_id are absent', () {
+      final json = baseJson()..['sender_id'] = null;
+      final model = MessageModel.fromJson(json);
+      expect(model.senderId, '');
+    });
   });
 
   group('MessageModel.toJson', () {
