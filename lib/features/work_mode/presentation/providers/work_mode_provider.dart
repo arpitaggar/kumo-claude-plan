@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/providers/per_user_bool_preference_notifier.dart';
 import '../../../organization/domain/entities/organization.dart';
 import '../../../organization/presentation/providers/organization_provider.dart';
 
@@ -8,45 +8,10 @@ const _kWorkModePrefix = 'work_mode_';
 
 /// Scoped per signed-in user id, mirroring `OnboardingNotifier`. Persists
 /// whether the user last chose Work Mode or Private Mode on this device.
-class WorkModeNotifier extends StateNotifier<bool?> {
-  WorkModeNotifier(this._ref) : super(null) {
-    _sync();
-    _ref.listen<AuthState>(authNotifierProvider, (_, _) => _sync());
-  }
+class WorkModeNotifier extends PerUserBoolPreferenceNotifier {
+  WorkModeNotifier(Ref ref) : super(ref, _kWorkModePrefix);
 
-  final Ref _ref;
-  String? _lastUserId;
-
-  String? get _currentUserId {
-    final auth = _ref.read(authNotifierProvider);
-    return auth is AuthAuthenticated ? auth.user.id : null;
-  }
-
-  void _sync() {
-    final userId = _currentUserId;
-    if (userId == null) {
-      // Signed out (or not yet resolved) — nothing to gate on.
-      _lastUserId = null;
-      state = null;
-      return;
-    }
-    if (userId == _lastUserId) {
-      return;
-    }
-    _lastUserId = userId;
-    final prefs = _ref.read(sharedPreferencesProvider);
-    state = prefs.getBool('$_kWorkModePrefix$userId') ?? false;
-  }
-
-  Future<void> setWorkMode({required bool value}) async {
-    final userId = _currentUserId;
-    if (userId == null) {
-      return;
-    }
-    final prefs = _ref.read(sharedPreferencesProvider);
-    await prefs.setBool('$_kWorkModePrefix$userId', value);
-    state = value;
-  }
+  Future<void> setWorkMode({required bool value}) => setValue(value: value);
 }
 
 /// `null` = not signed in yet (or still resolving). `false`/`true` = the

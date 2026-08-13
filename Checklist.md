@@ -29,6 +29,8 @@ _Compiled 2026-08-09 from `docs/DEVELOPMENT_ROADMAP.md`, migration history, and 
 - [x] Masked, forward-only trip email alias with inbound forwarding
 - [x] Work mode: org-scoped trips, expense approval workflow, cost-tracking fields
 - [x] macOS build re-enabled for local dev/testing — committed `5e4adf0`
+- [x] Trip roles Captain/Crew/Hitchhiker + server-side 18+ age gate at signup — regulatory design keeping Kumo outside COPPA/UK-AADC/GDPR minor-data-controller obligations (see `docs/ARCHITECTURE.md`); Hitchhikers are non-account trip collaborators authenticated via token-based RPCs, added by name only — committed `cd2c40b`/`b6310bc`
+- [x] Private `avatars`/`chat-attachments` Storage buckets + signed-URL resolution layer (`KumoAvatar`, `signedStorageUrlProvider`), replacing public-read — committed `cd2c40b`
 
 ## Code-complete but not live (deployment gaps)
 
@@ -37,6 +39,7 @@ _Compiled 2026-08-09 from `docs/DEVELOPMENT_ROADMAP.md`, migration history, and 
 - [ ] Google Maps tiles — needs a real API key (placeholder only)
 - [ ] Masked email inbound delivery — needs a domain + inbound-email provider + webhook secret
 - [ ] GitHub Pages for legal docs — not enabled
+- [ ] Migrations `stage42_trip_email_log_retention.sql` through `stage45_hitchhikers.sql` (retention purge, private storage buckets, age gate, Hitchhiker RPCs) — not yet confirmed run against the live database. **`stage43` (private buckets) and the app build that depends on it must ship together** — an old client calling the pre-signed `getPublicUrl()` result directly gets a 403 once the buckets flip in production.
 
 ## Process/quality gaps surfaced by this audit
 
@@ -419,3 +422,48 @@ The last item on `docs/SOLID_AUDIT.md`'s ranked priority list.
 - **This closes out `docs/SOLID_AUDIT.md`'s ranked priority list** — the last item from the original "complete the remaining 10 cleanup tasks" request.
 
 **Verification:** `flutter analyze` — clean, no new issues. `flutter test` — **985/985 passing**, unchanged count (4 existing tests in `push_message_handler_test.dart` strengthened, not added). `dart format lib/ test/` — clean. Not yet committed.
+
+## WorkModeNotifier/OnboardingNotifier dedup (2026-08-13)
+
+The one smaller, not-formally-ranked SOLID finding left open after round 10 (`docs/SOLID_AUDIT.md`'s 2026-08-11 addendum) — picked up on request.
+
+- [x] **New `lib/core/providers/per_user_bool_preference_notifier.dart`.** `PerUserBoolPreferenceNotifier` — the per-user-scoped `SharedPreferences` `bool?` sync/persist logic (`_lastUserId` caching, `_sync()` on construction and every `authNotifierProvider` change, reset-to-null on sign-out) that `OnboardingNotifier` and `WorkModeNotifier` had independently duplicated. Both now extend it, supplying only their own key prefix and a domain-named write method (`markComplete()` / `setWorkMode({required value})`) delegating to the base's `setValue({required value})`.
+- Pure structural refactor — no behavior change, no test file touched (existing coverage for both notifiers still exercises the same public API and passed unchanged).
+- Updated `docs/SOLID_AUDIT.md`'s 2026-08-11 and 2026-08-12 addenda to mark this ✅ Fixed.
+
+**Verification:** `flutter analyze --no-fatal-infos` — 11 issues, unchanged baseline (all pre-existing `one_member_abstracts`). `flutter test` — **1081/1081 passing**, unchanged count. `dart format lib/` — clean. Not yet committed.
+
+## 18+ age gate + Hitchhiker non-account collaborator role; private storage buckets; privacy audit fixes (2026-08-12/13)
+
+A legal/data-privacy compliance audit (separate from the three tracked security/scalability/SOLID audits) found the trip-membership model had no age floor and no path for a minor or account-averse guest to participate without becoming a full data subject. Full design rationale in `docs/ARCHITECTURE.md`'s "Trip Roles" section and `lib/features/hitchhiker/CLAUDE.md`.
+
+- [x] **New migration `docs/supabase_migrations/stage44_age_gate.sql`.** `enforce_signup_age_gate()` — a `BEFORE INSERT` trigger on `auth.users` that computes age from a DOB supplied at signup and **rejects the row outright** if under 18 (no account of any kind is created). Strips raw DOB out of `raw_user_meta_data` before persisting anything, keeping only `profiles.age_verified_at` (pass/fail, not the DOB itself). A separate `confirm_age` RPC + `ConfirmAgePage`/`AgeGateNotifier` flow covers invite-created accounts, which never go through signup's own DOB field.
+- [x] **New migration `docs/supabase_migrations/stage45_hitchhikers.sql`.** New `trip_hitchhikers` table — a Hitchhiker has **no `auth.users` row, no `user_id`, ever**; added by a Captain with just a first name. Access is a bearer token (`access_token`), validated by `SECURITY DEFINER` RPCs (`create_hitchhiker`, `revoke_hitchhiker`, `hitchhiker_get_trip_view`, `hitchhiker_send_message`, `hitchhiker_suggest_item`) rather than RLS, since RLS is built on `auth.uid()` and a Hitchhiker never has one. Anonymous Supabase Auth was considered and rejected for this — it would still create an `auth.users` row, weakening "zero identity-system rows for a minor" down to "anonymized rows." Revocation is immediate.
+- [x] **Why this is regulatory, not cosmetic:** the two-tier split (full-account Captain/Crew, always 18+, vs. account-less Hitchhiker) keeps Kumo outside COPPA (no data collected from/about anyone under 13 — no independent record exists outside the one trip), the UK/EU Age Appropriate Design Code (applies to any under-18 *account* holder, and Hitchhikers never have one), and GDPR's 13–16 digital-consent thresholds (moot with no independent data subject). Structural, not a checklist: Hitchhikers can't reach `itinerary_posts`, marketing email, push preferences, or `xp_events` — every one of those tables FKs to `auth.users`/`profiles`, which a Hitchhiker never has.
+- [x] **New `lib/features/hitchhiker/` module** — full Clean Architecture layers (`Hitchhiker`/`HitchhikerTripView` entities, `HitchhikerRepository`/`HitchhikerAccessRepository` + usecases), owner-side `HitchhikerTab` (roster, add via name-only form + QR/share-link, revoke with confirmation), and an isolated `/hitchhiker/:token` `HitchhikerScreen` — no login, no app shell, just the token-scoped trip view, chat send, and packing-suggestion submit. `lib/features/itinerary/domain/entities/trip_role.dart` exposes `TripRole { captain, crew, hitchhiker }` + `resolveTripRole(...)` as the shared classifier.
+- [x] **Private Storage buckets (same pass, `stage43_private_avatars_chat_attachments.sql`).** `avatars`/`chat-attachments` flipped from `public=true` to `public=false` — previously readable by anyone with the object URL, no auth or app-level control, despite `chat-attachments` being able to hold photographed travel documents. Avatars now reuse `profiles_select`'s visibility logic (owner, public profile, or searchable); chat-attachments require trip membership. New `lib/core/network/signed_storage_url.dart` (`signedStorageUrlProvider`) + `lib/shared/widgets/kumo_avatar.dart` (`KumoAvatar`) resolve signed URLs at render time, replacing raw `NetworkImage(getPublicUrl())` at every avatar/attachment call site. **Deployment-coupled:** this migration and the depending app build must ship together — an old client hitting the old public URL gets a 403 once the buckets flip.
+- [x] **Privacy-audit quick wins, same pass:** wired the existing GDPR data-export RPC to a "Download my data" action in Privacy Settings (`ExportOwnDataUseCase`); stopped `invite-email`/`inbound-trip-email` from logging raw Resend error-response bodies (could echo recipient email addresses into Supabase function logs — now logs only the HTTP status); corrected a privacy-policy claim about a CSV expense-export feature that never existed; `stage42_trip_email_log_retention.sql` adds a 90-day purge for `trip_email_forward_log.from_address` (a third party's email), scheduled via `pg_cron` where enabled.
+- [x] **Real pre-existing bug found while reissuing `handle_new_user()` for the age gate:** `stage21_trip_segments.sql` had silently dropped the pending-invitations auto-join loop `stage2b` originally added — fixed as part of the same reissue.
+- [x] **Test coverage follow-up (`b6310bc`), same day.** The feature commit shipped with partial coverage; closed the gaps immediately after: `ConfirmAgeUseCase`, `AuthRepositoryImpl.confirmAge()`, `AgeGateNotifier` (signed-out/verified/unverified/failed-fetch/re-sync states), `ConfirmAgePage` widget test; `RevokeHitchhikerUseCase`, `ListHitchhikersUseCase`, `GetHitchhikerTripViewUseCase`, `HitchhikerAccessRepositoryImpl`, `hitchhikerJoinLink()`; `HitchhikerTab` widget test (roster states, add-flow calls `createHitchhiker` and opens the share sheet, remove-flow confirms then calls `revokeHitchhiker`) and `HitchhikerScreen` widget test (loading/error states, chat send, suggestion submit).
+- **Deliberate, documented, not built:** Hitchhiker → Crew promotion (a Hitchhiker who turns 18 or wants an account goes through normal signup separately; no automatic row-conversion migration path — more scope than this pass warranted, revisit if it becomes a real product ask). No rate limiting yet on the token-authenticated Hitchhiker RPCs — deliberately deferred, same posture as SEC-021's like/follow deferral (`access_token` is a random UUID shared only with the invited person, instantly revocable).
+
+**Verification (combined, as of `1768d83`):** `flutter analyze --no-fatal-infos` clean at the tracked baseline. `flutter test` — **1081/1081 passing**. Committed as `cd2c40b` (feature) + `b6310bc` (coverage follow-up). **Not yet run against the live database** — see the deployment-gaps list above.
+
+## Flutter 3.44.8 → 3.47.0 upgrade (2026-08-13)
+
+Routine SDK upgrade, not audit- or feature-driven.
+
+- [x] Fixed two real `unawaited_return_in_try_block` issues the upgraded analyzer now catches — returning a `Future` directly inside a `try` block means the enclosing `catch` never actually handles errors from it, since Dart doesn't await it before the block exits. Added the missing `await` in `SendMessageUseCase.call()` and `UserProfileRemoteDataSourceImpl.updateProfile()`.
+- [x] `pubspec.lock` — transitive SDK-bundled packages (`matcher`, `meta`, `test_api`, `vector_math`) bumped to match the new Dart SDK; no direct dependency changes. `analysis_options.yaml` picked up the newer tooling's default platform-directory excludes. `ios/Podfile`/`Podfile.lock` — template/checksum sync from an iOS build under the new Flutter version (the one line that changed is a disabled comment; the real deployment target was already 15.0, unchanged).
+
+**Verification:** `flutter analyze --no-fatal-infos`, `dart format`, full test suite (**1081/1081**), an Android debug build, and an iOS simulator build all pass post-upgrade. Committed as `665ca6a`.
+
+## Analyzer info-level cleanup: lib/ then test/ (2026-08-13)
+
+Closed out the accumulated info-level analyzer backlog (11 `one_member_abstracts` aside, which are intentional per `lib/core/maps/CLAUDE.md`'s documented DI convention).
+
+- [x] **`lib/` — 100 issues down to 11.** `dart fix --apply lib/` (28 automated fixes) plus manual fixes: migrated all 4 `Share.share()` call sites to `SharePlus.instance.share(ShareParams(...))` (`deprecated_member_use`); control-body/cascade-invocation nits, mostly canvas-drawing code (`route_line_painter.dart`, `route_map_view.dart`, `route_marker_bitmaps.dart`); doc-comment `[symbol]` references switched to backticks; `avoid_positional_boolean_parameters` — converted `setVisibility(id, bool)` → `setVisibility(id, {required bool isVisible})` through the full stack (datasource → repository → usecase → UI → both test files). The remaining 11 are all `one_member_abstracts`, deliberately left — the abstract-class+Impl+Provider pattern for single-method services is this codebase's established convention, not an oversight.
+- [x] **`test/` — 0 remaining.** `dart fix --apply test/` (253 automated fixes) plus 4 manual fixes: three repeated-receiver call sequences converted to cascades, and `_StubWeatherService`'s error field narrowed from `Object?` to `Exception?` to satisfy `only_throw_errors`.
+- No behavior changes in either pass — mechanical lint fixes only.
+
+**Verification:** `dart format`, `flutter analyze --no-fatal-infos` (clean, exit 0), full test suite (**1081/1081** both times, unchanged count) after each pass. Committed as `1768d83` (lib/) and `0f0376e` (test/).
