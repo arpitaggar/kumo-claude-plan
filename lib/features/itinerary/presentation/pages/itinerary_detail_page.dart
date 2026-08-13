@@ -2562,6 +2562,16 @@ class _StatusRow extends ConsumerWidget {
                     ),
                   ),
                 ),
+                // Flexible looks redundant here (a plain FilledButton in a
+                // Row with one Expanded sibling lays out fine under
+                // flutter_test's default renderer) — don't remove it. It's
+                // load-bearing specifically under the web/CanvasKit
+                // renderer, which throws "BoxConstraints forces an infinite
+                // width" on this exact FilledButton without it. Not
+                // reproducible in this test suite (see
+                // itinerary_detail_page_test.dart's "keeps the Flexible
+                // wrapper" test and docs/Checklist.md, 2026-08-13) — only
+                // caught by actually running the web build.
                 if (itinerary.isPublic)
                   Flexible(
                     child: TextButton(

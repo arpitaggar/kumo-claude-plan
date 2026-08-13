@@ -49,23 +49,28 @@ const _summary = ExpenseSummary(
   memberBalances: {},
 );
 
-TravelItinerary _trip({required bool isPublic}) => TravelItinerary(
-  id: 'trip-1',
-  title: 'KumoTest',
-  ownerId: 'user-1',
-  startDate: DateTime.utc(2026, 6, 8),
-  endDate: DateTime.utc(2026, 6, 15),
-  totalBudget: 9000,
-  currencyCode: AppConstants.defaultCurrency,
-  members: const [],
-  items: const [],
-  expenseSummary: _summary,
-  createdAt: DateTime.utc(2026),
-  updatedAt: DateTime.utc(2026),
-  isPublic: isPublic,
-);
+TravelItinerary _trip({required bool isPublic, String ownerId = 'user-1'}) =>
+    TravelItinerary(
+      id: 'trip-1',
+      title: 'KumoTest',
+      ownerId: ownerId,
+      startDate: DateTime.utc(2026, 6, 8),
+      endDate: DateTime.utc(2026, 6, 15),
+      totalBudget: 9000,
+      currencyCode: AppConstants.defaultCurrency,
+      members: const [],
+      items: const [],
+      expenseSummary: _summary,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+      isPublic: isPublic,
+    );
 
-Future<void> _pump(WidgetTester tester, {required bool isPublic}) async {
+Future<void> _pump(
+  WidgetTester tester, {
+  required bool isPublic,
+  String ownerId = 'user-1',
+}) async {
   final authRepo = MockAuthRepository();
   when(authRepo.getCurrentUser).thenAnswer(
     (_) async => Right(
@@ -91,9 +96,9 @@ Future<void> _pump(WidgetTester tester, {required bool isPublic}) async {
             repository: authRepo,
           ),
         ),
-        itineraryStreamProvider(
-          'trip-1',
-        ).overrideWith((ref) => Stream.value(_trip(isPublic: isPublic))),
+        itineraryStreamProvider('trip-1').overrideWith(
+          (ref) => Stream.value(_trip(isPublic: isPublic, ownerId: ownerId)),
+        ),
       ],
       child: const MaterialApp(home: ItineraryDetailPage(id: 'trip-1')),
     ),
@@ -129,6 +134,36 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Published to Discover'), findsOneWidget);
       expect(find.widgetWithText(TextButton, 'Publish update'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'non-owner viewing the trip renders without a layout exception and '
+    'never shows the owner-only Status/Publish controls',
+    (tester) async {
+      await _pump(tester, isPublic: false, ownerId: 'someone-else');
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Start'), findsOneWidget);
+      // The Status row itself is unconditional; only the owner-only
+      // publish-status row (below the Divider) is gated on _isOwner.
+      expect(find.text('Not published'), findsNothing);
+      expect(find.byType(FilledButton), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'the Publish button stays wrapped in Flexible — required specifically '
+    'under the web/CanvasKit renderer, not reproducible in this test suite '
+    '(see the comment on this Row in itinerary_detail_page.dart)',
+    (tester) async {
+      await _pump(tester, isPublic: false);
+
+      final publishButton = find.widgetWithText(FilledButton, 'Publish');
+      expect(
+        find.ancestor(of: publishButton, matching: find.byType(Flexible)),
+        findsOneWidget,
+      );
     },
   );
 }
