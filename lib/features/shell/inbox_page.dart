@@ -19,6 +19,8 @@ class InboxPage extends ConsumerStatefulWidget {
 }
 
 class _InboxPageState extends ConsumerState<InboxPage> {
+  ProviderSubscription<AuthState>? _authSub;
+
   @override
   void initState() {
     super.initState();
@@ -27,16 +29,38 @@ class _InboxPageState extends ConsumerState<InboxPage> {
         return;
       }
       _recordVisit();
-      final auth = ref.read(authNotifierProvider);
-      if (auth is AuthAuthenticated) {
-        final current = ref.read(itineraryListProvider);
-        if (current is ItineraryListInitial || current is ItineraryListError) {
-          ref
-              .read(itineraryListProvider.notifier)
-              .loadItineraries(auth.user.id);
-        }
+      _load();
+    });
+    // Mirrors home_page.dart's _authSub — the postFrameCallback above only
+    // fires once, on the first frame. If authNotifierProvider is still
+    // resolving (AuthInitial/AuthLoading) at that moment — a real race on
+    // cold start, not just a test artifact — _load()'s AuthAuthenticated
+    // check silently no-ops and, unlike Home, nothing was ever listening
+    // for auth to catch up, so the itinerary fetch never fires and this
+    // page is stuck on its loading spinner forever unless some other page
+    // (typically Home) happens to have already populated
+    // itineraryListProvider first.
+    _authSub = ref.listenManual<AuthState>(authNotifierProvider, (_, next) {
+      if (next is AuthAuthenticated) {
+        _load();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.close();
+    super.dispose();
+  }
+
+  void _load() {
+    final auth = ref.read(authNotifierProvider);
+    if (auth is AuthAuthenticated) {
+      final current = ref.read(itineraryListProvider);
+      if (current is ItineraryListInitial || current is ItineraryListError) {
+        ref.read(itineraryListProvider.notifier).loadItineraries(auth.user.id);
+      }
+    }
   }
 
   Future<void> _recordVisit() async {
@@ -51,6 +75,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
   @override
   Widget build(BuildContext context) {
     final listState = ref.watch(itineraryListProvider);
+    final visibleItineraries = ref.watch(visibleItinerariesProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -75,47 +100,46 @@ class _InboxPageState extends ConsumerState<InboxPage> {
             style: TextStyle(color: context.colorScheme.onSurfaceVariant),
           ),
         ),
-        ItineraryListLoaded(:final itineraries) when itineraries.isEmpty =>
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.chat_bubble_outline,
-                  size: 56,
-                  color: context.colorScheme.outlineVariant,
+        ItineraryListLoaded() when visibleItineraries.isEmpty => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 56,
+                color: context.colorScheme.outlineVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No trip chats yet',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'No trip chats yet',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Create or join a trip to start chatting',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Create or join a trip to start chatting',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ItineraryListLoaded(:final itineraries) => ListView.separated(
+        ),
+        ItineraryListLoaded() => ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          itemCount: itineraries.length,
+          itemCount: visibleItineraries.length,
           separatorBuilder: (_, _) => Divider(
             height: 1,
             indent: 80,
             color: context.colorScheme.outlineVariant,
           ),
           itemBuilder: (context, i) =>
-              _ChatPreviewTile(itinerary: itineraries[i]),
+              _ChatPreviewTile(itinerary: visibleItineraries[i]),
         ),
       },
     );

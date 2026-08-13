@@ -283,6 +283,8 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 **🔧 Not yet deployed:** `docs/SECURITY_AUDIT.md` SEC-033 — the invite-created-account path's age gate is currently enforced only by the Flutter router redirect, not by any RLS policy or RPC check, flagged for a product decision rather than fixed unilaterally. **SQL migrations:** `docs/supabase_migrations/stage42_trip_email_log_retention.sql` through `stage45_hitchhikers.sql` — **not yet confirmed run against the live database.** `stage43` (private buckets) and the app build depending on it must ship together, or an old client gets a 403 on avatar/attachment URLs.
 
+**Web smoke-test pass (2026-08-13):** with no device/simulator available in this dev environment, actually drove the live web build (headless Chrome + a new reusable Playwright harness, `scripts/web_smoke_test/`) against production Supabase data instead of leaving Work Mode/gamification/Hitchhiker unverified. Found and fixed **5 real bugs**, none caught by `flutter test` alone: a `RenderFlex` overflow on the itinerary detail page's overview pills at real phone widths; a web/CanvasKit-only infinite-width crash on the same page's Publish button; Work Mode trip creation broken for *every* organization (an ambiguous PostgREST embed on `org_cost_field_sources`, live since Stage 21); a Hitchhiker's first chat message permanently crashing the Captain/Crew's group chat (`messages.sender_id` nullability never threaded through `MessageModel`); and a missing delete confirmation on the Home/Trips list (found because a test script's own race condition deleted a real trip — incident and fix both in `docs/Checklist.md`). Full writeup: `docs/Checklist.md`'s three "Real device/simulator smoke test" entries.
+
 ---
 
 ## What Remains (Deferred / Not Implemented)
@@ -294,7 +296,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Invite email (Resend branded) | Needs Resend account + domain — Supabase built-in fallback works today |
 | GitHub Pages for legal docs | Enable in repo Settings → Pages → /docs; submit URL to app stores |
 | WCAG 2.1 full accessibility audit | Partial (send button + dots done); full audit deferred |
-| Widget + integration tests | Domain/model/legal/organization/social/work-mode/gamification/hitchhiker coverage now substantial (1081 tests as of 2026-08-13, across four dedicated coverage-gap passes); still no end-to-end integration test suite, and neither the join-code deep link, Work Mode's retheme/banner/filtering, gamification's card/dialog/grid, nor the Hitchhiker screen/age-gate flow has ever been smoke-tested on a real device or simulator (none available in this dev environment) |
+| Widget + integration tests | Domain/model/legal/organization/social/work-mode/gamification/hitchhiker coverage now substantial (1092 tests as of 2026-08-13, across five dedicated coverage-gap passes); still no end-to-end integration test suite. The join-code deep link and the age-gate/confirm-age flow have still never been exercised at all outside unit tests. Work Mode, gamification, and Hitchhiker *have* now been smoke-tested — via the web build (`scripts/web_smoke_test/`), not a native device/simulator (still none available here) — which is how the 5 bugs above were found; a real iOS/Android/macOS pass remains outstanding and could still surface platform-specific issues the web build can't. |
 | Concierge AI mode (agents, streaming) | Requires backend agent infrastructure |
 | Virtual Debit Card (Stripe Issuing) | Legal/compliance review required |
 | Full B2B admin portal (dashboard, travel-policy engine) | Stage 21 shipped the minimal real substrate (orgs, expense approval, cost fields, join codes, department overrides); the admin-facing surface on top of it is explicitly left to a future admin portal or an external system (e.g. SAP), not this app |
@@ -350,7 +352,7 @@ Jun–Jul 2026
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
 - Signup consent checkbox before account creation ✅
-- **1081 unit/widget tests passing** (up from 227) ✅
+- **1092 unit/widget tests passing** (up from 227) ✅
 - Scalability audit complete — every finding fixed-and-live, explicitly decided, or documented as not-yet-justified at this app's actual scale (`docs/SCALABILITY_AUDIT.md`) ✅
 
 Outstanding:
@@ -361,7 +363,7 @@ Outstanding:
 - Drop a real Google Maps API key into the gitignored native config files to make that map provider actually render (Stage 18)
 - Wire up an inbound-email provider + `INBOUND_WEBHOOK_SECRET`, then deploy `inbound-trip-email`, to make masked trip email actually receive mail (Stage 19)
 - Enable GitHub Pages → submit legal URLs to App Store Connect / Google Play Console
-- No end-to-end integration test suite; the join-code deep link, Work Mode (Stage 22), gamification's card/dialog/grid (Stage 23), and the Hitchhiker screen/age-gate flow (Stage 24) have never been smoke-tested on a real device or simulator — none available in this dev environment
+- No end-to-end integration test suite. Work Mode (Stage 22), gamification (Stage 23), and Hitchhiker (Stage 24) have now been smoke-tested via the web build (see Stage 24's 2026-08-13 entry above); the join-code deep link and the age-gate/confirm-age flow have not been exercised outside unit tests at all. No native iOS/Android/macOS device or simulator is available in this dev environment, so none of the above has been verified on a real mobile/desktop build
 - No formal WCAG 2.1 accessibility audit
 - Solo development; no PR review process
 

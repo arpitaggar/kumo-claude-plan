@@ -2,6 +2,16 @@
 
 Migrated from the project root CLAUDE.md (2026-08-03 doctor cleanup) — loads only when working under lib/features/chat/. Push notification delivery is included here since it's chat-triggered, even though some of its code lives under lib/core/notifications/.
 
+### Hitchhiker-authored messages (Stage 24 integration point)
+
+`stage45_hitchhikers.sql` (see `lib/features/hitchhiker/CLAUDE.md`) made `messages.sender_id` **nullable** — a Hitchhiker-authored row sets `hitchhiker_id` instead (`messages_sender_xor_hitchhiker` check constraint: exactly one of the two is set). This feature shipped several stages after this doc was originally written and the integration was missed at the time: `MessageModel.fromJson` did `senderId: json['sender_id'] as String` — a hard, non-nullable cast — which meant a Hitchhiker's very first message permanently crashed every Captain/Crew member's group chat (not just that one message — the whole message list failed to parse). Found and fixed 2026-08-13 by actually driving a real Hitchhiker message through the live app rather than assuming the model already handled it; see `docs/Checklist.md`'s "Real device/simulator smoke test, part 2" entry for the full writeup.
+
+**The fix:** `senderId` falls back to the row's own `hitchhiker_id` when `sender_id` is null, rather than an empty string — this keeps `chat_page.dart`'s "same sender" consecutive-message grouping correct even when two different Hitchhikers post in the same trip (each gets a distinct fallback id), and can never collide with a real user's id (disjoint uuid spaces), so `isMe` comparisons stay correct too.
+
+**Checked, not just the one call site fixed:** every `senderId`/`senderName` use in `chat_page.dart` was traced for the same class of bug. `isMe` and "same sender" grouping are covered by the fallback above. The long-press "who's read this" receipt sheet (`_MessageBubble._showInfo`) is gated `if (!isMe) return;`, so it's structurally unreachable for a Hitchhiker's message (a Hitchhiker's fallback `senderId` can never equal a real signed-in `currentUserId`) — not a gap. No avatar-by-`senderId` lookup exists in `_MessageBubble`.
+
+**Open question, not resolved:** Hitchhiker messages never trigger `send-message-push` at all — `hitchhiker_send_message` (the RPC the Hitchhiker screen actually calls, see `lib/features/hitchhiker/CLAUDE.md`) is a plain insert with no push invocation, unlike `ChatRemoteDataSourceImpl.sendMessage`'s client-triggered call. Not confirmed whether that's an intentional scope trim (matching the badge-unlock no-push precedent in `lib/features/gamification/CLAUDE.md`) or a real gap.
+
 ### Chat Upgrade, Dark Themes & Push Notification Foundation (Stage 19)
 
 **Migration:** `docs/supabase_migrations/stage19_chat_upgrade.sql`  
