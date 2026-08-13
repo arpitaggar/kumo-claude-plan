@@ -316,22 +316,28 @@ class _ItineraryTab extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _InfoPill(
-              icon: Icons.calendar_today_outlined,
-              label: 'Start',
-              value: Formatters.formatDate(itinerary.startDate),
+            Expanded(
+              child: _InfoPill(
+                icon: Icons.calendar_today_outlined,
+                label: 'Start',
+                value: Formatters.formatDate(itinerary.startDate),
+              ),
             ),
             _Divider(),
-            _InfoPill(
-              icon: Icons.event_outlined,
-              label: 'End',
-              value: Formatters.formatDate(itinerary.endDate),
+            Expanded(
+              child: _InfoPill(
+                icon: Icons.event_outlined,
+                label: 'End',
+                value: Formatters.formatDate(itinerary.endDate),
+              ),
             ),
             _Divider(),
-            _InfoPill(
-              icon: Icons.schedule_outlined,
-              label: 'Duration',
-              value: '$duration ${duration == 1 ? 'day' : 'days'}',
+            Expanded(
+              child: _InfoPill(
+                icon: Icons.schedule_outlined,
+                label: 'Duration',
+                value: '$duration ${duration == 1 ? 'day' : 'days'}',
+              ),
             ),
           ],
         ),
@@ -2080,6 +2086,9 @@ class _InfoPill extends StatelessWidget {
       const SizedBox(height: 2),
       Text(
         value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
@@ -2554,14 +2563,18 @@ class _StatusRow extends ConsumerWidget {
                   ),
                 ),
                 if (itinerary.isPublic)
-                  TextButton(
-                    onPressed: () => _publish(context, ref),
-                    child: const Text('Publish update'),
+                  Flexible(
+                    child: TextButton(
+                      onPressed: () => _publish(context, ref),
+                      child: const Text('Publish update'),
+                    ),
                   )
                 else
-                  FilledButton(
-                    onPressed: () => _publish(context, ref),
-                    child: const Text('Publish'),
+                  Flexible(
+                    child: FilledButton(
+                      onPressed: () => _publish(context, ref),
+                      child: const Text('Publish'),
+                    ),
                   ),
               ],
             ),
