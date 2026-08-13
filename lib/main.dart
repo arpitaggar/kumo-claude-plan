@@ -124,7 +124,7 @@ class StartupErrorApp extends StatelessWidget {
                 const Icon(Icons.error_outline, size: 48, color: Colors.red),
                 const SizedBox(height: 16),
                 const Text(
-                  'Kumo failed to start',
+                  '${Brand.appName} failed to start',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                   textAlign: TextAlign.center,
                 ),

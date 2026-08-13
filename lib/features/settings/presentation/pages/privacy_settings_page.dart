@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../config/brand.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -140,7 +141,7 @@ class _PrivacyBodyState extends ConsumerState<_PrivacyBody> {
       (data) {
         final json = const JsonEncoder.withIndent('  ').convert(data);
         SharePlus.instance.share(
-          ShareParams(text: json, subject: 'My Kumo data export'),
+          ShareParams(text: json, subject: 'My ${Brand.appName} data export'),
         );
       },
     );

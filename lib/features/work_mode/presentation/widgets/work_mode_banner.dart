@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/brand.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../providers/work_mode_provider.dart';
 
@@ -37,7 +38,9 @@ class WorkModeBanner extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  active && org != null ? 'Kumo — for ${org.name}' : 'Personal',
+                  active && org != null
+                      ? '${Brand.appName} — for ${org.name}'
+                      : 'Personal',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: onInverse,
                     fontWeight: FontWeight.w600,

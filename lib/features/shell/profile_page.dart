@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../config/brand.dart';
 import '../../config/theme_provider.dart';
 import '../../core/maps/kumo_map_provider.dart';
 import '../../core/premium/premium_feature.dart';
@@ -407,7 +408,7 @@ class _ThemePickerSheet extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Choose how Kumo looks. Your choice syncs with the app icon.',
+            'Choose how ${Brand.appName} looks. Your choice syncs with the app icon.',
             style: TextStyle(
               fontSize: 13,
               color: context.colorScheme.onSurfaceVariant,

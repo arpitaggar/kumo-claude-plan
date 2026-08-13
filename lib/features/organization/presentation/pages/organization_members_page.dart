@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../config/brand.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/org_member.dart';
@@ -29,7 +30,7 @@ class OrganizationMembersPage extends ConsumerWidget {
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   labelText: 'Email',
-                  hintText: 'Must already have a Kumo account',
+                  hintText: 'Must already have a ${Brand.appName} account',
                 ),
               ),
               const SizedBox(height: 12),

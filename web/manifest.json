@@ -1,6 +1,6 @@
 {
-    "name": "kumo_claude",
-    "short_name": "kumo_claude",
+    "name": "Kumo",
+    "short_name": "Kumo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

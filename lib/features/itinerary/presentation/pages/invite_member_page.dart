@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../config/brand.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../hitchhiker/presentation/widgets/hitchhiker_tab.dart';
@@ -396,9 +397,10 @@ class _EmailTabState extends State<_EmailTab> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Enter any email address. If they already have a Kumo account '
-              'they\'ll be added instantly. Otherwise we\'ll keep the invite '
-              'ready and they\'ll auto-join when they sign up.',
+              'Enter any email address. If they already have a '
+              '${Brand.appName} account they\'ll be added instantly. '
+              'Otherwise we\'ll keep the invite ready and they\'ll '
+              'auto-join when they sign up.',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -672,7 +674,8 @@ class _PendingBanner extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'They\'ll be added to this trip automatically when they create a Kumo account.',
+                'They\'ll be added to this trip automatically when they '
+                'create a ${Brand.appName} account.',
                 style: context.textTheme.bodySmall?.copyWith(
                   color: context.colorScheme.onSurfaceVariant,
                 ),

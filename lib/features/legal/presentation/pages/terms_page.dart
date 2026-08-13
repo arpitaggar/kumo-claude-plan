@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/brand.dart';
 import '../widgets/legal_section_widgets.dart';
 
 class TermsPage extends StatelessWidget {
@@ -31,16 +32,17 @@ class _TermsContent extends StatelessWidget {
       SizedBox(height: 8),
       LegalBody(
         'Please read these Terms of Service ("Terms") carefully before '
-        'using the Kumo mobile application ("the App"). By creating an '
-        'account or using the App you agree to be bound by these Terms.',
+        'using the ${Brand.appName} mobile application ("the App"). By '
+        'creating an account or using the App you agree to be bound by '
+        'these Terms.',
       ),
 
-      LegalSection('1. About Kumo'),
+      LegalSection('1. About ${Brand.appName}'),
       LegalBody(
-        'Kumo is a collaborative travel-planning application that allows '
-        'users to create, manage, and share travel itineraries; split '
-        'expenses; maintain packing lists; and chat with co-travellers '
-        'in real time.',
+        '${Brand.appName} is a collaborative travel-planning application '
+        'that allows users to create, manage, and share travel '
+        'itineraries; split expenses; maintain packing lists; and chat '
+        'with co-travellers in real time.',
       ),
 
       LegalSection('2. Eligibility'),
@@ -91,8 +93,8 @@ class _TermsContent extends StatelessWidget {
         'public, you agree that:\n'
         '• Invited members can view and (depending on their role) edit '
         'your trip data.\n'
-        '• Public itineraries are visible to all Kumo users in the '
-        'Discover feed and may be cloned.\n'
+        '• Public itineraries are visible to all ${Brand.appName} users '
+        'in the Discover feed and may be cloned.\n'
         '• You are responsible for the content you share.',
       ),
 
@@ -115,7 +117,7 @@ class _TermsContent extends StatelessWidget {
 
       LegalSection('9. Intellectual Property'),
       LegalBody(
-        'The Kumo name, logo, and all original App content are our '
+        'The ${Brand.appName} name, logo, and all original App content are our '
         'intellectual property. Nothing in these Terms transfers ownership '
         'of our IP to you. You may not use our branding without prior '
         'written consent.',
@@ -141,7 +143,7 @@ class _TermsContent extends StatelessWidget {
 
       LegalSection('12. Indemnity'),
       LegalBody(
-        'You agree to indemnify and hold harmless Kumo and its team from '
+        'You agree to indemnify and hold harmless ${Brand.appName} and its team from '
         'any claims, losses, or expenses (including legal fees) arising '
         'from your violation of these Terms or misuse of the App.',
       ),
@@ -172,7 +174,7 @@ class _TermsContent extends StatelessWidget {
       ),
 
       LegalSection('16. Contact'),
-      LegalBody('Kumo Support\nsupport@kumoapp.com'),
+      LegalBody('${Brand.appName} Support\nsupport@kumoapp.com'),
     ],
   );
 }

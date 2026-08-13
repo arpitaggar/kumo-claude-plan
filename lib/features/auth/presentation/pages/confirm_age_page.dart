@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../config/brand.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../providers/age_gate_provider.dart';
@@ -73,9 +74,9 @@ class _ConfirmAgePageState extends ConsumerState<ConfirmAgePage> {
           builder: (ctx) => AlertDialog(
             title: const Text('18+ required'),
             content: const Text(
-              'Kumo accounts require you to be 18 or older, so this one '
-              "couldn't be completed. Ask the trip owner to add you as a "
-              'Hitchhiker instead — no account needed.',
+              '${Brand.appName} accounts require you to be 18 or older, so '
+              "this one couldn't be completed. Ask the trip owner to add "
+              'you as a Hitchhiker instead — no account needed.',
             ),
             actions: [
               TextButton(
@@ -117,8 +118,8 @@ class _ConfirmAgePageState extends ConsumerState<ConfirmAgePage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Kumo accounts require you to be 18 or older. This only '
-                'takes a second.',
+                '${Brand.appName} accounts require you to be 18 or older. '
+                'This only takes a second.',
                 style: TextStyle(
                   fontSize: 14,
                   color: context.colorScheme.onSurfaceVariant,

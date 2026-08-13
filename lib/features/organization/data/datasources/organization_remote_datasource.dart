@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
+import '../../../../config/brand.dart';
 import '../../../../core/error/exception.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../domain/entities/org_cost_field.dart';
@@ -196,7 +197,9 @@ class OrganizationRemoteDataSourceImpl implements OrganizationRemoteDataSource {
           .limit(1);
 
       if (profileRows.isEmpty) {
-        throw NotFoundException(message: 'No Kumo account found for $email');
+        throw NotFoundException(
+          message: 'No ${Brand.appName} account found for $email',
+        );
       }
       final profile = profileRows.first;
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/brand.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../widgets/legal_section_widgets.dart';
 
@@ -31,17 +32,19 @@ class _PolicyContent extends StatelessWidget {
       LegalBody('Effective date: 1 July 2026\nLast updated: 1 July 2026'),
       SizedBox(height: 8),
       LegalBody(
-        'Kumo ("we", "us", or "our") is committed to protecting your '
-        'personal data. This Privacy Policy explains what information we '
-        'collect, how we use it, and your rights under the General Data '
-        'Protection Regulation (GDPR) and applicable privacy laws.',
+        '${Brand.appName} ("we", "us", or "our") is committed to '
+        'protecting your personal data. This Privacy Policy explains what '
+        'information we collect, how we use it, and your rights under the '
+        'General Data Protection Regulation (GDPR) and applicable privacy '
+        'laws.',
       ),
 
       LegalSection('1. Data Controller'),
       LegalBody(
-        'Kumo is the data controller for personal data collected through '
-        'the Kumo mobile application. For enquiries about this policy or '
-        'your data rights, contact us at privacy@kumoapp.com.',
+        '${Brand.appName} is the data controller for personal data '
+        'collected through the ${Brand.appName} mobile application. For '
+        'enquiries about this policy or your data rights, contact us at '
+        'privacy@kumoapp.com.',
       ),
 
       LegalSection('2. Data We Collect'),
@@ -117,7 +120,8 @@ class _PolicyContent extends StatelessWidget {
         'is permanently deleted within 30 days. Aggregated, anonymised '
         'statistics (e.g. total trip count) may be retained indefinitely. '
         'If you forward a trip-related email (e.g. a flight confirmation) '
-        "to your trip's Kumo email alias, we keep a metadata-only record "
+        "to your trip's ${Brand.appName} email alias, we keep a "
+        'metadata-only record '
         '(sender address, subject line, forward count — never the message '
         'body) for up to 90 days to support delivery troubleshooting, then '
         'delete it automatically.',
@@ -162,9 +166,9 @@ class _PolicyContent extends StatelessWidget {
 
       LegalSection('11. Children'),
       LegalBody(
-        'Kumo is not directed at children under 16. We do not knowingly '
-        'collect data from anyone under 16. If you become aware that a '
-        'child has provided us with personal data, contact '
+        '${Brand.appName} is not directed at children under 16. We do not '
+        'knowingly collect data from anyone under 16. If you become aware '
+        'that a child has provided us with personal data, contact '
         'privacy@kumoapp.com.',
       ),
 
@@ -177,7 +181,7 @@ class _PolicyContent extends StatelessWidget {
       ),
 
       LegalSection('13. Contact'),
-      LegalBody('Kumo Privacy\nprivacy@kumoapp.com'),
+      LegalBody('${Brand.appName} Privacy\nprivacy@kumoapp.com'),
     ],
   );
 }

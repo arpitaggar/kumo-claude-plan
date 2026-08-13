@@ -1,3 +1,4 @@
+import '../../../../config/brand.dart';
 import '../../../../core/error/exception.dart';
 
 /// Auth-domain validation rules — email format and password strength are
@@ -75,7 +76,7 @@ class AuthValidators {
     }
     if (age < 18) {
       throw ValidationException(
-        message: 'Kumo accounts require you to be 18 or older',
+        message: '${Brand.appName} accounts require you to be 18 or older',
       );
     }
     return true;

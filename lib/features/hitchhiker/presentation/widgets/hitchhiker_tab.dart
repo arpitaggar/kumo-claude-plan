@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../config/brand.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../itinerary/presentation/pages/invite_member_page.dart'
     show InviteMemberPage;
@@ -156,7 +157,7 @@ class _HitchhikerTabState extends ConsumerState<HitchhikerTab> {
                     onPressed: () => SharePlus.instance.share(
                       ShareParams(
                         text:
-                            "Join ${hitchhiker.displayName == '' ? 'my' : ''} trip on Kumo: $link",
+                            "Join ${hitchhiker.displayName == '' ? 'my' : ''} trip on ${Brand.appName}: $link",
                       ),
                     ),
                     icon: const Icon(Icons.ios_share),

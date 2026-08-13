@@ -19,6 +19,16 @@ class Brand {
   Brand._();
 
   // ── Identity ─────────────────────────────��──────────────────────��───────────
+  // appName drives every in-app string (UI text, legal pages, share text,
+  // error messages). It does NOT reach native platform shells — Dart can't
+  // be read at their build time — so renaming also requires hand-editing:
+  //   • android/app/src/main/AndroidManifest.xml (android:label)
+  //   • ios/Runner/Info.plist (CFBundleDisplayName, CFBundleName)
+  //   • macos/Runner/Info.plist (CFBundleDisplayName, CFBundleName)
+  //   • web/index.html (<title>, apple-mobile-web-app-title)
+  //   • web/manifest.json (name, short_name)
+  //   • windows/runner/main.cpp (window.Create title)
+  //   • linux/runner/my_application.cc (header bar / window title)
   static const String appName = 'Kumo';
   static const String tagline = 'Plan. Go. Explore.';
   static const String fontFamily = 'Poppins';
