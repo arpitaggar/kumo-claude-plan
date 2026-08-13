@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
@@ -17,6 +18,35 @@ class ItineraryCard extends StatelessWidget {
   final TravelItinerary itinerary;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete trip?'),
+        content: Text(
+          'This will permanently delete "${itinerary.title}". This cannot '
+          'be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colorScheme.error,
+            ),
+            onPressed: () => ctx.pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      onDelete?.call();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +101,7 @@ class ItineraryCard extends StatelessWidget {
                               size: 18,
                               color: context.colorScheme.onSurfaceVariant,
                             ),
-                            onPressed: onDelete,
+                            onPressed: () => _confirmDelete(context),
                             padding: EdgeInsets.zero,
                             tooltip: 'Delete trip',
                           ),

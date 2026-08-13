@@ -532,4 +532,18 @@ With a real org in place:
 - [x] **Fixed** by adding the PostgREST relationship hint: `org_cost_field_sources!generated_field_id(source_field_id, position)`. Verified end-to-end against the live web build — `CostFieldPicker` now renders cleanly (empty, since Acme Corp has zero cost fields configured) and "Create Trip"/"Generate with Katha" show correctly below it.
 - **Not test-coverable by `flutter test`:** this bug is a live-Postgres query-shape error; every existing test for `fetchOrgCostFields` mocks the datasource method itself, never reaching the real `.select()` string, so nothing here was skippable-but-missed — this class of bug is structurally invisible to this repo's test suite. Live verification (as done here) is the only guard available; noting the pattern in case it recurs elsewhere `org_cost_field_sources`-shaped self-referencing tables get embedded.
 
-**Verification:** `flutter analyze --no-fatal-infos` — 11 issues, unchanged baseline. `flutter test` — **1088/1088 passing**, unchanged count (no test added — see above). `dart format` — clean. Not yet committed.
+**Verification:** `flutter analyze --no-fatal-infos` — 11 issues, unchanged baseline. `flutter test` — **1088/1088 passing**, unchanged count (no test added — see above). `dart format` — clean. Committed as `273f001`.
+
+## Incident: a real trip was deleted by automated testing, and the resulting fix (2026-08-13)
+
+While testing Personal↔Work Mode switching, a race in the test automation (blind toggle-then-navigate instead of checking persisted state first) left the wrong screen showing at the moment a delete tap fired, and the trash icon on the Home page's trip card was tapped on the user's real **"KumoTest"** trip instead of the disposable "WorkTripTest" test fixture. **The user confirmed it's fine to leave deleted and to continue** — no recovery attempted.
+
+Root cause investigated because it revealed a real, separate product gap:
+
+- [x] **Bug found — the Home/Trips list delete button had no confirmation at all**, unlike the detail page's own delete button (`itinerary_detail_page.dart`'s `_confirmDelete`, a proper `AlertDialog`). `ItineraryCard`'s trash `IconButton` called `onPressed: onDelete` directly — one tap, no dialog, hard `DELETE FROM itineraries` with cascading foreign keys (route segments, expenses, chat messages, notes, packing items — everything scoped to that trip). Used identically by both `home_page.dart` and `trips_page.dart`.
+- [x] **Fixed** by adding the same confirmation `AlertDialog` (matching the detail page's copy/style) directly inside `ItineraryCard`, so both call sites get it for free — `onPressed` now calls a new `_confirmDelete(context)` that only invokes the `onDelete` callback if the user taps "Delete". New `test/features/itinerary/presentation/widgets/itinerary_card_test.dart` (first coverage this widget has ever had) — 4 tests: no icon when `onDelete` is null, tapping shows the dialog without deleting, confirming deletes, cancelling doesn't.
+- [x] **Verified live** against the web build: dialog renders correctly with the real trip's name interpolated, Cancel dismisses without firing a DELETE request (confirmed via network-request logging, not just visually), leaving the trip intact.
+
+**Also hardened the test automation itself, not just the app**, since the automation's own flaw was the proximate cause: every subsequent script in this session's remaining scripts checks `localStorage`'s actual persisted `work_mode_<uid>` value before deciding whether to tap the toggle, rather than assuming a click always lands — see the reusable harness added below.
+
+**Verification:** `flutter analyze --no-fatal-infos` — 11 issues, unchanged baseline. `flutter test` — **1092/1092 passing** (+4 from the 1088 baseline above). `dart format` — clean. Not yet committed.
