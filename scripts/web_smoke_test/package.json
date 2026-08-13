@@ -1,0 +1,8 @@
+{
+  "name": "kumo-web-smoke-test",
+  "private": true,
+  "description": "Reusable Playwright driver for smoke-testing Kumo's Flutter web build against a real Supabase project — see README.md.",
+  "dependencies": {
+    "playwright-core": "^1.62.0"
+  }
+}

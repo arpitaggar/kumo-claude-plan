@@ -1,3 +1,11 @@
+# scripts/web_smoke_test — Playwright driver for smoke-testing the web
+# build (see its README.md). node_modules is regenerable via `npm install`;
+# auth.json holds a real logged-in session, never committed; screenshots are
+# throwaway run output.
+scripts/web_smoke_test/node_modules/
+scripts/web_smoke_test/auth.json
+scripts/web_smoke_test/screenshots/
+
 # Miscellaneous
 *.class
 *.log

@@ -546,4 +546,17 @@ Root cause investigated because it revealed a real, separate product gap:
 
 **Also hardened the test automation itself, not just the app**, since the automation's own flaw was the proximate cause: every subsequent script in this session's remaining scripts checks `localStorage`'s actual persisted `work_mode_<uid>` value before deciding whether to tap the toggle, rather than assuming a click always lands — see the reusable harness added below.
 
-**Verification:** `flutter analyze --no-fatal-infos` — 11 issues, unchanged baseline. `flutter test` — **1092/1092 passing** (+4 from the 1088 baseline above). `dart format` — clean. Not yet committed.
+**Verification:** `flutter analyze --no-fatal-infos` — 11 issues, unchanged baseline. `flutter test` — **1092/1092 passing** (+4 from the 1088 baseline above). `dart format` — clean. Committed as `b4f13d1`.
+
+## Reusable web smoke-test harness (2026-08-13)
+
+Requested directly ("automate as much as possible for future") — this whole session's smoke-testing had been ad hoc scratch scripts, rewritten and re-debugged from zero each time. New `scripts/web_smoke_test/` captures it as a documented, reusable tool instead.
+
+- [x] **`driver.js`** — the reusable Playwright library: `launch`/`tap`/`typeText`/`login`/`workModeState`/`ensureWorkMode`/`goHome`/`screenshot`. Every function's doc comment explains *why* it's shaped the way it is, not just what it does — each one exists because the "obviously correct" version was flaky in practice this session: `tap()`'s explicit press duration (a zero-delay `.click()` registers as a hover under CanvasKit, not a tap — the exact mechanism behind several apparently-random failures earlier in this session), `ensureWorkMode()`'s check-before-toggle (the direct cause of the KumoTest deletion incident above — a blind toggle assumed a state instead of reading it).
+- [x] **`README.md`** — setup, usage, and a dedicated safety section written directly off today's incident: never call a destructive action against a coordinate that isn't freshly re-verified this run, prefer disposable `SMOKETEST-`-prefixed fixtures over the account's real data, check persisted state before acting on it, treat irreversible actions (e.g. publishing) as always needing a fresh human go-ahead. Also documents real limitations: no accessible DOM (CanvasKit renders to one `<canvas>`, so every interaction is a raw pixel coordinate), custom URL schemes untestable on web, and that a bug not reproducing here doesn't mean it's web-only — two of this session's four bugs had web-specific *symptoms* but platform-agnostic *causes*.
+- [x] **`example_login_and_home.js`** — copy-and-start template for new scripts.
+- [x] **Verified the harness itself works**, not just written and assumed correct: ran it against the live web build, confirmed session reuse via `auth.json` and a real screenshot came back correctly.
+- `.gitignore` — `scripts/web_smoke_test/{node_modules,auth.json,screenshots}/` excluded (regenerable, a real session token, and throwaway output, respectively); `package.json`/`package-lock.json` committed for reproducibility.
+- Documented in `scripts/CLAUDE.md` alongside the existing icon-generation and git-hooks entries, matching this directory's established documentation convention.
+
+Not committed yet.
