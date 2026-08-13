@@ -51,6 +51,8 @@ dev_dependencies:
   flutter_secure_storage_platform_interface: ^2.0.3
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
   mocktail: ^1.0.5
   riverpod_generator: ^2.3.0
 
