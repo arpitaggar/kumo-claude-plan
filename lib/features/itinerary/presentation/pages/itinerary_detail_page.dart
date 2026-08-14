@@ -33,6 +33,7 @@ import '../providers/trip_segment_provider.dart';
 import '../widgets/cost_field_picker.dart';
 import '../widgets/segment_actions_sheet.dart';
 import '../widgets/segment_card.dart';
+import '../widgets/trip_theme_picker.dart';
 
 class ItineraryDetailPage extends ConsumerWidget {
   const ItineraryDetailPage({required this.id, super.key});
@@ -148,6 +149,27 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
     context.showSnackBar('Katha AI coming soon ✨');
   }
 
+  Future<void> _changeTheme() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _ThemePickerSheet(currentKey: it.themeKey),
+    );
+    if (selected == null || selected == it.themeKey || !mounted) {
+      return;
+    }
+    final result = await ref
+        .read(updateItineraryUseCaseProvider)
+        .call(it.copyWith(themeKey: selected));
+    result.fold((f) {
+      if (mounted) {
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) {});
+  }
+
   Future<void> _deleteItem(String itemId) async {
     final updated = it.copyWith(
       items: it.items.where((i) => i.id != itemId).toList(),
@@ -187,6 +209,12 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
             forceElevated: innerBoxIsScrolled,
             shadowColor: context.colorScheme.onSurface.withValues(alpha: 0.08),
             actions: [
+              if (canEdit)
+                IconButton(
+                  icon: const Icon(Icons.palette_outlined),
+                  tooltip: 'Change theme',
+                  onPressed: _changeTheme,
+                ),
               IconButton(
                 icon: const Icon(Icons.share_outlined),
                 tooltip: 'Share trip',
@@ -265,6 +293,7 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
               onDeleteItem: _deleteItem,
               onAddAiItems: canEdit ? _addAiItems : null,
               currentUserId: currentUserId,
+              canEdit: canEdit,
             ),
 
             // ── Route tab ──────────────────────────────────────────────────
@@ -288,6 +317,47 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
   }
 }
 
+/// Bottom sheet for changing an existing trip's theme — pops with the
+/// newly-selected key on tap, or null if dismissed without choosing.
+class _ThemePickerSheet extends StatelessWidget {
+  const _ThemePickerSheet({required this.currentKey});
+
+  final String currentKey;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: EdgeInsets.fromLTRB(
+      20,
+      20,
+      20,
+      MediaQuery.of(context).padding.bottom + 20,
+    ),
+    decoration: BoxDecoration(
+      color: context.colorScheme.surface,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Trip Theme',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: context.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        TripThemePicker(
+          selectedKey: currentKey,
+          onSelected: (key) => Navigator.of(context).pop(key),
+        ),
+      ],
+    ),
+  );
+}
+
 // ── Itinerary tab ─────────────────────────────────────────────────────────────
 
 class _ItineraryTab extends ConsumerWidget {
@@ -296,6 +366,7 @@ class _ItineraryTab extends ConsumerWidget {
     required this.duration,
     required this.onDeleteItem,
     required this.currentUserId,
+    required this.canEdit,
     this.onAddAiItems,
   });
 
@@ -303,176 +374,238 @@ class _ItineraryTab extends ConsumerWidget {
   final int duration;
   final Future<void> Function(String itemId) onDeleteItem;
   final String currentUserId;
+  final bool canEdit;
   final VoidCallback? onAddAiItems;
 
+  Future<void> _pickDate(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool isStart,
+  }) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? itinerary.startDate : itinerary.endDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    if (picked == null || !context.mounted) {
+      return;
+    }
+
+    var newStart = itinerary.startDate;
+    var newEnd = itinerary.endDate;
+    if (isStart) {
+      newStart = picked;
+      if (newEnd.isBefore(newStart)) {
+        newEnd = newStart.add(const Duration(days: 1));
+      }
+    } else {
+      if (picked.isBefore(newStart)) {
+        context.showSnackBar(
+          "End date can't be before the start date",
+          isError: true,
+        );
+        return;
+      }
+      newEnd = picked;
+    }
+
+    final result = await ref
+        .read(updateItineraryUseCaseProvider)
+        .call(itinerary.copyWith(startDate: newStart, endDate: newEnd));
+    result.fold((f) {
+      if (context.mounted) {
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) {});
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-    children: [
-      // Overview pill row
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: context.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Expanded(
-              child: _InfoPill(
-                icon: Icons.calendar_today_outlined,
-                label: 'Start',
-                value: Formatters.formatDate(itinerary.startDate),
-              ),
-            ),
-            _Divider(),
-            Expanded(
-              child: _InfoPill(
-                icon: Icons.event_outlined,
-                label: 'End',
-                value: Formatters.formatDate(itinerary.endDate),
-              ),
-            ),
-            _Divider(),
-            Expanded(
-              child: _InfoPill(
-                icon: Icons.schedule_outlined,
-                label: 'Duration',
-                value: '$duration ${duration == 1 ? 'day' : 'days'}',
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Dates only stay editable while the trip is still a draft — once
+    // active/completed/archived, members may already be relying on the
+    // dates (route segments, expense periods, notifications), so changing
+    // them silently underneath a shared trip isn't safe to allow inline.
+    final datesEditable =
+        canEdit && itinerary.status == ItineraryStatusEnum.draft;
 
-      const SizedBox(height: 12),
-      _StatusRow(itinerary: itinerary, currentUserId: currentUserId),
-
-      if (itinerary.description != null &&
-          itinerary.description!.isNotEmpty) ...[
-        const SizedBox(height: 12),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+      children: [
+        // Overview pill row
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: context.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Text(
-            itinerary.description!,
-            style: TextStyle(
-              fontSize: 14,
-              color: context.colorScheme.onSurfaceVariant,
-              height: 1.5,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Expanded(
+                child: _InfoPill(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Start',
+                  value: Formatters.formatDate(itinerary.startDate),
+                  onTap: datesEditable
+                      ? () => _pickDate(context, ref, isStart: true)
+                      : null,
+                ),
+              ),
+              _Divider(),
+              Expanded(
+                child: _InfoPill(
+                  icon: Icons.event_outlined,
+                  label: 'End',
+                  value: Formatters.formatDate(itinerary.endDate),
+                  onTap: datesEditable
+                      ? () => _pickDate(context, ref, isStart: false)
+                      : null,
+                ),
+              ),
+              _Divider(),
+              Expanded(
+                child: _InfoPill(
+                  icon: Icons.schedule_outlined,
+                  label: 'Duration',
+                  value: '$duration ${duration == 1 ? 'day' : 'days'}',
+                ),
+              ),
+            ],
           ),
         ),
-      ],
 
-      const SizedBox(height: 20),
+        const SizedBox(height: 12),
+        _StatusRow(itinerary: itinerary, currentUserId: currentUserId),
 
-      // Schedule header
-      Row(
-        children: [
-          Text(
-            'Schedule',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: context.colorScheme.onSurface,
+        if (itinerary.description != null &&
+            itinerary.description!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: context.colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              itinerary.description!,
+              style: TextStyle(
+                fontSize: 14,
+                color: context.colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
             ),
           ),
-          const Spacer(),
-          if (onAddAiItems != null) ...[
+        ],
+
+        const SizedBox(height: 20),
+
+        // Schedule header
+        Row(
+          children: [
+            Text(
+              'Schedule',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: context.colorScheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            if (onAddAiItems != null) ...[
+              TextButton.icon(
+                onPressed: onAddAiItems,
+                icon: const Icon(Icons.auto_awesome, size: 15),
+                label: const Text('Katha'),
+                style: TextButton.styleFrom(
+                  foregroundColor: context.colorScheme.primary,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              const SizedBox(width: 2),
+            ],
             TextButton.icon(
-              onPressed: onAddAiItems,
-              icon: const Icon(Icons.auto_awesome, size: 15),
-              label: const Text('Katha'),
+              onPressed: () => context.push('/trip/${itinerary.id}/item'),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add'),
               style: TextButton.styleFrom(
                 foregroundColor: context.colorScheme.primary,
                 visualDensity: VisualDensity.compact,
               ),
             ),
-            const SizedBox(width: 2),
           ],
-          TextButton.icon(
-            onPressed: () => context.push('/trip/${itinerary.id}/item'),
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('Add'),
-            style: TextButton.styleFrom(
-              foregroundColor: context.colorScheme.primary,
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-
-      if (itinerary.items.isEmpty)
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: context.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Center(
-            child: Column(
-              children: [
-                Icon(
-                  Icons.map_outlined,
-                  size: 36,
-                  color: context.colorScheme.outlineVariant,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'No activities yet',
-                  style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-        )
-      else
-        ...itinerary.items.map(
-          (item) => _ScheduleItem(
-            item: item,
-            isLast: item == itinerary.items.last,
-            onEdit: () => context.push('/trip/${itinerary.id}/item/${item.id}'),
-            onDelete: () => onDeleteItem(item.id),
-          ),
         ),
+        const SizedBox(height: 8),
 
-      const SizedBox(height: 20),
-
-      // Members
-      Row(
-        children: [
-          Text(
-            'Travellers',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: context.colorScheme.onSurface,
+        if (itinerary.items.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: context.colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.map_outlined,
+                    size: 36,
+                    color: context.colorScheme.outlineVariant,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No activities yet',
+                    style: TextStyle(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ...itinerary.items.map(
+            (item) => _ScheduleItem(
+              item: item,
+              isLast: item == itinerary.items.last,
+              onEdit: () =>
+                  context.push('/trip/${itinerary.id}/item/${item.id}'),
+              onDelete: () => onDeleteItem(item.id),
             ),
           ),
-          const Spacer(),
-          TextButton.icon(
-            onPressed: () => context.push('/trip/${itinerary.id}/invite'),
-            icon: const Icon(Icons.person_add_outlined, size: 16),
-            label: const Text('Invite'),
-            style: TextButton.styleFrom(
-              foregroundColor: context.colorScheme.primary,
-              visualDensity: VisualDensity.compact,
+
+        const SizedBox(height: 20),
+
+        // Members
+        Row(
+          children: [
+            Text(
+              'Travellers',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: context.colorScheme.onSurface,
+              ),
             ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-      _MembersCard(itinerary: itinerary, currentUserId: currentUserId),
-      const SizedBox(height: 20),
-      _TripEmailCard(itineraryId: itinerary.id),
-    ],
-  );
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => context.push('/trip/${itinerary.id}/invite'),
+              icon: const Icon(Icons.person_add_outlined, size: 16),
+              label: const Text('Invite'),
+              style: TextButton.styleFrom(
+                foregroundColor: context.colorScheme.primary,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _MembersCard(itinerary: itinerary, currentUserId: currentUserId),
+        const SizedBox(height: 20),
+        _TripEmailCard(itineraryId: itinerary.id),
+      ],
+    );
+  }
 }
 
 // ── Route tab ──────────────────────────────────────────────────────────────────
@@ -2068,38 +2201,72 @@ class _InfoPill extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final String value;
 
+  /// Non-null makes this pill tappable (draft-mode start/end dates) — shows
+  /// a small edit-pencil next to the label so it's discoverable as
+  /// editable rather than looking identical to the read-only Duration pill
+  /// beside it.
+  final VoidCallback? onTap;
+
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Icon(icon, size: 16, color: context.colorScheme.onSurfaceVariant),
-      const SizedBox(height: 4),
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          color: context.colorScheme.onSurfaceVariant,
+  Widget build(BuildContext context) {
+    final content = Column(
+      children: [
+        Icon(icon, size: 16, color: context.colorScheme.onSurfaceVariant),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (onTap != null) ...[
+              const SizedBox(width: 3),
+              Icon(
+                Icons.edit,
+                size: 10,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ],
         ),
-      ),
-      const SizedBox(height: 2),
-      Text(
-        value,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: context.colorScheme.onSurface,
+        const SizedBox(height: 2),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: context.colorScheme.onSurface,
+          ),
         ),
+      ],
+    );
+
+    if (onTap == null) {
+      return content;
+    }
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: content,
       ),
-    ],
-  );
+    );
+  }
 }
 
 class _Divider extends StatelessWidget {

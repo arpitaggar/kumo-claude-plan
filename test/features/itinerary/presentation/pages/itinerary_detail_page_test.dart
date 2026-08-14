@@ -49,27 +49,45 @@ const _summary = ExpenseSummary(
   memberBalances: {},
 );
 
-TravelItinerary _trip({required bool isPublic, String ownerId = 'user-1'}) =>
-    TravelItinerary(
-      id: 'trip-1',
-      title: 'KumoTest',
-      ownerId: ownerId,
-      startDate: DateTime.utc(2026, 6, 8),
-      endDate: DateTime.utc(2026, 6, 15),
-      totalBudget: 9000,
-      currencyCode: AppConstants.defaultCurrency,
-      members: const [],
-      items: const [],
-      expenseSummary: _summary,
-      createdAt: DateTime.utc(2026),
-      updatedAt: DateTime.utc(2026),
-      isPublic: isPublic,
-    );
+TravelItinerary _trip({
+  required bool isPublic,
+  String ownerId = 'user-1',
+  ItineraryStatusEnum status = ItineraryStatusEnum.draft,
+  List<GroupMember> members = const [],
+}) => TravelItinerary(
+  id: 'trip-1',
+  title: 'KumoTest',
+  ownerId: ownerId,
+  startDate: DateTime.utc(2026, 6, 8),
+  endDate: DateTime.utc(2026, 6, 15),
+  totalBudget: 9000,
+  currencyCode: AppConstants.defaultCurrency,
+  members: members,
+  items: const [],
+  expenseSummary: _summary,
+  createdAt: DateTime.utc(2026),
+  updatedAt: DateTime.utc(2026),
+  isPublic: isPublic,
+  status: status,
+);
+
+/// An editor-role membership for 'user-1' — canEdit in the real page
+/// requires the current user to actually appear in `members` with a
+/// non-viewer role, which the bare `_trip()` fixture above deliberately
+/// doesn't include (existing tests don't need edit-gated UI).
+final _editorMember = GroupMember(
+  userId: 'user-1',
+  userName: 'Arpit',
+  role: GroupMemberRole.editor,
+  joinedAt: DateTime.utc(2026),
+);
 
 Future<void> _pump(
   WidgetTester tester, {
   required bool isPublic,
   String ownerId = 'user-1',
+  ItineraryStatusEnum status = ItineraryStatusEnum.draft,
+  List<GroupMember> members = const [],
 }) async {
   final authRepo = MockAuthRepository();
   when(authRepo.getCurrentUser).thenAnswer(
@@ -97,7 +115,14 @@ Future<void> _pump(
           ),
         ),
         itineraryStreamProvider('trip-1').overrideWith(
-          (ref) => Stream.value(_trip(isPublic: isPublic, ownerId: ownerId)),
+          (ref) => Stream.value(
+            _trip(
+              isPublic: isPublic,
+              ownerId: ownerId,
+              status: status,
+              members: members,
+            ),
+          ),
         ),
       ],
       child: const MaterialApp(home: ItineraryDetailPage(id: 'trip-1')),
@@ -166,4 +191,113 @@ void main() {
       );
     },
   );
+
+  group('editable dates (draft mode)', () {
+    testWidgets(
+      'an editor on a draft trip can tap Start to open the date picker',
+      (tester) async {
+        await _pump(tester, isPublic: false, members: [_editorMember]);
+
+        await tester.tap(find.text('Start'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DatePickerDialog), findsOneWidget);
+      },
+    );
+
+    testWidgets('an editor on a draft trip can tap End to open the date '
+        'picker', (tester) async {
+      await _pump(tester, isPublic: false, members: [_editorMember]);
+
+      await tester.tap(find.text('End'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DatePickerDialog), findsOneWidget);
+    });
+
+    testWidgets(
+      'dates are not tappable once the trip is no longer a draft, even '
+      'for an editor',
+      (tester) async {
+        await _pump(
+          tester,
+          isPublic: false,
+          status: ItineraryStatusEnum.active,
+          members: [_editorMember],
+        );
+
+        await tester.tap(find.text('Start'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DatePickerDialog), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'dates are not tappable for a viewer-role member, even in draft',
+      (tester) async {
+        await _pump(
+          tester,
+          isPublic: false,
+          members: [
+            GroupMember(
+              userId: 'user-1',
+              userName: 'Arpit',
+              role: GroupMemberRole.viewer,
+              joinedAt: DateTime.utc(2026),
+            ),
+          ],
+        );
+
+        await tester.tap(find.text('Start'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DatePickerDialog), findsNothing);
+      },
+    );
+  });
+
+  group('editable theme', () {
+    testWidgets('an editor sees a "Change theme" action in the app bar', (
+      tester,
+    ) async {
+      await _pump(tester, isPublic: false, members: [_editorMember]);
+
+      expect(find.byTooltip('Change theme'), findsOneWidget);
+    });
+
+    testWidgets(
+      'the theme action is available even once the trip is no longer a '
+      'draft — unlike dates, theme is cosmetic and safe to change any time',
+      (tester) async {
+        await _pump(
+          tester,
+          isPublic: false,
+          status: ItineraryStatusEnum.active,
+          members: [_editorMember],
+        );
+
+        expect(find.byTooltip('Change theme'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a non-owner/non-member never sees the theme action', (
+      tester,
+    ) async {
+      await _pump(tester, isPublic: false, ownerId: 'someone-else');
+
+      expect(find.byTooltip('Change theme'), findsNothing);
+    });
+
+    testWidgets('tapping "Change theme" opens the theme picker sheet', (
+      tester,
+    ) async {
+      await _pump(tester, isPublic: false, members: [_editorMember]);
+
+      await tester.tap(find.byTooltip('Change theme'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Trip Theme'), findsOneWidget);
+    });
+  });
 }
