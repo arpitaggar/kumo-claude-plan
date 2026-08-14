@@ -35,6 +35,7 @@ void main() {
     repository = AuthRepositoryImpl(
       remoteDataSource: remote,
       localDataSource: local,
+      sessionRestoreRetryDelay: Duration.zero,
     );
   });
 
@@ -390,14 +391,35 @@ void main() {
       result.fold((_) => fail('expected Right'), (user) => expect(user, tUser));
     });
 
+    test('falls back to the cached user when the remote call never finds a '
+        'session, even after retrying', () async {
+      when(() => remote.getCurrentUser()).thenAnswer((_) async => null);
+      when(() => local.getCachedUser()).thenAnswer((_) async => tUser);
+
+      final result = await repository.getCurrentUser();
+
+      verify(() => remote.getCurrentUser()).called(11); // 1 + 10 retries
+      result.fold((_) => fail('expected Right'), (user) => expect(user, tUser));
+    });
+
     test(
-      'falls back to the cached user when the remote call finds none',
+      'regression: retries a still-in-flight Supabase session restore '
+      'instead of immediately falling back to the offline cache — a race '
+      'that let myOrganizationsProvider permanently cache an empty org '
+      'list, found via a real-device integration test (2026-08-14)',
       () async {
-        when(() => remote.getCurrentUser()).thenAnswer((_) async => null);
-        when(() => local.getCachedUser()).thenAnswer((_) async => tUser);
+        var calls = 0;
+        when(() => remote.getCurrentUser()).thenAnswer((_) async {
+          calls++;
+          return calls < 3 ? null : tUser;
+        });
+        when(() => local.cacheUser(any())).thenAnswer((_) async {});
 
         final result = await repository.getCurrentUser();
 
+        expect(calls, 3);
+        verifyNever(() => local.getCachedUser());
+        verify(() => local.cacheUser(tUser)).called(1);
         result.fold(
           (_) => fail('expected Right'),
           (user) => expect(user, tUser),

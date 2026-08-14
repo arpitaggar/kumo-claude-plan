@@ -1,11 +1,38 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kumo_claude/features/auth/domain/entities/user.dart';
+import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kumo_claude/features/auth/domain/usecases/delete_account_usecase.dart';
+import 'package:kumo_claude/features/auth/domain/usecases/login_usecase.dart';
+import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';
+import 'package:kumo_claude/features/auth/domain/usecases/signup_usecase.dart';
+import 'package:kumo_claude/features/auth/presentation/providers/auth_provider.dart';
+import 'package:kumo_claude/features/gamification/presentation/providers/gamification_provider.dart';
 import 'package:kumo_claude/features/shell/profile_page.dart';
 import 'package:kumo_claude/features/work_mode/presentation/providers/work_mode_provider.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_helpers.dart';
+
+// These tests are about Work Mode tile visibility, not auth — overriding
+// authNotifierProvider with a repository that resolves immediately (rather
+// than leaving the real AuthRepositoryImpl wired up) keeps them from
+// depending on AuthRepositoryImpl.getCurrentUser()'s session-restore-retry
+// loop (see that method's doc comment), which needs real pumped time this
+// helper's plain pumpAndSettle() doesn't give it.
+class MockAuthRepository extends Mock implements AuthRepository {}
+
+class MockLoginUseCase extends Mock implements LoginUseCase {}
+
+class MockSignupUseCase extends Mock implements SignupUseCase {}
+
+class MockLogoutUseCase extends Mock implements LogoutUseCase {}
+
+class MockDeleteAccountUseCase extends Mock implements DeleteAccountUseCase {}
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -24,11 +51,40 @@ Future<void> _pump(
     routes: [GoRoute(path: '/profile', builder: (_, _) => const ProfilePage())],
   );
 
+  final authRepo = MockAuthRepository();
+  when(authRepo.getCurrentUser).thenAnswer(
+    (_) async => Right(
+      User(
+        id: 'user-1',
+        email: 'u@example.com',
+        displayName: 'Arpit',
+        createdAt: DateTime.utc(2026),
+      ),
+    ),
+  );
+
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         isWorkModeAvailableProvider.overrideWithValue(available),
         isWorkModeActiveProvider.overrideWithValue(active),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        authNotifierProvider.overrideWith(
+          (ref) => AuthNotifier(
+            loginUseCase: MockLoginUseCase(),
+            signupUseCase: MockSignupUseCase(),
+            logoutUseCase: MockLogoutUseCase(),
+            deleteAccountUseCase: MockDeleteAccountUseCase(),
+            repository: authRepo,
+          ),
+        ),
+        // ProfilePage renders GamificationCard, which now actually fires
+        // (previously masked by authNotifierProvider never resolving to a
+        // real user in this test) — not what these tests are about.
+        xpEventsProvider.overrideWith((ref) async => const []),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),

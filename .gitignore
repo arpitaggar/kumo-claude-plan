@@ -31,6 +31,11 @@ env.local.json
 env.*.json
 !env.example.json
 
+# Dedicated test-account credentials for integration_test/ authenticated
+# coverage (see integration_test/README.md's safety section) — never the
+# developer's own account, never committed.
+integration_test/test_account.json
+
 # Firebase platform config — contains a per-app API key. Not a traditional
 # secret (Google's own guidance is that these are safe to ship in a client
 # binary), but keeping it out of git avoids tripping secret scanners and
