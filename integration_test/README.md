@@ -14,10 +14,19 @@ for the web/CanvasKit renderer.
 flutter test integration_test/app_test.dart -d macos --dart-define-from-file=env.local.json
 ```
 
-Swap `-d macos` for `-d chrome`, a simulator UDID (`xcrun simctl list
-devices`), or a connected device from `flutter devices`. Needs a real
-`env.local.json` (see `env.example.json`) — same file the app's own manual
-builds use.
+Swap `-d macos` for a simulator/emulator UDID (`xcrun simctl list devices`
+for iOS, `flutter emulators --launch <id>` for Android) or a connected
+device from `flutter devices`. Needs a real `env.local.json` (see
+`env.example.json`) — same file the app's own manual builds use.
+
+**Web is not supported** — `flutter test -d chrome` fails outright
+("Web devices are not supported for integration tests yet"), a Flutter
+platform limitation as of this SDK version, not something wrong with this
+suite. Getting web coverage would mean the older `flutter drive
+--driver=test_driver/integration_test.dart` pathway plus a matching
+`chromedriver` binary (not installed on this machine) — not worth
+duplicating given `scripts/web_smoke_test/` already covers web
+deliberately. If that changes upstream, revisit.
 
 ## What's covered today
 
@@ -26,6 +35,15 @@ real app, lets the real Supabase session check resolve (no session found on
 a clean machine), and confirms it lands on the login page. This exercises
 the full real startup path (`Supabase.initialize`, secure-storage session
 lookup, routing) without creating, modifying, or reading any account data.
+
+**Verified passing on all 3 native targets** (2026-08-14): macOS desktop,
+an iOS simulator (iPhone 17 Pro, iOS 26.5), and an Android emulator (Pixel
+6, API 33) — each a real, separate app build/install/launch, not just the
+same run reused. iOS pulled in CocoaPods for `google_maps_flutter_ios`
+only (expected — see the root `CLAUDE.md`/`macos/.gitignore` on why iOS
+still needs it after macOS dropped CocoaPods entirely). Android additionally
+exercises the `Firebase.initializeApp()` branch of `main()`, which
+macOS/iOS (outside `kIosPushReady`) skip.
 
 ## Safety rules — read before adding a test that logs in or touches data
 

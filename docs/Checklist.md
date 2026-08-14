@@ -608,4 +608,18 @@ This project had `flutter test` widget-test coverage (mocked providers/usecases,
 - [x] **New `integration_test/README.md`** — how to run, and a safety-rules section mirroring `scripts/web_smoke_test/README.md`'s (written after this project's real-trip-deletion incident): no logging into a real personal account without explicit sign-off, dedicated test-account credentials via `--dart-define` if authenticated coverage is added, disposable `SMOKETEST-`-prefixed fixtures, no CI runs these (this project has none) so they're a manual local verification step.
 - **Deliberately not attempted this pass**: authenticated-flow coverage (login, trip creation, etc.) — needs either a dedicated test account or explicit sign-off to use a real one, not decided unilaterally, consistent with how the live web-smoke-test scope question was handled earlier this session.
 
-**Verification:** `flutter analyze --no-fatal-infos integration_test/` — 0 issues. `flutter test integration_test/app_test.dart -d macos --dart-define-from-file=env.local.json` — 1/1 passing. Not yet committed.
+**Verification:** `flutter analyze --no-fatal-infos integration_test/` — 0 issues. `flutter test integration_test/app_test.dart -d macos --dart-define-from-file=env.local.json` — 1/1 passing. Committed as `49249c8`.
+
+## Integration test: multi-platform verification (2026-08-14)
+
+Ran the same `app_test.dart` (unchanged, still read-only/unauthenticated) against every native target this environment can actually reach, to confirm the harness isn't a macOS-only fluke:
+
+- [x] **macOS** — already verified above.
+- [x] **iOS simulator** (booted iPhone 17 Pro, iOS 26.5, via `xcrun simctl boot`) — passes. Pulled in CocoaPods only for `google_maps_flutter_ios` (no SPM support), matching the asymmetry already documented for the macOS CocoaPods removal above — expected, not a regression.
+- [x] **Android emulator** (Pixel 6, API 33, via `flutter emulators --launch`) — passes. Additionally exercises `main()`'s `Firebase.initializeApp()` branch, which macOS/iOS (outside `kIosPushReady`) don't reach — first time that code path has run under any automated test in this project.
+- **Web: not supported by this Flutter SDK's `flutter test -d <device>` runner at all** ("Web devices are not supported for integration tests yet") — a Flutter platform limitation, not a bug in this suite. The alternative (`flutter drive` + a matching `chromedriver` binary) isn't installed and wasn't added, since `scripts/web_smoke_test/` already covers web deliberately via a different, purpose-built mechanism — installing a second, redundant web-testing pathway wasn't judged worth it.
+- Both booted devices shut down after the run (`xcrun simctl shutdown`, `adb emu kill`) rather than left running.
+
+**Still blocked, not decided unilaterally:** authenticated-flow coverage (Work Mode, trip creation, Hitchhiker, chat, Inbox filtering — the flows `scripts/web_smoke_test/` previously found real bugs in) needs either a dedicated test account or explicit sign-off to use a real one. Asked directly, twice; not yet answered.
+
+**Verification:** `flutter test integration_test/app_test.dart` — 1/1 passing on macOS, iOS simulator, and Android emulator (3 separate runs, 3 separate app builds). Not yet committed.
