@@ -324,8 +324,8 @@ class _ModeIconMarker extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: _DirectionArrow(
-                    color: colorScheme.primary,
-                    outlineColor: colorScheme.surface,
+                    color: colorScheme.surface,
+                    outlineColor: colorScheme.primary,
                   ),
                 ),
               ),
@@ -504,8 +504,8 @@ Future<_RouteBitmaps> _loadRouteBitmaps(
   }
 
   final directionArrow = await directionArrowBitmap(
-    color: colorScheme.primary,
-    outlineColor: colorScheme.surface,
+    color: colorScheme.surface,
+    outlineColor: colorScheme.primary,
   );
 
   return _RouteBitmaps(
