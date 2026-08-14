@@ -4,7 +4,6 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/kumo_avatar.dart';
 import '../../../itinerary/domain/entities/trip_theme.dart';
-import '../../../itinerary/presentation/extensions/trip_theme_context_extension.dart';
 import '../../domain/entities/itinerary_post.dart';
 
 /// A published itinerary snapshot, as it appears in the feed or on a public
@@ -35,7 +34,7 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = TripTheme.forKey(post.themeKey).withContext(context);
+    final theme = TripTheme.forKey(post.themeKey);
     return Material(
       color: context.colorScheme.surface,
       borderRadius: BorderRadius.circular(20),

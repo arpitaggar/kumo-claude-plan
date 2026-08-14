@@ -258,6 +258,69 @@ void main() {
     });
   });
 
+  group('updateItinerary', () {
+    // Regression coverage: a direct call to updateItineraryUseCaseProvider
+    // from the detail page (theme/date/status/publish edits, etc.) used to
+    // update the backend row without ever touching itineraryListProvider's
+    // cached snapshot, so Home/Trips cards kept showing pre-edit data
+    // (e.g. the trip's theme at creation time) until an unrelated refresh
+    // happened to re-fetch the list. This method exists specifically to
+    // close that gap.
+    test(
+      'patches the matching trip into an already-loaded list on success',
+      () async {
+        when(
+          () => fetchUseCase('user-1'),
+        ).thenAnswer((_) async => Right([_trip('keep'), _trip('trip-1')]));
+        await notifier.loadItineraries('user-1');
+
+        final updated = _trip('trip-1').copyWith(themeKey: 'tropical');
+        when(
+          () => updateUseCase(updated),
+        ).thenAnswer((_) async => Right(updated));
+
+        final result = await notifier.updateItinerary(updated);
+
+        expect(result, Right(updated));
+        final state = notifier.state;
+        expect(state, isA<ItineraryListLoaded>());
+        final patched = (state as ItineraryListLoaded).itineraries.firstWhere(
+          (i) => i.id == 'trip-1',
+        );
+        expect(patched.themeKey, 'tropical');
+      },
+    );
+
+    test(
+      'leaves the cached list untouched on failure — a failed single-field '
+      'edit should not blow away an otherwise-good list into an error state',
+      () async {
+        when(
+          () => fetchUseCase('user-1'),
+        ).thenAnswer((_) async => Right([_trip('trip-1')]));
+        await notifier.loadItineraries('user-1');
+
+        final updated = _trip('trip-1').copyWith(themeKey: 'tropical');
+        when(
+          () => updateUseCase(updated),
+        ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
+
+        final result = await notifier.updateItinerary(updated);
+
+        expect(
+          result,
+          const Left<Failure, TravelItinerary>(ServerFailure('DB error')),
+        );
+        final state = notifier.state;
+        expect(state, isA<ItineraryListLoaded>());
+        expect(
+          (state as ItineraryListLoaded).itineraries.single.themeKey,
+          isNot('tropical'),
+        );
+      },
+    );
+  });
+
   group('deleteItinerary', () {
     test('removes the trip from an already-loaded list on success', () async {
       when(

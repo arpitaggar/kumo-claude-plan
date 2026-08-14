@@ -25,7 +25,6 @@ import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_segment.dart';
 import '../../domain/entities/trip_theme.dart';
 import '../../domain/trip_segment_order.dart';
-import '../extensions/trip_theme_context_extension.dart';
 import '../providers/itinerary_provider.dart';
 import '../providers/trip_cost_field_value_provider.dart';
 import '../providers/trip_email_alias_provider.dart';
@@ -161,8 +160,8 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
       return;
     }
     final result = await ref
-        .read(updateItineraryUseCaseProvider)
-        .call(it.copyWith(themeKey: selected));
+        .read(itineraryListProvider.notifier)
+        .updateItinerary(it.copyWith(themeKey: selected));
     result.fold((f) {
       if (mounted) {
         context.showSnackBar(f.message, isError: true);
@@ -174,7 +173,9 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
     final updated = it.copyWith(
       items: it.items.where((i) => i.id != itemId).toList(),
     );
-    final result = await ref.read(updateItineraryUseCaseProvider).call(updated);
+    final result = await ref
+        .read(itineraryListProvider.notifier)
+        .updateItinerary(updated);
     result.fold((f) {
       if (mounted) {
         context.showSnackBar(f.message, isError: true);
@@ -195,122 +196,150 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
         .firstOrNull;
     final canEdit = member != null && member.role != GroupMemberRole.viewer;
 
-    final tripTheme = TripTheme.forKey(it.themeKey).withContext(context);
+    final tripTheme = TripTheme.forKey(it.themeKey);
+    // A trip's theme is its own self-contained look — it must never blend
+    // with (or get swallowed by) whichever app-wide KumoTheme is active,
+    // light or dark. ColorScheme.fromSeed derives a complete, harmonious,
+    // accessible scheme from the theme's single hand-picked accent color;
+    // wrapping the page in a Theme override below cascades it to every
+    // descendant here (the tabs, the header's nested builder closure) that
+    // reads context.colorScheme, without having to hunt down and swap each
+    // one individually. Dialogs/sheets opened from within (delete
+    // confirmation, date picker, the theme picker itself) are inserted at
+    // the Navigator/Overlay level and correctly fall outside this
+    // override, staying on the app's own theme — the right split, since
+    // those are system-level interactions, not trip content.
+    // brightness defaults to Brightness.light — left implicit, but that
+    // default is exactly the point: every trip theme is light regardless
+    // of whether the app-wide KumoTheme (e.g. Synthwave Tokyo) is dark.
+    final tripColorScheme = ColorScheme.fromSeed(seedColor: tripTheme.primary);
 
-    return Scaffold(
-      backgroundColor: tripTheme.backgroundTint,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverAppBar(
-            backgroundColor: tripTheme.backgroundTint,
-            foregroundColor: context.colorScheme.onSurface,
-            pinned: true,
-            expandedHeight: 140,
-            forceElevated: innerBoxIsScrolled,
-            shadowColor: context.colorScheme.onSurface.withValues(alpha: 0.08),
-            actions: [
-              if (canEdit)
+    return Theme(
+      data: Theme.of(context).copyWith(colorScheme: tripColorScheme),
+      child: Scaffold(
+        backgroundColor: tripTheme.backgroundTint,
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverAppBar(
+              backgroundColor: tripTheme.backgroundTint,
+              foregroundColor: context.colorScheme.onSurface,
+              pinned: true,
+              expandedHeight: 140,
+              forceElevated: innerBoxIsScrolled,
+              shadowColor: context.colorScheme.onSurface.withValues(
+                alpha: 0.08,
+              ),
+              actions: [
+                if (canEdit)
+                  IconButton(
+                    icon: const Icon(Icons.palette_outlined),
+                    tooltip: 'Change theme',
+                    onPressed: _changeTheme,
+                  ),
                 IconButton(
-                  icon: const Icon(Icons.palette_outlined),
-                  tooltip: 'Change theme',
-                  onPressed: _changeTheme,
+                  icon: const Icon(Icons.share_outlined),
+                  tooltip: 'Share trip',
+                  onPressed: _shareTrip,
                 ),
-              IconButton(
-                icon: const Icon(Icons.share_outlined),
-                tooltip: 'Share trip',
-                onPressed: _shareTrip,
-              ),
-              IconButton(
-                icon: const Icon(Icons.chat_bubble_outline),
-                tooltip: 'Trip chat',
-                onPressed: () => context.push('/trip/${it.id}/chat'),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                tooltip: 'Delete trip',
-                onPressed: _confirmDelete,
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 56),
-              title: Text(
-                it.title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: context.colorScheme.onSurface,
+                IconButton(
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  tooltip: 'Trip chat',
+                  onPressed: () => context.push('/trip/${it.id}/chat'),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Delete trip',
+                  onPressed: _confirmDelete,
+                ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsetsDirectional.fromSTEB(
+                  20,
+                  0,
+                  16,
+                  56,
+                ),
+                title: Text(
+                  it.title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: context.colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                background: Hero(
+                  tag: 'trip-header-${it.id}',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: tripTheme.headerGradient,
+                    ),
+                  ),
+                ),
               ),
-              background: Hero(
-                tag: 'trip-header-${it.id}',
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(46),
                 child: Container(
-                  decoration: BoxDecoration(gradient: tripTheme.headerGradient),
+                  color: context.colorScheme.surface,
+                  child: TabBar(
+                    controller: _tabs,
+                    labelColor: tripTheme.primary,
+                    unselectedLabelColor: context.colorScheme.onSurfaceVariant,
+                    indicatorColor: tripTheme.primary,
+                    labelStyle: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                    ),
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    tabs: const [
+                      Tab(text: 'Itinerary'),
+                      Tab(text: 'Route'),
+                      Tab(text: 'Notes'),
+                      Tab(text: 'Expenses'),
+                      Tab(text: 'Reviews'),
+                      Tab(text: 'Packing'),
+                    ],
+                  ),
                 ),
               ),
             ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(46),
-              child: Container(
-                color: context.colorScheme.surface,
-                child: TabBar(
-                  controller: _tabs,
-                  labelColor: tripTheme.primary,
-                  unselectedLabelColor: context.colorScheme.onSurfaceVariant,
-                  indicatorColor: tripTheme.primary,
-                  labelStyle: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                  ),
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  tabs: const [
-                    Tab(text: 'Itinerary'),
-                    Tab(text: 'Route'),
-                    Tab(text: 'Notes'),
-                    Tab(text: 'Expenses'),
-                    Tab(text: 'Reviews'),
-                    Tab(text: 'Packing'),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-        body: TabBarView(
-          controller: _tabs,
-          children: [
-            // ── Itinerary tab ──────────────────────────────────────────────
-            _ItineraryTab(
-              itinerary: it,
-              duration: duration,
-              onDeleteItem: _deleteItem,
-              onAddAiItems: canEdit ? _addAiItems : null,
-              currentUserId: currentUserId,
-              canEdit: canEdit,
-            ),
-
-            // ── Route tab ──────────────────────────────────────────────────
-            _RouteTab(itinerary: it),
-
-            // ── Notes tab ─────────────────────────────────────────────────
-            _NotesTab(itinerary: it, currentUserId: currentUserId),
-
-            // ── Expenses tab ───────────────────────────────────────────────
-            _ExpensesTab(itinerary: it),
-
-            // ── Reviews tab ────────────────────────────────────────────────
-            _ReviewsTab(itinerary: it),
-
-            // ── Notes tab ─────────────────────────────────────────────────
-            _PackingTab(itinerary: it, currentUserId: currentUserId),
           ],
+          body: TabBarView(
+            controller: _tabs,
+            children: [
+              // ── Itinerary tab ──────────────────────────────────────────────
+              _ItineraryTab(
+                itinerary: it,
+                duration: duration,
+                onDeleteItem: _deleteItem,
+                onAddAiItems: canEdit ? _addAiItems : null,
+                currentUserId: currentUserId,
+                canEdit: canEdit,
+              ),
+
+              // ── Route tab ──────────────────────────────────────────────────
+              _RouteTab(itinerary: it),
+
+              // ── Notes tab ─────────────────────────────────────────────────
+              _NotesTab(itinerary: it, currentUserId: currentUserId),
+
+              // ── Expenses tab ───────────────────────────────────────────────
+              _ExpensesTab(itinerary: it),
+
+              // ── Reviews tab ────────────────────────────────────────────────
+              _ReviewsTab(itinerary: it),
+
+              // ── Notes tab ─────────────────────────────────────────────────
+              _PackingTab(itinerary: it, currentUserId: currentUserId),
+            ],
+          ),
         ),
       ),
     );
@@ -411,8 +440,10 @@ class _ItineraryTab extends ConsumerWidget {
     }
 
     final result = await ref
-        .read(updateItineraryUseCaseProvider)
-        .call(itinerary.copyWith(startDate: newStart, endDate: newEnd));
+        .read(itineraryListProvider.notifier)
+        .updateItinerary(
+          itinerary.copyWith(startDate: newStart, endDate: newEnd),
+        );
     result.fold((f) {
       if (context.mounted) {
         context.showSnackBar(f.message, isError: true);
@@ -1301,8 +1332,8 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
           return;
         }
         await ref
-            .read(updateItineraryUseCaseProvider)
-            .call(
+            .read(itineraryListProvider.notifier)
+            .updateItinerary(
               itinerary.copyWith(
                 expenseSummary: itinerary.expenseSummary.adjustedBy(
                   categoryKey: expense.category.name,
@@ -2001,7 +2032,9 @@ class _MembersCard extends ConsumerWidget {
           )
           .toList(),
     );
-    final result = await ref.read(updateItineraryUseCaseProvider).call(updated);
+    final result = await ref
+        .read(itineraryListProvider.notifier)
+        .updateItinerary(updated);
     result.fold((f) {
       if (context.mounted) {
         context.showSnackBar(f.message, isError: true);
@@ -2042,7 +2075,9 @@ class _MembersCard extends ConsumerWidget {
           .where((m) => m.userId != member.userId)
           .toList(),
     );
-    final result = await ref.read(updateItineraryUseCaseProvider).call(updated);
+    final result = await ref
+        .read(itineraryListProvider.notifier)
+        .updateItinerary(updated);
     result.fold((f) {
       if (context.mounted) {
         context.showSnackBar(f.message, isError: true);
@@ -2517,8 +2552,8 @@ class _StatusRow extends ConsumerWidget {
     ItineraryStatusEnum status,
   ) async {
     final result = await ref
-        .read(updateItineraryUseCaseProvider)
-        .call(itinerary.copyWith(status: status));
+        .read(itineraryListProvider.notifier)
+        .updateItinerary(itinerary.copyWith(status: status));
     result.fold((f) {
       if (context.mounted) {
         context.showSnackBar(f.message, isError: true);
@@ -2595,8 +2630,8 @@ class _StatusRow extends ConsumerWidget {
       (_) async {
         if (!itinerary.isPublic) {
           await ref
-              .read(updateItineraryUseCaseProvider)
-              .call(itinerary.copyWith(isPublic: true));
+              .read(itineraryListProvider.notifier)
+              .updateItinerary(itinerary.copyWith(isPublic: true));
         }
         if (context.mounted) {
           context.showSnackBar(
@@ -3200,7 +3235,7 @@ class _NotesTabState extends ConsumerState<_NotesTab> {
     final updated = widget.itinerary.copyWith(
       notes: value.trim().isEmpty ? null : value.trim(),
     );
-    await ref.read(updateItineraryUseCaseProvider).call(updated);
+    await ref.read(itineraryListProvider.notifier).updateItinerary(updated);
     if (mounted) {
       setState(() {
         _saving = false;

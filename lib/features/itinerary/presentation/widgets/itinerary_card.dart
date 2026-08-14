@@ -5,7 +5,6 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_theme.dart';
-import '../extensions/trip_theme_context_extension.dart';
 
 class ItineraryCard extends StatelessWidget {
   const ItineraryCard({
@@ -50,7 +49,7 @@ class ItineraryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = TripTheme.forKey(itinerary.themeKey).withContext(context);
+    final theme = TripTheme.forKey(itinerary.themeKey);
     return Material(
       color: context.colorScheme.surface,
       borderRadius: BorderRadius.circular(20),

@@ -1,5 +1,7 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/error/failure.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../work_mode/presentation/providers/work_mode_provider.dart';
 import '../../data/datasources/itinerary_local_datasource.dart';
@@ -178,6 +180,33 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
         return newItinerary;
       },
     );
+  }
+
+  /// Updates a trip and patches it into the cached list in place, so
+  /// Home/Trips cards reflect the change immediately. This list is a
+  /// plain fetched snapshot, not a live stream — unlike
+  /// `itineraryStreamProvider` (which the detail page itself watches and
+  /// so already updates correctly), nothing keeps it in sync with an edit
+  /// made elsewhere unless the caller goes through this method instead of
+  /// calling `updateItineraryUseCaseProvider` directly. Returns the same
+  /// `Either` the use case does (rather than swallowing the failure) so
+  /// every existing call site's own `result.fold((f) => ..., ...)` error
+  /// handling keeps working unchanged — only where `result` comes from
+  /// needs to change.
+  Future<Either<Failure, TravelItinerary>> updateItinerary(
+    TravelItinerary itinerary,
+  ) async {
+    final result = await updateUseCase(itinerary);
+    result.fold((_) {}, (saved) {
+      if (state is ItineraryListLoaded) {
+        final current = (state as ItineraryListLoaded).itineraries;
+        state = ItineraryListLoaded([
+          for (final i in current)
+            if (i.id == saved.id) saved else i,
+        ]);
+      }
+    });
+    return result;
   }
 
   Future<void> deleteItinerary(String id) async {
