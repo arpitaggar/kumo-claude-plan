@@ -13,7 +13,9 @@ import '../../domain/usecases/create_itinerary_usecase.dart';
 import '../../domain/usecases/delete_itinerary_usecase.dart';
 import '../../domain/usecases/fetch_itineraries_usecase.dart';
 import '../../domain/usecases/fetch_itinerary_usecase.dart';
+import '../../domain/usecases/import_trip_file_usecase.dart';
 import '../../domain/usecases/update_itinerary_usecase.dart';
+import 'trip_segment_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Infrastructure providers
@@ -69,6 +71,13 @@ final updateItineraryUseCaseProvider = Provider<UpdateItineraryUseCase>(
 
 final deleteItineraryUseCaseProvider = Provider<DeleteItineraryUseCase>(
   (ref) => DeleteItineraryUseCase(ref.watch(itineraryRepositoryProvider)),
+);
+
+final importTripFileUseCaseProvider = Provider<ImportTripFileUseCase>(
+  (ref) => ImportTripFileUseCase(
+    ref.watch(createItineraryUseCaseProvider),
+    ref.watch(addTripSegmentUseCaseProvider),
+  ),
 );
 
 // ---------------------------------------------------------------------------

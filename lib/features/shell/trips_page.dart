@@ -1,9 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/itinerary/domain/entities/travel_itinerary.dart';
+import '../../features/itinerary/domain/entities/trip_file.dart';
 import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
 import '../../features/itinerary/presentation/widgets/itinerary_card.dart';
 import '../../shared/extensions/context_extensions.dart';
@@ -17,6 +22,94 @@ class TripsPage extends ConsumerStatefulWidget {
 
 class _TripsPageState extends ConsumerState<TripsPage> {
   ItineraryStatusEnum? _statusFilter;
+  bool _importing = false;
+
+  /// Picks a `.json` Kumo trip file (exported from `itinerary_detail_page`'s
+  /// "Export trip file" action, on this device or shared in from another
+  /// user), parses it, and — after a confirmation dialog — creates a new
+  /// trip in the current user's account from its contents. See
+  /// `ImportTripFileUseCase` for exactly what is/isn't copied.
+  Future<void> _importTripFile(AuthState auth) async {
+    if (auth is! AuthAuthenticated) {
+      return;
+    }
+    final picked = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    final path = picked?.path;
+    if (path == null || !mounted) {
+      return;
+    }
+
+    late final TripFile file;
+    try {
+      final raw = await File(path).readAsString();
+      file = TripFile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } on FormatException catch (e) {
+      if (mounted) {
+        context.showSnackBar(e.message, isError: true);
+      }
+      return;
+    } catch (_) {
+      if (mounted) {
+        context.showSnackBar('Could not read that file.', isError: true);
+      }
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Import trip?'),
+        content: Text(
+          'This creates a new trip, "${file.title}", in your account with '
+          '${file.items.length} item(s) and ${file.segments.length} route '
+          'leg(s). It won\'t affect the original.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => ctx.pop(true),
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    setState(() => _importing = true);
+    final result = await ref
+        .read(importTripFileUseCaseProvider)
+        .call(
+          file: file,
+          newOwnerId: auth.user.id,
+          newOwnerName: auth.user.displayName ?? auth.user.email,
+        );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _importing = false);
+    await result.fold(
+      (f) async => context.showSnackBar(f.message, isError: true),
+      (imported) async {
+        await ref
+            .read(itineraryListProvider.notifier)
+            .softRefresh(auth.user.id);
+        if (mounted) {
+          await context.push('/trip/${imported.id}');
+        }
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +129,19 @@ class _TripsPageState extends ConsumerState<TripsPage> {
             color: context.colorScheme.onSurface,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: _importing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.file_upload_outlined),
+            tooltip: 'Import trip file',
+            onPressed: _importing ? null : () => _importTripFile(auth),
+          ),
+        ],
       ),
       body: switch (state) {
         ItineraryListInitial() || ItineraryListLoading() => Center(

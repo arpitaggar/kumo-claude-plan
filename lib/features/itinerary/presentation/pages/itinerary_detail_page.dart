@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../config/brand.dart';
@@ -22,6 +25,7 @@ import '../../../ratings/presentation/providers/rating_provider.dart';
 import '../../../ratings/presentation/widgets/add_rating_sheet.dart';
 import '../../../social/presentation/providers/social_provider.dart';
 import '../../domain/entities/travel_itinerary.dart';
+import '../../domain/entities/trip_file.dart';
 import '../../domain/entities/trip_segment.dart';
 import '../../domain/entities/trip_theme.dart';
 import '../../domain/trip_segment_order.dart';
@@ -108,6 +112,39 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
             '✈️ Check out "${it.title}" ($start – $end) planned on '
             '${Brand.appName}!',
         subject: it.title,
+      ),
+    );
+  }
+
+  /// Exports this trip (title, dates, theme, items, route — never members,
+  /// expenses, or notes; see `TripFile`'s doc comment) as a `.json` file and
+  /// opens the share sheet so it can be sent to someone else. They import it
+  /// from the Trips tab to get their own independent copy of the trip.
+  Future<void> _exportTripFile() async {
+    final segments =
+        ref.read(tripSegmentsStreamProvider(it.id)).value ??
+        const <TripSegment>[];
+    final file = TripFile.fromItinerary(
+      itinerary: it,
+      segments: segments.map(TripFileSegment.fromEntity).toList(),
+    );
+    final json = const JsonEncoder.withIndent('  ').convert(file.toJson());
+
+    final safeName = it.title.replaceAll(RegExp(r'[^A-Za-z0-9 _-]'), '').trim();
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/${safeName.isEmpty ? 'trip' : safeName}.json';
+    await File(path).writeAsString(json);
+
+    if (!mounted) {
+      return;
+    }
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(path)],
+        subject: 'Kumo trip: ${it.title}',
+        text:
+            'Open this file in ${Brand.appName} (Trips → Import trip file) '
+            'to get your own copy of "${it.title}".',
       ),
     );
   }
@@ -240,6 +277,11 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
                   icon: const Icon(Icons.share_outlined),
                   tooltip: 'Share trip',
                   onPressed: _shareTrip,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.file_download_outlined),
+                  tooltip: 'Export trip file',
+                  onPressed: _exportTripFile,
                 ),
                 IconButton(
                   icon: const Icon(Icons.chat_bubble_outline),
