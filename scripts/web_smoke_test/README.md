@@ -50,10 +50,18 @@ Screenshots go to `scripts/web_smoke_test/screenshots/` (gitignored) via
 ## Writing a new script
 
 Copy `example_login_and_home.js`. Use `driver.js`'s exports — `launch`,
-`tap`, `typeText`, `login`, `workModeState`, `ensureWorkMode`, `goHome`,
-`screenshot`. Read the doc comment on each before using it; several exist
-specifically because the obvious approach was flaky in practice (see the
-comments on `tap` and `ensureWorkMode`).
+`tap`, `tapDestructive`, `typeText`, `login`, `workModeState`,
+`ensureWorkMode`, `goHome`, `screenshot`. Read the doc comment on each
+before using it; several exist specifically because the obvious approach
+was flaky in practice (see the comments on `tap` and `ensureWorkMode`).
+
+**Prefer `integration_test/authenticated_flows_test.dart` over adding a new
+destructive action here at all.** It runs against a real accessibility
+tree (`find.text(...)`), so it can actually confirm which screen is
+showing before acting — this harness fundamentally can't (see "Known
+limitations" below). Reach for this directory only for what it's actually
+for: visual/rendering verification and reproducing CanvasKit-web-specific
+bugs.
 
 **Coordinates are per-screen and not reusable across screens.** Take a
 screenshot, read pixel positions off of *that* image, and hard-code them for
@@ -74,6 +82,16 @@ count on).
 - **Never call a delete/remove/revoke action against a coordinate you
   haven't just re-verified with a screenshot from *this exact run*.** Don't
   reuse a coordinate captured in an earlier script or an earlier session.
+  Use `tapDestructive` (not bare `tap`) for these — it screenshots
+  immediately before tapping and logs where, so this rule is mechanical
+  rather than something to remember. Still inspect the screenshot yourself;
+  the helper creates the evidence, it doesn't check it for you.
+- **A tap immediately after a screen-transition tap (e.g. switching tabs,
+  then acting on what should now be showing) carries the same risk even
+  if nothing about it looks destructive in isolation** — this is exactly
+  the 2026-08-13 KumoTest sequence: tap a tab, assume the transition
+  landed, tap again. Use `tapDestructive` for the second tap in that
+  pattern too, not just for taps that are obviously delete buttons.
 - **Prefer creating your own disposable fixtures** (a trip titled e.g.
   `SMOKETEST-<timestamp>`, a Hitchhiker named `smoketest-probe`) over
   interacting with the account's real data, and clean them up yourself when
