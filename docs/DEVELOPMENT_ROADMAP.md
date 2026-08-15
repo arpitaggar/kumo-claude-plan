@@ -1,11 +1,11 @@
 # Kumo Development Roadmap
 
 **Project:** Kumo — Collaborative Travel Super-App  
-**Current Version:** 2.2 (as-built)  
-**Previous Version:** 1.0 (original plan) → 2.0 (Stage 1–19, through masked trip email) → 2.1 (Stage 20–23, through gamification)  
+**Current Version:** 2.3 (as-built)  
+**Previous Version:** 1.0 (original plan) → 2.0 (Stage 1–19, through masked trip email) → 2.1 (Stage 20–23, through gamification) → 2.2 (Stage 24, age gate + Hitchhiker)  
 **Target Launch:** Q3 2026
 
-> **2026-08-11 refresh, updated 2026-08-13:** This doc was last substantively written before the social feed grew into a real social product surface and before any B2B/org work existed (Stage 19 and earlier only). Stages 20–24 below cover everything shipped since — see `docs/Checklist.md` for the full, continuously-updated day-by-day log this doc summarizes; that file is the actual source of truth going forward, not this one. (`docs/Checklist.md` itself moved from the repo root to `docs/` on 2026-08-13 — every cross-reference to it in this repo was updated to match.)
+> **2026-08-11 refresh, updated 2026-08-13, updated 2026-08-15:** This doc was last substantively written before the social feed grew into a real social product surface and before any B2B/org work existed (Stage 19 and earlier only). Stages 20–25 below cover everything shipped since — see `docs/Checklist.md` for the full, continuously-updated day-by-day log this doc summarizes; that file is the actual source of truth going forward, not this one. (`docs/Checklist.md` itself moved from the repo root to `docs/` on 2026-08-13 — every cross-reference to it in this repo was updated to match.)
 
 ---
 
@@ -271,7 +271,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 ---
 
-### Stage 24 — 18+ Age Gate + Hitchhiker Non-Account Collaborator Role 🔧
+### Stage 24 — 18+ Age Gate + Hitchhiker Non-Account Collaborator Role ✅
 
 **Shipped:** A legal/data-privacy compliance audit (2026-08-12, separate from the security/scalability/SOLID audits) found the trip-membership model had no age floor and no way for a minor or account-averse guest to participate without becoming a full data subject. Two-tier fix: (1) a server-side `BEFORE INSERT` trigger on `auth.users` rejects signup outright for anyone under 18 — no account of any kind is ever created — with a `/confirm-age` completion step for invite-created accounts, which can't check DOB at creation time; (2) a new **Hitchhiker** trip role — a non-account collaborator added by a Captain with just a first name, authenticated via token-based `SECURITY DEFINER` RPCs rather than Supabase Auth (anonymous auth was considered and rejected — it would still create an `auth.users` row). Full rationale in `docs/ARCHITECTURE.md`'s "Trip Roles" section and `lib/features/hitchhiker/CLAUDE.md`.
 
@@ -287,6 +287,17 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 ---
 
+### Stage 25 — Real-device verification, doc/architecture cleanup, and two more features (2026-08-13 → 2026-08-15) ✅
+
+**Not a single themed feature — this stage is the catch-all for everything shipped between the 2026-08-13 doc catch-up pass and now.** Grouped by theme; see `docs/Checklist.md`'s dated entries for full writeups of each.
+
+- **Real device/simulator verification, closing the gap Stage 24 flagged as outstanding.** This dev environment turned out to have real device access after all (macOS desktop, a booted iOS simulator, an Android emulator, and a wirelessly-connected iPhone) — Flutter's official `integration_test` package was added and passed on all four. Driving the actual itinerary-detail, Hitchhiker, and Work Mode flows for the first time found and fixed **four more real bugs**: two more itinerary-detail-page rendering crashes, a session-restore race that could permanently hide Work Mode for an entire app session (`AuthRepositoryImpl.getCurrentUser()` falling back to a stale cache before Supabase's own async session restore had caught up), and Work Mode trip creation's cost-field picker crashing for every organization. A dedicated test account/organization was self-provisioned for authenticated-flow coverage (`.invalid` TLD, never a real mailbox).
+- **Analyzer/doc/architecture hygiene:** the SDK bumped 3.44.8 → 3.47.0; the info-level analyzer backlog closed from ~111 down to the 11-issue `one_member_abstracts` baseline that's been stable since; macOS moved off CocoaPods onto Swift Package Manager entirely (iOS keeps CocoaPods only for `google_maps_flutter_ios`, which has no SPM support); the app name was consolidated behind a single `Brand.appName` constant.
+- **Two new user-facing features:** trip dates became editable while a trip is in draft, and the trip theme became editable at any time (previously locked after creation) — plus a real bug fix alongside it, a trip-card/app-wide dark-theme mixing bug. Separately, a full trip export/import file format shipped (`TripFile`, deliberately not a raw dump of the backend row shape, so a future schema change can't break an old file sitting in someone's inbox) plus GPS-coordinate and `.gpx`-file import for route-segment endpoints (`lib/core/geocoding/gpx_parser.dart`).
+- **Test coverage and security closeout:** `chat_page.dart` — the last presentation page with zero coverage — got a full test suite, surfacing and fixing a real dispose-order race. SEC-033 (the invite-path age gate being enforced only by the Flutter router, not the database) was closed with a DB-level trigger, scoped and decided directly with the user rather than unilaterally, plus a pre-commit lint (`scripts/check_age_gate_coverage.sh`) so a future table can't ship without the same guard. Followed by a fresh doc/test audit pass (this entry) that found and closed two more real test-coverage gaps (`LocationSearchSheet`'s Coordinates/GPX tabs, `inboxHasUnreadProvider`) and a missing `lib/features/itinerary/CLAUDE.md` for the app's largest feature.
+
+---
+
 ## What Remains (Deferred / Not Implemented)
 
 | Feature | Why Deferred |
@@ -296,7 +307,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Invite email (Resend branded) | Needs Resend account + domain — Supabase built-in fallback works today |
 | GitHub Pages for legal docs | Enable in repo Settings → Pages → /docs; submit URL to app stores |
 | WCAG 2.1 full accessibility audit | Partial (send button + dots done); full audit deferred |
-| Widget + integration tests | Domain/model/legal/organization/social/work-mode/gamification/hitchhiker coverage now substantial (1092 tests as of 2026-08-13, across five dedicated coverage-gap passes); still no end-to-end integration test suite. The join-code deep link and the age-gate/confirm-age flow have still never been exercised at all outside unit tests. Work Mode, gamification, and Hitchhiker *have* now been smoke-tested — via the web build (`scripts/web_smoke_test/`), not a native device/simulator (still none available here) — which is how the 5 bugs above were found; a real iOS/Android/macOS pass remains outstanding and could still surface platform-specific issues the web build can't. |
+| Widget + integration tests | Domain/model/legal/organization/social/work-mode/gamification/hitchhiker/chat coverage now substantial (1245 tests as of 2026-08-15, across six dedicated coverage-gap passes — every presentation page now has at least one test file). A real `integration_test` suite now exists too (`integration_test/app_test.dart`, `authenticated_flows_test.dart`), verified on macOS, a booted iOS simulator, an Android emulator, and a wirelessly-connected iPhone — this is what found the session-restore race and the Work Mode cost-field crash documented under Stage 25. The join-code deep link and the age-gate/confirm-age flow specifically still haven't been exercised outside unit tests — everything else that was smoke-tested only via the web build (`scripts/web_smoke_test/`) as of Stage 24 has since also been verified on real native targets. |
 | Concierge AI mode (agents, streaming) | Requires backend agent infrastructure |
 | Virtual Debit Card (Stripe Issuing) | Legal/compliance review required |
 | Full B2B admin portal (dashboard, travel-policy engine) | Stage 21 shipped the minimal real substrate (orgs, expense approval, cost fields, join codes, department overrides); the admin-facing surface on top of it is explicitly left to a future admin portal or an external system (e.g. SAP), not this app |
@@ -337,7 +348,9 @@ Jun–Jul 2026
 ├── Stage 21: Organizations / Minimal B2B    ✅                   Aug 2026
 ├── Stage 22: Work Mode Toggle               ✅                   Aug 2026
 ├── Stage 23: Gamification (XP/Badges)       ✅                   Aug 2026
-└── Stage 24: Age Gate + Hitchhiker Role     🔧                   Aug 2026
+├── Stage 24: Age Gate + Hitchhiker Role     ✅                   Aug 2026
+└── Stage 25: Device verification, export/  ✅                   Aug 2026
+    import file, SEC-033 DB enforcement
 ```
 
 ---
@@ -352,7 +365,7 @@ Jun–Jul 2026
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
 - Signup consent checkbox before account creation ✅
-- **1092 unit/widget tests passing** (up from 227) ✅
+- **1245 unit/widget tests passing** (up from 227), plus a real-device `integration_test` suite (macOS, iOS simulator, Android emulator, a wirelessly-connected iPhone) ✅
 - Scalability audit complete — every finding fixed-and-live, explicitly decided, or documented as not-yet-justified at this app's actual scale (`docs/SCALABILITY_AUDIT.md`) ✅
 
 Outstanding:
@@ -368,4 +381,4 @@ Outstanding:
 
 ---
 
-**End of Development Roadmap v2.2** — see `docs/Checklist.md` for the continuously-updated day-by-day log this document summarizes.
+**End of Development Roadmap v2.3** — see `docs/Checklist.md` for the continuously-updated day-by-day log this document summarizes.
