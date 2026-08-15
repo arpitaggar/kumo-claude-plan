@@ -12,6 +12,16 @@ Migrated from the project root CLAUDE.md (2026-08-03 doctor cleanup) — loads o
 
 **Open question, not resolved:** Hitchhiker messages never trigger `send-message-push` at all — `hitchhiker_send_message` (the RPC the Hitchhiker screen actually calls, see `lib/features/hitchhiker/CLAUDE.md`) is a plain insert with no push invocation, unlike `ChatRemoteDataSourceImpl.sendMessage`'s client-triggered call. Not confirmed whether that's an intentional scope trim (matching the badge-unlock no-push precedent in `lib/features/gamification/CLAUDE.md`) or a real gap.
 
+### Typing-indicator `RealtimeChannel.subscribe()` hardening (2026-08-15)
+
+Found via a real user bug report ("exception in chat, went away after restarting the app," Android) rather than a code review — see `docs/Checklist.md`'s 2026-08-15 crash-reporting entry for the full investigation. `_subscribeTyping()` (`chat_page.dart`) creates a `RealtimeChannel` in `initState`'s `postFrameCallback` and calls `.subscribe()` on it exactly once by construction — except `RealtimeChannel.subscribe()` throws a **raw `String`**, not an `Exception`/`Error`, if it's ever called twice on the same channel instance (`"tried to subscribe multiple times…"`, `realtime_client` package), and nothing previously guarded against that structurally.
+
+Two independent hardening fixes, since the exact real-world trigger couldn't be confirmed without a stack trace (this app had zero crash reporting until this same pass — see `lib/core/crash_reporting/`):
+- The `postFrameCallback` itself had no `mounted` check — if the widget disposed before the callback fired (e.g. navigating away before first paint), it ran `_subscribeTyping()` against an already-disposed State's `ref`. Now guarded.
+- `_subscribeTyping()` gained a `_typingSubscribeAttempted` flag, so `.subscribe()` structurally cannot fire twice on one channel regardless of call path, and the whole subscription setup is wrapped in try/catch, recorded via `crashReporterProvider`, and degrades to "no typing indicator" rather than crashing the screen — this feature is a nice-to-have, not core chat functionality.
+
+Deliberately not attempted: reproducing the exact trigger in a widget test. The raw `RealtimeChannel`'s use here is the same untested-by-design seam documented in `docs/SOLID_AUDIT.md` (see `chat_page_test.dart`'s own header comment) — this fix closes the failure mode without needing to prove which exact call path caused it.
+
 ### Chat Upgrade, Dark Themes & Push Notification Foundation (Stage 19)
 
 **Migration:** `docs/supabase_migrations/stage19_chat_upgrade.sql`  

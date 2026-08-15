@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/crash_reporting/crash_reporting_providers.dart';
 import '../../../../core/network/signed_storage_url.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../../../shared/extensions/context_extensions.dart';
@@ -44,6 +45,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final Map<String, String> _typingUsers = {}; // userId → displayName
   Timer? _typingDebounce;
   Timer? _typingExpiry;
+  // Guards against RealtimeChannel.subscribe()'s own hard requirement —
+  // it throws a raw String ("tried to subscribe multiple times...") if
+  // called more than once per channel instance. _subscribeTyping() should
+  // only ever run once per State given its one-shot postFrameCallback
+  // call site, but this makes that a structural guarantee rather than an
+  // assumption, since a real "Realtime subscribe exception" report is what
+  // prompted this (see docs/Checklist.md, 2026-08-15).
+  bool _typingSubscribeAttempted = false;
 
   static const _typingEventType = 'typing';
   static const _stoppedTypingEventType = 'stopped_typing';
@@ -60,6 +69,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _activeChatIdController = ref.read(activeChatIdProvider.notifier);
     _inputController.addListener(_onTextChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // A postFrameCallback can fire after this State is already disposed
+      // (e.g. the user navigated away before the first frame painted) —
+      // nothing below is safe to run against a disposed State's `ref`.
+      if (!mounted) {
+        return;
+      }
       _subscribeTyping();
       // Suppresses the in-app new-message notification for this chat while
       // it's the one on screen.
@@ -74,49 +89,68 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         .markMessagesRead(widget.itineraryId)
         .ignore();
 
-    final channel = KumoSupabaseClient.client.channel(
-      'typing:${widget.itineraryId}',
-    );
-    _typingChannel = channel;
-    channel
-        .onBroadcast(
-          event: _typingEventType,
-          callback: (payload) {
-            final userId = payload['user_id'] as String?;
-            final name = payload['name'] as String?;
-            if (userId == null || name == null) {
-              return;
-            }
-            final me = (ref.read(authNotifierProvider) is AuthAuthenticated)
-                ? (ref.read(authNotifierProvider) as AuthAuthenticated).user.id
-                : '';
-            if (userId == me) {
-              return;
-            }
-            if (mounted) {
-              setState(() => _typingUsers[userId] = name);
-            }
-            // Auto-clear after 4s in case stopped_typing is missed
-            Future.delayed(const Duration(seconds: 4), () {
+    // The typing indicator is a nice-to-have, not core chat functionality
+    // — if anything below throws (RealtimeChannel.subscribe() throws a raw
+    // String, not an Exception, if this ever runs twice on one channel
+    // instance — see _typingSubscribeAttempted's comment), degrade to "no
+    // typing indicator" rather than let it take the whole chat screen down.
+    if (_typingSubscribeAttempted) {
+      return;
+    }
+    _typingSubscribeAttempted = true;
+
+    try {
+      final channel = KumoSupabaseClient.client.channel(
+        'typing:${widget.itineraryId}',
+      );
+      _typingChannel = channel;
+      channel
+          .onBroadcast(
+            event: _typingEventType,
+            callback: (payload) {
+              final userId = payload['user_id'] as String?;
+              final name = payload['name'] as String?;
+              if (userId == null || name == null) {
+                return;
+              }
+              final me = (ref.read(authNotifierProvider) is AuthAuthenticated)
+                  ? (ref.read(authNotifierProvider) as AuthAuthenticated)
+                        .user
+                        .id
+                  : '';
+              if (userId == me) {
+                return;
+              }
+              if (mounted) {
+                setState(() => _typingUsers[userId] = name);
+              }
+              // Auto-clear after 4s in case stopped_typing is missed
+              Future.delayed(const Duration(seconds: 4), () {
+                if (mounted) {
+                  setState(() => _typingUsers.remove(userId));
+                }
+              });
+            },
+          )
+          .onBroadcast(
+            event: _stoppedTypingEventType,
+            callback: (payload) {
+              final userId = payload['user_id'] as String?;
+              if (userId == null) {
+                return;
+              }
               if (mounted) {
                 setState(() => _typingUsers.remove(userId));
               }
-            });
-          },
-        )
-        .onBroadcast(
-          event: _stoppedTypingEventType,
-          callback: (payload) {
-            final userId = payload['user_id'] as String?;
-            if (userId == null) {
-              return;
-            }
-            if (mounted) {
-              setState(() => _typingUsers.remove(userId));
-            }
-          },
-        )
-        .subscribe();
+            },
+          )
+          .subscribe();
+    } catch (e, st) {
+      ref
+          .read(crashReporterProvider)
+          .recordError(e, st, reason: 'ChatPage._subscribeTyping');
+      _typingChannel = null;
+    }
   }
 
   void _onTextChanged() {

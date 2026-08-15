@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -10,6 +12,9 @@ import 'config/brand.dart';
 import 'config/router.dart';
 import 'config/theme.dart';
 import 'config/theme_provider.dart';
+import 'core/crash_reporting/crash_reporter.dart';
+import 'core/crash_reporting/crash_reporting_providers.dart';
+import 'core/crash_reporting/local_file_crash_reporter.dart';
 import 'core/network/supabase_client.dart';
 import 'core/notifications/notification_tap_events.dart';
 import 'core/notifications/push_config.dart';
@@ -35,8 +40,68 @@ void _navigateForNotificationTap(NotificationTapEvent event) {
   }
 }
 
+/// Created here (not inside `runZonedGuarded`'s closure) so the exact same
+/// instance is wired into every error-catching seam below and handed to
+/// `crashReporterProvider`'s override — one reporter, not several
+/// independently-instantiated ones that would each keep their own view of
+/// "recent errors".
+final CrashReporter _crashReporter = LocalFileCrashReporterImpl();
+
+// Stays `Future<void> Function()` (not bare `void`) — integration_test/
+// app_test.dart and authenticated_flows_test.dart both `await app.main()`
+// to know startup has actually finished before driving the app further;
+// a synchronous `main()` would make that await a compile error (as it did
+// briefly while writing this) and, worse if it silently compiled, would
+// let those tests race the real startup work below.
 Future<void> main() async {
+  // Wraps the whole app so `_crashReporter` catches errors that escape an
+  // async gap without ever reaching `FlutterError.onError` (which only
+  // catches errors thrown synchronously during the framework's own
+  // build/layout/paint callbacks) — e.g. an unawaited Future rejecting, or
+  // (the case that prompted this) a raw synchronous `throw` inside a
+  // Realtime channel's `subscribe()` called from a non-framework callback.
+  // `PlatformDispatcher.instance.onError` below is the belt-and-suspenders
+  // second seam Flutter itself recommends alongside this, for errors that
+  // manage to escape even the zone (rare, but documented as possible).
+  await runZonedGuarded(
+    _runApp,
+    (error, stackTrace) => unawaited(
+      _crashReporter.recordError(
+        error,
+        stackTrace,
+        reason: 'runZonedGuarded',
+        fatal: true,
+      ),
+    ),
+  );
+}
+
+Future<void> _runApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    unawaited(
+      _crashReporter.recordError(
+        details.exception,
+        details.stack,
+        reason: 'FlutterError.onError',
+        fatal: true,
+      ),
+    );
+  };
+  PlatformDispatcher.instance.onError = (error, stackTrace) {
+    unawaited(
+      _crashReporter.recordError(
+        error,
+        stackTrace,
+        reason: 'PlatformDispatcher.onError',
+        fatal: true,
+      ),
+    );
+    return true;
+  };
+
   notificationTaps.listen(_navigateForNotificationTap);
 
   try {
@@ -54,6 +119,14 @@ Future<void> main() async {
       'Failed to initialize Supabase',
       error: e,
       stackTrace: st,
+    );
+    unawaited(
+      _crashReporter.recordError(
+        e,
+        st,
+        reason: 'Supabase.initialize',
+        fatal: true,
+      ),
     );
     runApp(StartupErrorApp(error: e));
     return;
@@ -94,6 +167,7 @@ Future<void> main() async {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         inboxLastVisitProvider.overrideWith((_) => lastInboxVisitMs),
+        crashReporterProvider.overrideWithValue(_crashReporter),
       ],
       child: const KumoApp(),
     ),

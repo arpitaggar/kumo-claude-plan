@@ -2,6 +2,8 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kumo_claude/core/crash_reporting/crash_reporter.dart';
+import 'package:kumo_claude/core/crash_reporting/crash_reporting_providers.dart';
 import 'package:kumo_claude/core/error/failure.dart';
 import 'package:kumo_claude/features/auth/domain/entities/user.dart';
 import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
@@ -53,6 +55,8 @@ class MockChatRepository extends Mock implements ChatRepository {}
 
 class MockChatRemoteDataSource extends Mock implements ChatRemoteDataSource {}
 
+class MockCrashReporter extends Mock implements CrashReporter {}
+
 const _tripId = 'trip-1';
 const _me = 'user-me';
 const _other = 'user-other';
@@ -98,10 +102,15 @@ Message _msg({
 );
 
 class _Harness {
-  _Harness({required this.chatRepo, required this.dataSource});
+  _Harness({
+    required this.chatRepo,
+    required this.dataSource,
+    required this.crashReporter,
+  });
 
   final MockChatRepository chatRepo;
   final MockChatRemoteDataSource dataSource;
+  final MockCrashReporter crashReporter;
 }
 
 Future<_Harness> _pump(
@@ -129,6 +138,21 @@ Future<_Harness> _pump(
   final dataSource = MockChatRemoteDataSource();
   when(() => dataSource.markMessagesRead(any())).thenAnswer((_) async {});
 
+  // Not expected to be called under normal test conditions (the typing
+  // channel's real RealtimeChannel.subscribe() doesn't throw against the
+  // test project's dummy URL — see the plain-pump comment below), but
+  // _subscribeTyping() does read this provider inside its catch block, so
+  // it needs a real override rather than relying on that never happening.
+  final crashReporter = MockCrashReporter();
+  when(
+    () => crashReporter.recordError(
+      any(),
+      any(),
+      reason: any(named: 'reason'),
+      fatal: any(named: 'fatal'),
+    ),
+  ).thenAnswer((_) async {});
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -147,6 +171,7 @@ Future<_Harness> _pump(
         ).overrideWith((ref) => Stream.value(_trip())),
         chatRepositoryProvider.overrideWithValue(chatRepo),
         chatRemoteDataSourceProvider.overrideWithValue(dataSource),
+        crashReporterProvider.overrideWithValue(crashReporter),
       ],
       child: const MaterialApp(home: ChatPage(itineraryId: _tripId)),
     ),
@@ -159,7 +184,11 @@ Future<_Harness> _pump(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
 
-  return _Harness(chatRepo: chatRepo, dataSource: dataSource);
+  return _Harness(
+    chatRepo: chatRepo,
+    dataSource: dataSource,
+    crashReporter: crashReporter,
+  );
 }
 
 void main() {

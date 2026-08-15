@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../config/brand.dart';
 import '../../config/theme_provider.dart';
+import '../../core/crash_reporting/crash_reporting_providers.dart';
+import '../../core/crash_reporting/local_file_crash_reporter.dart';
 import '../../core/maps/kumo_map_provider.dart';
 import '../../core/premium/premium_feature.dart';
 import '../../core/premium/premium_providers.dart';
@@ -215,12 +218,58 @@ class ProfilePage extends ConsumerWidget {
           const SizedBox(height: 8),
           _tile(
             context,
+            icon: Icons.bug_report_outlined,
+            label: 'Share Debug Log',
+            onTap: () => _shareDebugLog(context, ref),
+          ),
+          const SizedBox(height: 8),
+          _tile(
+            context,
             icon: Icons.logout,
             label: 'Sign Out',
             color: context.colorScheme.primary,
             onTap: () => ref.read(authNotifierProvider.notifier).logout(),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Lets a user hand over `crashReporterProvider`'s local log directly —
+  /// today's only way to get an error record off a real device, since this
+  /// app has no remote crash-reporting backend (see `crash_reporter.dart`'s
+  /// doc comment). `ExportableCrashLog` is implemented only by reporters
+  /// that keep a local, shareable file — a future Sentry/Crashlytics
+  /// backend wouldn't, so this tile would need to become a "view online"
+  /// link instead at that point, not a share sheet.
+  Future<void> _shareDebugLog(BuildContext context, WidgetRef ref) async {
+    // Pattern-matched, not a plain `is` check + cast — CrashReporter and
+    // ExportableCrashLog are unrelated sibling interfaces (a single impl
+    // happens to implement both), so a bare `is` check can't promote the
+    // provider's declared CrashReporter type to ExportableCrashLog; this
+    // binds a correctly-typed variable directly instead.
+    final reporter = ref.read(crashReporterProvider);
+    if (reporter is! ExportableCrashLog) {
+      context.showSnackBar(
+        'Debug log sharing is not available.',
+        isError: true,
+      );
+      return;
+    }
+
+    final file = await (reporter as ExportableCrashLog).exportFile();
+    if (!context.mounted) {
+      return;
+    }
+    if (file == null) {
+      context.showSnackBar('No debug log recorded yet.');
+      return;
+    }
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        subject: '${Brand.appName} debug log',
+        text: 'Debug log from ${Brand.appName}.',
       ),
     );
   }
