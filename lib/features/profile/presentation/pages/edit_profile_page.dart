@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/accommodation/accommodation_source_meta.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/kumo_avatar.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/source_toggle_picker.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/user_profile_provider.dart';
 import 'profile_field_data.dart';
@@ -54,6 +56,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   String _units = 'metric';
   List<String> _selectedTags = [];
+  List<String> _selectedAccommodationSources = [];
   bool _controllersReady = false;
   bool _saving = false;
   bool _uploadingAvatar = false;
@@ -105,6 +108,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           : null;
       _units = profile?.unitsPreference ?? 'metric';
       _selectedTags = List<String>.from(profile?.travelPreferenceTags ?? []);
+      // enabledAccommodationSources == null means "all sources" (see
+      // UserProfile's doc comment) — resolve that to every known key here
+      // so the picker shows everything checked, rather than treating null
+      // as an empty selection.
+      final enabledSources =
+          profile?.enabledAccommodationSources as List<String>?;
+      _selectedAccommodationSources = List<String>.from(
+        enabledSources ?? kAccommodationSources.map((s) => s.key),
+      );
     });
   }
 
@@ -368,6 +380,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       unitsPreference: _units,
       travelPreferenceTags: _selectedTags,
       avatarUrl: _avatarUrl,
+      enabledAccommodationSources: _selectedAccommodationSources,
     );
 
     if (!mounted) {
@@ -588,6 +601,31 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   _selectedTags.remove(tag);
                 } else {
                   _selectedTags.add(tag);
+                }
+              }),
+            ),
+
+            // ── Accommodation sources ───────────────────────────────────────
+            const SizedBox(height: 24),
+            const _SectionHeader('Accommodation Sources'),
+            const SizedBox(height: 4),
+            Text(
+              'Default sources shown on a new trip\'s Stay tab. Each trip can '
+              'change this later without affecting this default.',
+              style: TextStyle(
+                fontSize: 13,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SourceTogglePicker(
+              sources: kAccommodationSources,
+              selectedKeys: _selectedAccommodationSources,
+              onToggle: (key) => setState(() {
+                if (_selectedAccommodationSources.contains(key)) {
+                  _selectedAccommodationSources.remove(key);
+                } else {
+                  _selectedAccommodationSources.add(key);
                 }
               }),
             ),

@@ -53,6 +53,7 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
     String? contactVisibility,
     String? avatarUrl,
     bool? pushMessagePreviewEnabled,
+    List<String>? enabledAccommodationSources,
   }) async {
     try {
       final result = await _remote.updateProfile(
@@ -70,6 +71,7 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
         contactVisibility: contactVisibility,
         avatarUrl: avatarUrl,
         pushMessagePreviewEnabled: pushMessagePreviewEnabled,
+        enabledAccommodationSources: enabledAccommodationSources,
       );
       return Right(result);
     } on AuthException catch (e) {

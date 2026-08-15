@@ -32,6 +32,7 @@ class UserProfile extends Equatable {
     this.preferredLanguage,
     this.usernameLastChangedAt,
     this.ageVerifiedAt,
+    this.enabledAccommodationSources,
   });
 
   final String id;
@@ -79,6 +80,15 @@ class UserProfile extends Equatable {
   /// text, or a generic "New message" placeholder.
   final bool pushMessagePreviewEnabled;
 
+  /// Default accommodation source keys (see
+  /// `lib/core/accommodation/accommodation_source_meta.dart`) this user
+  /// wants shown on a new trip's "Stay" tab. **Null means "all currently
+  /// -known sources," not "none"** — see this field's column comment in
+  /// `stage47_accommodation_sources.sql`. A trip's own setting is copied
+  /// from this at creation time and independently editable afterward — see
+  /// `TravelItinerary.accommodationSources`.
+  final List<String>? enabledAccommodationSources;
+
   /// True when the 7-day username-change cooldown has elapsed (or never set).
   bool get canChangeUsername {
     final last = usernameLastChangedAt;
@@ -111,6 +121,7 @@ class UserProfile extends Equatable {
     DateTime? updatedAt,
     bool? pushMessagePreviewEnabled,
     DateTime? ageVerifiedAt,
+    List<String>? enabledAccommodationSources,
   }) => UserProfile(
     id: id ?? this.id,
     email: email ?? this.email,
@@ -133,6 +144,8 @@ class UserProfile extends Equatable {
     pushMessagePreviewEnabled:
         pushMessagePreviewEnabled ?? this.pushMessagePreviewEnabled,
     ageVerifiedAt: ageVerifiedAt ?? this.ageVerifiedAt,
+    enabledAccommodationSources:
+        enabledAccommodationSources ?? this.enabledAccommodationSources,
   );
 
   @override
@@ -157,5 +170,6 @@ class UserProfile extends Equatable {
     updatedAt,
     pushMessagePreviewEnabled,
     ageVerifiedAt,
+    enabledAccommodationSources,
   ];
 }

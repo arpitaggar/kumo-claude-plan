@@ -24,6 +24,7 @@ class CreateItineraryUseCase {
     List<ItineraryItem>? items,
     String themeKey = 'classic',
     String? orgId,
+    List<String> accommodationSources = const [],
   }) async {
     try {
       Validators.validateNonEmpty(title, 'Title');
@@ -61,6 +62,7 @@ class CreateItineraryUseCase {
       description: description,
       themeKey: themeKey,
       orgId: orgId,
+      accommodationSources: accommodationSources,
     );
 
     return _repository.createItinerary(itinerary);

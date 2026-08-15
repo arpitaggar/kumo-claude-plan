@@ -24,6 +24,7 @@ abstract class UserProfileRemoteDataSource {
     String? contactVisibility,
     String? avatarUrl,
     bool? pushMessagePreviewEnabled,
+    List<String>? enabledAccommodationSources,
   });
 }
 
@@ -45,9 +46,11 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
 
   // Only ever used for the caller's own row. age_verified_at backs the
   // client-side age gate (see lib/features/auth/presentation/providers/
-  // age_gate_provider.dart) — nobody else's business, so it's excluded from
-  // _publicCols above.
-  static const _ownCols = '$_publicCols, email, age_verified_at';
+  // age_gate_provider.dart), and enabled_accommodation_sources is a private
+  // preference — neither is anyone else's business, so both are excluded
+  // from _publicCols above.
+  static const _ownCols =
+      '$_publicCols, email, age_verified_at, enabled_accommodation_sources';
 
   @override
   Future<UserProfileModel> getOwnProfile() async {
@@ -127,6 +130,7 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
     String? contactVisibility,
     String? avatarUrl,
     bool? pushMessagePreviewEnabled,
+    List<String>? enabledAccommodationSources,
   }) async {
     if (KumoSupabaseClient.auth.currentUser == null) {
       throw AuthException(message: 'Not authenticated');
@@ -176,6 +180,9 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
       }
       if (pushMessagePreviewEnabled != null) {
         params['p_push_message_preview'] = pushMessagePreviewEnabled;
+      }
+      if (enabledAccommodationSources != null) {
+        params['p_enabled_accommodation_sources'] = enabledAccommodationSources;
       }
 
       await KumoSupabaseClient.client.rpc('update_profile', params: params);

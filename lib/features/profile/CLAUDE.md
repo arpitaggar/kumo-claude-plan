@@ -112,3 +112,11 @@ updateProfile()                          // datasource
     → rows.isEmpty → throws ServerException('Profile not found')   ← fixed by migration
 ```
 
+### Accommodation source default (Stage 25)
+
+**Migration:** `docs/supabase_migrations/stage47_accommodation_sources.sql`
+
+`public.profiles` gains `enabled_accommodation_sources text[]` (nullable — **null means "all sources currently known to the app," not "none"**; see `lib/core/accommodation/accommodation_source_meta.dart`'s catalog). `update_profile` was reissued (14→15 params) with `p_enabled_accommodation_sources`, same `COALESCE`-if-null-leave-unchanged convention as every other param. `edit_profile_page.dart` gained a new "Accommodation Sources" section, next to Travel Interests, using the new shared `lib/shared/widgets/source_toggle_picker.dart` (generalized from that page's own `_TagPicker`).
+
+This is the *default* — a trip's own setting (`itineraries.accommodation_sources`, always a concrete non-null list) is stamped from this at trip-creation time and independently editable afterward; see `lib/features/itinerary/CLAUDE.md`'s "Stay tab" section and `lib/core/accommodation/CLAUDE.md` for the full feature.
+

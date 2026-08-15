@@ -203,4 +203,63 @@ void main() {
       );
     });
   });
+
+  group('ItineraryModel — accommodationSources (Stage 25)', () {
+    Map<String, dynamic> baseJson() => {
+      'id': 'itin-1',
+      'title': 'Verona Trip',
+      'owner_id': 'owner-uid',
+      'start_date': '2026-06-10T00:00:00.000Z',
+      'end_date': '2026-06-15T00:00:00.000Z',
+      'total_budget': 2000.0,
+      'currency_code': 'USD',
+      'members': <dynamic>[],
+      'items': <dynamic>[],
+      'expense_summary': {
+        'total_spent': 0,
+        'spent_by_category': <String, dynamic>{},
+        'member_balances': <String, dynamic>{},
+      },
+      'created_at': '2026-06-01T00:00:00.000Z',
+      'updated_at': '2026-06-01T00:00:00.000Z',
+      'status': 'draft',
+      'is_public': false,
+    };
+
+    test('reads accommodation_sources from JSON', () {
+      final json = baseJson()
+        ..['accommodation_sources'] = ['airbnb', 'booking'];
+      final model = ItineraryModel.fromJson(json);
+      expect(model.accommodationSources, ['airbnb', 'booking']);
+    });
+
+    test('defaults to an empty list when the key is absent — always '
+        'concrete, never null (unlike the profile-level setting)', () {
+      final model = ItineraryModel.fromJson(baseJson());
+      expect(model.accommodationSources, isEmpty);
+    });
+
+    test('toJson always includes accommodation_sources, even when empty', () {
+      final model = ItineraryModel.fromJson(baseJson());
+      expect(model.toJson().containsKey('accommodation_sources'), isTrue);
+      expect(model.toJson()['accommodation_sources'], isEmpty);
+    });
+
+    test('fromEntity preserves accommodationSources', () {
+      final json = baseJson()..['accommodation_sources'] = ['expedia'];
+      final source = ItineraryModel.fromJson(json);
+      final copy = ItineraryModel.fromEntity(source);
+      expect(copy.accommodationSources, ['expedia']);
+    });
+
+    test('copyWith updates accommodationSources without mutating the '
+        'original', () {
+      final model = ItineraryModel.fromJson(
+        baseJson()..['accommodation_sources'] = ['airbnb'],
+      );
+      final updated = model.copyWith(accommodationSources: ['hostelworld']);
+      expect(updated.accommodationSources, ['hostelworld']);
+      expect(model.accommodationSources, ['airbnb']);
+    });
+  });
 }

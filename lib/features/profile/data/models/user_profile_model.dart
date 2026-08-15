@@ -22,6 +22,7 @@ class UserProfileModel extends UserProfile {
     super.usernameLastChangedAt,
     super.pushMessagePreviewEnabled,
     super.ageVerifiedAt,
+    super.enabledAccommodationSources,
   });
 
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
@@ -60,6 +61,8 @@ class UserProfileModel extends UserProfile {
       ageVerifiedAt: json['age_verified_at'] != null
           ? DateTime.parse(json['age_verified_at'] as String)
           : null,
+      enabledAccommodationSources:
+          (json['enabled_accommodation_sources'] as List?)?.cast<String>(),
     );
   }
 }

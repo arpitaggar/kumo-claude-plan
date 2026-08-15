@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kumo_claude/config/constants.dart';
+import 'package:kumo_claude/core/geocoding/geocoding_providers.dart';
+import 'package:kumo_claude/core/geocoding/geocoding_service.dart';
 import 'package:kumo_claude/features/auth/domain/entities/user.dart';
 import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/delete_account_usecase.dart';
@@ -54,6 +56,7 @@ TravelItinerary _trip({
   String ownerId = 'user-1',
   ItineraryStatusEnum status = ItineraryStatusEnum.draft,
   List<GroupMember> members = const [],
+  List<String> accommodationSources = const [],
 }) => TravelItinerary(
   id: 'trip-1',
   title: 'KumoTest',
@@ -69,7 +72,29 @@ TravelItinerary _trip({
   updatedAt: DateTime.utc(2026),
   isPublic: isPublic,
   status: status,
+  accommodationSources: accommodationSources,
 );
+
+/// Fixed single-result stand-in for the real (network-hitting) geocoding
+/// service — the Stay tab geocodes the trip title to a search center (see
+/// itinerary_detail_page.dart's `_accommodationSearchCenterProvider`), and
+/// nothing in this file should make a real HTTP call.
+class _FakeGeocodingService implements GeocodingService {
+  @override
+  Future<List<GeocodingResult>> search(String query) async => const [
+    GeocodingResult(
+      name: 'Verona, Italy',
+      latitude: 45.4384,
+      longitude: 10.9916,
+    ),
+  ];
+}
+
+/// Simulates a trip title that doesn't resolve to any real place.
+class _EmptyGeocodingService implements GeocodingService {
+  @override
+  Future<List<GeocodingResult>> search(String query) async => const [];
+}
 
 /// An editor-role membership for 'user-1' — canEdit in the real page
 /// requires the current user to actually appear in `members` with a
@@ -88,6 +113,8 @@ Future<void> _pump(
   String ownerId = 'user-1',
   ItineraryStatusEnum status = ItineraryStatusEnum.draft,
   List<GroupMember> members = const [],
+  List<String> accommodationSources = const [],
+  GeocodingService? geocodingService,
 }) async {
   final authRepo = MockAuthRepository();
   when(authRepo.getCurrentUser).thenAnswer(
@@ -121,9 +148,12 @@ Future<void> _pump(
               ownerId: ownerId,
               status: status,
               members: members,
+              accommodationSources: accommodationSources,
             ),
           ),
         ),
+        if (geocodingService != null)
+          geocodingServiceProvider.overrideWithValue(geocodingService),
       ],
       child: const MaterialApp(home: ItineraryDetailPage(id: 'trip-1')),
     ),
@@ -299,5 +329,137 @@ void main() {
 
       expect(find.text('Trip Theme'), findsOneWidget);
     });
+  });
+
+  group('accommodation sources', () {
+    testWidgets(
+      'an editor sees an "Accommodation sources" action in the app bar',
+      (tester) async {
+        await _pump(tester, isPublic: false, members: [_editorMember]);
+
+        expect(find.byTooltip('Accommodation sources'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a non-owner/non-member never sees the action', (tester) async {
+      await _pump(tester, isPublic: false, ownerId: 'someone-else');
+
+      expect(find.byTooltip('Accommodation sources'), findsNothing);
+    });
+
+    testWidgets(
+      'tapping the action opens a sheet seeded with the trip\'s current '
+      'sources',
+      (tester) async {
+        await _pump(
+          tester,
+          isPublic: false,
+          members: [_editorMember],
+          accommodationSources: const ['airbnb'],
+        );
+
+        await tester.tap(find.byTooltip('Accommodation sources'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Accommodation Sources'), findsOneWidget);
+        final airbnbChip = tester.widget<FilterChip>(
+          find.ancestor(
+            of: find.text('Airbnb'),
+            matching: find.byType(FilterChip),
+          ),
+        );
+        final expediaChip = tester.widget<FilterChip>(
+          find.ancestor(
+            of: find.text('Expedia'),
+            matching: find.byType(FilterChip),
+          ),
+        );
+        expect(airbnbChip.selected, isTrue);
+        expect(expediaChip.selected, isFalse);
+      },
+    );
+
+    testWidgets('toggling a chip in the sheet updates its selected state', (
+      tester,
+    ) async {
+      await _pump(tester, isPublic: false, members: [_editorMember]);
+
+      await tester.tap(find.byTooltip('Accommodation sources'));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<FilterChip>(
+              find.ancestor(
+                of: find.text('Booking.com'),
+                matching: find.byType(FilterChip),
+              ),
+            )
+            .selected,
+        isFalse,
+      );
+
+      await tester.tap(find.text('Booking.com'));
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<FilterChip>(
+              find.ancestor(
+                of: find.text('Booking.com'),
+                matching: find.byType(FilterChip),
+              ),
+            )
+            .selected,
+        isTrue,
+      );
+    });
+  });
+
+  group('Stay tab', () {
+    testWidgets('renders the source/price/radius filters once the destination '
+        'resolves, without a layout exception', (tester) async {
+      await _pump(
+        tester,
+        isPublic: false,
+        members: [_editorMember],
+        accommodationSources: const [
+          'airbnb',
+          'expedia',
+          'booking',
+          'hostelworld',
+        ],
+        geocodingService: _FakeGeocodingService(),
+      );
+
+      await tester.tap(find.text('Stay'));
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Sources'), findsOneWidget);
+      expect(find.byType(RangeSlider), findsOneWidget);
+      expect(find.byType(Slider), findsOneWidget);
+    });
+
+    testWidgets(
+      'shows a message instead of a search when the destination cannot be '
+      'geocoded',
+      (tester) async {
+        await _pump(
+          tester,
+          isPublic: false,
+          members: [_editorMember],
+          geocodingService: _EmptyGeocodingService(),
+        );
+
+        await tester.tap(find.text('Stay'));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(tester.takeException(), isNull);
+        expect(
+          find.textContaining('Could not find a location'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

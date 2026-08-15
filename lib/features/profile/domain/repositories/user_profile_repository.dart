@@ -33,5 +33,6 @@ abstract class UserProfileRepository {
     String? contactVisibility,
     String? avatarUrl,
     bool? pushMessagePreviewEnabled,
+    List<String>? enabledAccommodationSources,
   });
 }

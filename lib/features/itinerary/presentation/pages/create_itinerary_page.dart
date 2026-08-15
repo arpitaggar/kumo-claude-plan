@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../core/accommodation/accommodation_source_meta.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../profile/presentation/providers/user_profile_provider.dart';
 import '../../../work_mode/presentation/providers/work_mode_provider.dart';
 import '../../domain/entities/travel_itinerary.dart';
 import '../../domain/entities/trip_theme.dart';
@@ -127,6 +129,17 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
         ? ref.read(currentWorkOrgProvider)?.id
         : null;
 
+    // Resolve the creator's accommodation-source default onto this trip as
+    // a concrete list *now* — null on the profile means "every source known
+    // at this exact moment" (see UserProfile.enabledAccommodationSources'
+    // doc comment), not "none". A trip's own setting never changes later
+    // just because the profile default changes or a new source ships.
+    final profile = await ref.read(userProfileProvider.future);
+    final accommodationSources = List<String>.from(
+      profile?.enabledAccommodationSources ??
+          kAccommodationSources.map((s) => s.key),
+    );
+
     final created = await ref
         .read(itineraryListProvider.notifier)
         .createItinerary(
@@ -143,6 +156,7 @@ class _CreateItineraryPageState extends ConsumerState<CreateItineraryPage> {
           items: _generatedItems.isEmpty ? null : _generatedItems,
           themeKey: _themeKey,
           orgId: effectiveOrgId,
+          accommodationSources: accommodationSources,
         );
 
     if (created != null && _costFieldValues.isNotEmpty) {

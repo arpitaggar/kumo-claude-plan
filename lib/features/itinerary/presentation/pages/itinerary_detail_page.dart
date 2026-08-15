@@ -8,13 +8,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../config/brand.dart';
+import '../../../../core/accommodation/accommodation_listing.dart';
+import '../../../../core/accommodation/accommodation_providers.dart';
+import '../../../../core/accommodation/accommodation_source_meta.dart';
+import '../../../../core/geocoding/geocoding_providers.dart';
+import '../../../../core/geocoding/geocoding_service.dart';
 import '../../../../core/maps/route_map_view.dart';
 import '../../../../core/routing/routing_service.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../../shared/widgets/source_toggle_picker.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../expense_split/domain/entities/expense.dart';
 import '../../../expense_split/presentation/providers/expense_provider.dart';
@@ -92,7 +99,7 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 6, vsync: this);
+    _tabs = TabController(length: 7, vsync: this);
   }
 
   @override
@@ -206,6 +213,32 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
     }, (_) {});
   }
 
+  /// Editable any time (like theme, not like dates) — which accommodation
+  /// sources show on this trip's Stay tab is cosmetic/preference, not
+  /// something other members build state on top of. See
+  /// `lib/core/accommodation/CLAUDE.md`.
+  Future<void> _changeAccommodationSources() async {
+    final selected = await showModalBottomSheet<List<String>>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) =>
+          _AccommodationSourcesSheet(currentKeys: it.accommodationSources),
+    );
+    if (selected == null || !mounted) {
+      return;
+    }
+    final result = await ref
+        .read(itineraryListProvider.notifier)
+        .updateItinerary(it.copyWith(accommodationSources: selected));
+    result.fold((f) {
+      if (mounted) {
+        context.showSnackBar(f.message, isError: true);
+      }
+    }, (_) {});
+  }
+
   Future<void> _deleteItem(String itemId) async {
     final updated = it.copyWith(
       items: it.items.where((i) => i.id != itemId).toList(),
@@ -272,6 +305,12 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
                     icon: const Icon(Icons.palette_outlined),
                     tooltip: 'Change theme',
                     onPressed: _changeTheme,
+                  ),
+                if (canEdit)
+                  IconButton(
+                    icon: const Icon(Icons.hotel_outlined),
+                    tooltip: 'Accommodation sources',
+                    onPressed: _changeAccommodationSources,
                   ),
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
@@ -343,6 +382,7 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
                     tabs: const [
                       Tab(text: 'Itinerary'),
                       Tab(text: 'Route'),
+                      Tab(text: 'Stay'),
                       Tab(text: 'Notes'),
                       Tab(text: 'Expenses'),
                       Tab(text: 'Reviews'),
@@ -368,6 +408,9 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
 
               // ── Route tab ──────────────────────────────────────────────────
               _RouteTab(itinerary: it),
+
+              // ── Stay tab ──────────────────────────────────────────────────
+              _AccommodationTab(itinerary: it),
 
               // ── Notes tab ─────────────────────────────────────────────────
               _NotesTab(itinerary: it, currentUserId: currentUserId),
@@ -423,6 +466,81 @@ class _ThemePickerSheet extends StatelessWidget {
         TripThemePicker(
           selectedKey: currentKey,
           onSelected: (key) => Navigator.of(context).pop(key),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Multi-select, unlike [_ThemePickerSheet] — keeps its own local selection
+/// state and only reports back on explicit "Save," rather than popping on
+/// first tap, since toggling one source shouldn't immediately close the
+/// sheet.
+class _AccommodationSourcesSheet extends StatefulWidget {
+  const _AccommodationSourcesSheet({required this.currentKeys});
+
+  final List<String> currentKeys;
+
+  @override
+  State<_AccommodationSourcesSheet> createState() =>
+      _AccommodationSourcesSheetState();
+}
+
+class _AccommodationSourcesSheetState
+    extends State<_AccommodationSourcesSheet> {
+  late final List<String> _selected = List<String>.from(widget.currentKeys);
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: EdgeInsets.fromLTRB(
+      20,
+      20,
+      20,
+      MediaQuery.of(context).padding.bottom + 20,
+    ),
+    decoration: BoxDecoration(
+      color: context.colorScheme.surface,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Accommodation Sources',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: context.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Which platforms show up on this trip\'s Stay tab.',
+          style: TextStyle(
+            fontSize: 13,
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SourceTogglePicker(
+          sources: kAccommodationSources,
+          selectedKeys: _selected,
+          onToggle: (key) => setState(() {
+            if (_selected.contains(key)) {
+              _selected.remove(key);
+            } else {
+              _selected.add(key);
+            }
+          }),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: () => Navigator.of(context).pop(_selected),
+            child: const Text('Save'),
+          ),
         ),
       ],
     ),
@@ -877,6 +995,408 @@ Future<void> _toggleSegmentVisibility(
       const SnackBar(content: Text('Failed to update segment visibility')),
     );
   }
+}
+
+// ── Stay tab ─────────────────────────────────────────────────────────────────
+
+/// Geocodes `title` (the trip's own title — itineraries have no dedicated
+/// destination-coordinates field) to a search center for the Stay tab. A
+/// deliberate v1 simplification (see `lib/core/accommodation/CLAUDE.md`) —
+/// no manual "pick a different center" control exists yet, so a trip
+/// titled without a recognizable place name (e.g. "Summer Trip") won't
+/// resolve to anywhere useful.
+final _accommodationSearchCenterProvider =
+    FutureProvider.family<GeocodingResult?, String>((ref, title) async {
+      final results = await ref.watch(geocodingServiceProvider).search(title);
+      return results.isNotEmpty ? results.first : null;
+    });
+
+AccommodationSourceMeta? _sourceMetaFor(String key) =>
+    kAccommodationSources.where((s) => s.key == key).firstOrNull;
+
+class _AccommodationTab extends ConsumerStatefulWidget {
+  const _AccommodationTab({required this.itinerary});
+
+  final TravelItinerary itinerary;
+
+  @override
+  ConsumerState<_AccommodationTab> createState() => _AccommodationTabState();
+}
+
+class _AccommodationTabState extends ConsumerState<_AccommodationTab> {
+  // Seeded from the trip's persisted setting, but this is purely a display
+  // filter for this screen — toggling here doesn't save anything. The
+  // AppBar's "Accommodation sources" action (_changeAccommodationSources)
+  // is what edits the persisted trip-level setting.
+  late final List<String> _visibleSourceKeys = List<String>.from(
+    widget.itinerary.accommodationSources,
+  );
+  double _radiusKm = 5;
+  RangeValues _priceRange = const RangeValues(0, 500);
+
+  @override
+  Widget build(BuildContext context) {
+    final centerAsync = ref.watch(
+      _accommodationSearchCenterProvider(widget.itinerary.title),
+    );
+
+    return centerAsync.when(
+      loading: () => const LoadingWidget(message: 'Finding destination…'),
+      error: (_, _) => const _AccommodationMessage(
+        'Could not determine this trip\'s location.',
+      ),
+      data: (center) {
+        if (center == null) {
+          return _AccommodationMessage(
+            'Could not find a location for "${widget.itinerary.title}" — '
+            'accommodation search needs a recognizable place name in the '
+            'trip title.',
+          );
+        }
+
+        final request = AccommodationSearchRequest(
+          query: AccommodationSearchQuery(
+            latitude: center.latitude,
+            longitude: center.longitude,
+            radiusKm: _radiusKm,
+            checkIn: widget.itinerary.startDate,
+            checkOut: widget.itinerary.endDate,
+            minPricePerNight: _priceRange.start,
+            maxPricePerNight: _priceRange.end,
+          ),
+          enabledSourceKeys: _visibleSourceKeys,
+        );
+        final resultAsync = ref.watch(accommodationSearchProvider(request));
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          children: [
+            Text(
+              'Sources',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SourceTogglePicker(
+              sources: kAccommodationSources,
+              selectedKeys: _visibleSourceKeys,
+              onToggle: (key) => setState(() {
+                if (_visibleSourceKeys.contains(key)) {
+                  _visibleSourceKeys.remove(key);
+                } else {
+                  _visibleSourceKeys.add(key);
+                }
+              }),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              '\$${_priceRange.start.round()} – \$${_priceRange.end.round()} '
+              'per night',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            RangeSlider(
+              values: _priceRange,
+              max: 500,
+              divisions: 25,
+              labels: RangeLabels(
+                '\$${_priceRange.start.round()}',
+                '\$${_priceRange.end.round()}',
+              ),
+              onChanged: (values) => setState(() => _priceRange = values),
+            ),
+            Text(
+              'Within ${_radiusKm.toStringAsFixed(0)} km',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Slider(
+              value: _radiusKm,
+              min: 1,
+              max: 20,
+              divisions: 19,
+              label: '${_radiusKm.toStringAsFixed(0)} km',
+              onChanged: (value) => setState(() => _radiusKm = value),
+            ),
+            const SizedBox(height: 12),
+            resultAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_, _) => const _AccommodationMessage(
+                'Could not load accommodation listings.',
+              ),
+              data: (result) {
+                if (_visibleSourceKeys.isEmpty) {
+                  return const _AccommodationMessage(
+                    'No sources selected — toggle at least one above.',
+                  );
+                }
+                if (result.listings.isEmpty) {
+                  return const _AccommodationMessage(
+                    'No listings match your filters.',
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (result.failedSourceKeys.isNotEmpty)
+                      _SourceFailureBanner(
+                        failedSourceKeys: result.failedSourceKeys,
+                      ),
+                    for (final listing in result.listings)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _AccommodationListingCard(listing: listing),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AccommodationMessage extends StatelessWidget {
+  const _AccommodationMessage(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(32),
+    child: Center(
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+      ),
+    ),
+  );
+}
+
+class _SourceFailureBanner extends StatelessWidget {
+  const _SourceFailureBanner({required this.failedSourceKeys});
+
+  final List<String> failedSourceKeys;
+
+  @override
+  Widget build(BuildContext context) {
+    final names = failedSourceKeys
+        .map((key) => _sourceMetaFor(key)?.displayName ?? key)
+        .join(', ');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.colorScheme.errorContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, size: 18, color: context.colorScheme.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$names unavailable right now — showing everything else.',
+              style: TextStyle(fontSize: 12, color: context.colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccommodationListingCard extends StatelessWidget {
+  const _AccommodationListingCard({required this.listing});
+
+  final AccommodationListing listing;
+
+  IconData get _propertyIcon => switch (listing.propertyType) {
+    PropertyType.hotel => Icons.hotel_outlined,
+    PropertyType.hostel => Icons.bed_outlined,
+    PropertyType.apartment => Icons.apartment_outlined,
+    PropertyType.other => Icons.place_outlined,
+  };
+
+  Future<void> _openBookingUrl(BuildContext context) async {
+    if (!await launchUrl(
+      listing.bookingUrl,
+      mode: LaunchMode.externalApplication,
+    )) {
+      if (context.mounted) {
+        context.showSnackBar('Could not open link', isError: true);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final meta = _sourceMetaFor(listing.sourceKey);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: listing.thumbnailUrl != null
+                ? Image.network(
+                    listing.thumbnailUrl!,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _placeholderThumbnail(context),
+                  )
+                : _placeholderThumbnail(context),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 8,
+                      backgroundColor:
+                          meta?.badgeColor ?? context.colorScheme.outline,
+                      child: Text(
+                        (meta?.displayName ?? listing.sourceKey).isNotEmpty
+                            ? (meta?.displayName ?? listing.sourceKey)[0]
+                                  .toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      meta?.displayName ?? listing.sourceKey,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  listing.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: context.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(
+                      _propertyIcon,
+                      size: 14,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      listing.propertyType.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (listing.rating != null) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.star, size: 14, color: Colors.amber[700]),
+                      const SizedBox(width: 2),
+                      Text(
+                        listing.rating!.toStringAsFixed(1),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Both children are flex-wrapped (not just the price) so
+                // this never overflows regardless of how long the price
+                // text or the source's display name is — a card this
+                // narrow (see itinerary_detail_page_test.dart's Stay tab
+                // tests, run at phone width) has very little room, and a
+                // name like "Hostelworld" alone can push a naturally-sized
+                // Row past its bounds.
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${Formatters.formatCurrency(listing.pricePerNight, listing.currencyCode)}/night',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: context.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: TextButton.icon(
+                        onPressed: () => _openBookingUrl(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        icon: const Icon(Icons.open_in_new, size: 14),
+                        label: Text(
+                          meta?.displayName ?? listing.sourceKey,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _placeholderThumbnail(BuildContext context) => Container(
+    width: 72,
+    height: 72,
+    color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+    alignment: Alignment.center,
+    child: Icon(_propertyIcon, color: context.colorScheme.onSurfaceVariant),
+  );
 }
 
 // ── Expenses tab ──────────────────────────────────────────────────────────────

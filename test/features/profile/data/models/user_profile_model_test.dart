@@ -118,5 +118,26 @@ void main() {
       expect(model.preferredCurrency, isNull);
       expect(model.preferredLanguage, isNull);
     });
+
+    test('parses enabled_accommodation_sources when present (Stage 25)', () {
+      final model = UserProfileModel.fromJson(const {
+        'id': 'user-1',
+        'updated_at': '2026-06-01T00:00:00.000Z',
+        'enabled_accommodation_sources': ['airbnb', 'expedia'],
+      });
+
+      expect(model.enabledAccommodationSources, ['airbnb', 'expedia']);
+    });
+
+    test('defaults enabledAccommodationSources to null when absent — null '
+        'means "all sources", not "none", so this must never default to an '
+        'empty list', () {
+      final model = UserProfileModel.fromJson(const {
+        'id': 'user-1',
+        'updated_at': '2026-06-01T00:00:00.000Z',
+      });
+
+      expect(model.enabledAccommodationSources, isNull);
+    });
   });
 }

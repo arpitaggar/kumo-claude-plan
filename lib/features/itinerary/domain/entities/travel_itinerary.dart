@@ -70,6 +70,7 @@ class TravelItinerary extends Equatable {
     this.themeKey = 'classic',
     this.originPostId,
     this.orgId,
+    this.accommodationSources = const [],
   });
 
   /// Unique identifier for this itinerary (UUID format).
@@ -190,6 +191,15 @@ class TravelItinerary extends Equatable {
   /// oversight (this row's existence, not its content) of org-tagged trips.
   final String? orgId;
 
+  /// Accommodation source keys (see
+  /// `lib/core/accommodation/accommodation_source_meta.dart`) enabled on
+  /// this trip's Stay tab. Unlike `UserProfile.enabledAccommodationSources`,
+  /// **always a concrete list, never null** — stamped from the creator's
+  /// profile default at trip-creation time (see `CreateItineraryUseCase`)
+  /// and independently editable afterward; it deliberately doesn't change
+  /// just because the profile default changes later or a new source ships.
+  final List<String> accommodationSources;
+
   /// Creates a copy of this [TravelItinerary] with optionally replaced fields.
   ///
   /// Useful for immutable updates without modifying original.
@@ -224,6 +234,7 @@ class TravelItinerary extends Equatable {
     String? themeKey,
     String? originPostId,
     String? orgId,
+    List<String>? accommodationSources,
   }) => TravelItinerary(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -244,6 +255,7 @@ class TravelItinerary extends Equatable {
     themeKey: themeKey ?? this.themeKey,
     originPostId: originPostId ?? this.originPostId,
     orgId: orgId ?? this.orgId,
+    accommodationSources: accommodationSources ?? this.accommodationSources,
   );
 
   @override
@@ -267,6 +279,7 @@ class TravelItinerary extends Equatable {
     themeKey,
     originPostId,
     orgId,
+    accommodationSources,
   ];
 }
 

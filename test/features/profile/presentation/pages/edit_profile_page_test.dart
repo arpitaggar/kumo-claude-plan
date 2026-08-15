@@ -97,6 +97,7 @@ _pump(WidgetTester tester, {UserProfile? profile}) async {
       contactVisibility: any(named: 'contactVisibility'),
       avatarUrl: any(named: 'avatarUrl'),
       pushMessagePreviewEnabled: any(named: 'pushMessagePreviewEnabled'),
+      enabledAccommodationSources: any(named: 'enabledAccommodationSources'),
     ),
   ).thenAnswer((_) async => Right(profile ?? _profile));
 
@@ -186,6 +187,7 @@ void main() {
         contactVisibility: any(named: 'contactVisibility'),
         avatarUrl: any(named: 'avatarUrl'),
         pushMessagePreviewEnabled: any(named: 'pushMessagePreviewEnabled'),
+        enabledAccommodationSources: any(named: 'enabledAccommodationSources'),
       ),
     );
   });
@@ -227,6 +229,9 @@ void main() {
           contactVisibility: any(named: 'contactVisibility'),
           avatarUrl: any(named: 'avatarUrl'),
           pushMessagePreviewEnabled: any(named: 'pushMessagePreviewEnabled'),
+          enabledAccommodationSources: any(
+            named: 'enabledAccommodationSources',
+          ),
         ),
       ).called(1);
       // Checked before pumpAndSettle — a real SnackBar's dismiss timer keeps
@@ -258,6 +263,7 @@ void main() {
         contactVisibility: any(named: 'contactVisibility'),
         avatarUrl: any(named: 'avatarUrl'),
         pushMessagePreviewEnabled: any(named: 'pushMessagePreviewEnabled'),
+        enabledAccommodationSources: any(named: 'enabledAccommodationSources'),
       ),
     ).thenAnswer((_) async => const Left(ServerFailure('Update failed')));
 
@@ -288,5 +294,35 @@ void main() {
       find.widgetWithText(FilterChip, 'beach'),
     );
     expect(beachChipAfter.selected, isTrue);
+  });
+
+  testWidgets(
+    'every accommodation source starts selected when the profile has never '
+    'customized this (enabledAccommodationSources is null, meaning "all")',
+    (tester) async {
+      await _pump(tester);
+
+      final airbnbChip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'Airbnb'),
+      );
+      final bookingChip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'Booking.com'),
+      );
+      expect(airbnbChip.selected, isTrue);
+      expect(bookingChip.selected, isTrue);
+    },
+  );
+
+  testWidgets('toggling an accommodation source chip updates its selected '
+      'state', (tester) async {
+    await _pump(tester);
+
+    await tester.tap(find.text('Airbnb'));
+    await tester.pumpAndSettle();
+
+    final airbnbChipAfter = tester.widget<FilterChip>(
+      find.widgetWithText(FilterChip, 'Airbnb'),
+    );
+    expect(airbnbChipAfter.selected, isFalse);
   });
 }

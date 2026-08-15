@@ -220,6 +220,52 @@ void main() {
       expect(captured!.expenseSummary.totalSpent, 0.0);
       expect(captured!.expenseSummary.spentByCategory, isEmpty);
     });
+
+    test(
+      'defaults accommodationSources to an empty list when omitted',
+      () async {
+        TravelItinerary? captured;
+        when(() => mockRepo.createItinerary(any())).thenAnswer((inv) async {
+          captured = inv.positionalArguments[0] as TravelItinerary;
+          return Right(captured!);
+        });
+
+        await useCase(
+          title: 'Tokyo Trip',
+          ownerId: 'user-1',
+          ownerName: 'Alice',
+          startDate: tStart,
+          endDate: tEnd,
+          totalBudget: 1500,
+          currencyCode: 'USD',
+        );
+
+        expect(captured!.accommodationSources, isEmpty);
+      },
+    );
+
+    test('passes accommodationSources through unchanged — resolving the '
+        'profile default (including null-means-all) is the caller\'s job, '
+        'not this usecase\'s', () async {
+      TravelItinerary? captured;
+      when(() => mockRepo.createItinerary(any())).thenAnswer((inv) async {
+        captured = inv.positionalArguments[0] as TravelItinerary;
+        return Right(captured!);
+      });
+
+      await useCase(
+        title: 'Tokyo Trip',
+        ownerId: 'user-1',
+        ownerName: 'Alice',
+        startDate: tStart,
+        endDate: tEnd,
+        totalBudget: 1500,
+        currencyCode: 'USD',
+        accommodationSources: const ['airbnb', 'hostelworld'],
+      );
+
+      expect(captured!.accommodationSources, ['airbnb', 'hostelworld']);
+    });
   });
 
   group('CreateItineraryUseCase — repository delegation', () {

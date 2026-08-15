@@ -18,6 +18,7 @@ import 'package:kumo_claude/features/itinerary/presentation/providers/itinerary_
 import 'package:kumo_claude/features/itinerary/presentation/widgets/cost_field_picker.dart';
 import 'package:kumo_claude/features/organization/domain/entities/organization.dart';
 import 'package:kumo_claude/features/organization/presentation/providers/organization_provider.dart';
+import 'package:kumo_claude/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:kumo_claude/features/work_mode/presentation/providers/work_mode_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -99,6 +100,7 @@ Future<MockCreateItineraryUseCase> _pump(
       items: any(named: 'items'),
       themeKey: any(named: 'themeKey'),
       orgId: any(named: 'orgId'),
+      accommodationSources: any(named: 'accommodationSources'),
     ),
   ).thenAnswer((_) async => Right(_createdTrip(orgId: workOrg?.id)));
 
@@ -115,6 +117,10 @@ Future<MockCreateItineraryUseCase> _pump(
     createItineraryUseCaseProvider.overrideWithValue(createUseCase),
     isWorkModeActiveProvider.overrideWithValue(workModeActive),
     currentWorkOrgProvider.overrideWithValue(workOrg),
+    // No explicit profile fixture needed for these tests — a null profile
+    // resolves to "every known accommodation source" the same way a real
+    // never-customized profile would (see UserProfile's doc comment).
+    userProfileProvider.overrideWith((ref) async => null),
   ];
   if (workOrg != null) {
     overrides.add(
@@ -249,6 +255,7 @@ void main() {
         items: any(named: 'items'),
         themeKey: any(named: 'themeKey'),
         orgId: captureAny(named: 'orgId'),
+        accommodationSources: any(named: 'accommodationSources'),
       ),
     ).captured;
     expect(captured.single, isNull);
@@ -279,6 +286,7 @@ void main() {
           items: any(named: 'items'),
           themeKey: any(named: 'themeKey'),
           orgId: captureAny(named: 'orgId'),
+          accommodationSources: any(named: 'accommodationSources'),
         ),
       ).captured;
       expect(captured.single, 'org-1');

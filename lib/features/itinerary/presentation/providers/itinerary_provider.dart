@@ -162,6 +162,7 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
     List<ItineraryItem>? items,
     String themeKey = 'classic',
     String? orgId,
+    List<String> accommodationSources = const [],
   }) async {
     final result = await createUseCase(
       title: title,
@@ -175,6 +176,7 @@ class ItineraryListNotifier extends StateNotifier<ItineraryListState> {
       items: items,
       themeKey: themeKey,
       orgId: orgId,
+      accommodationSources: accommodationSources,
     );
     return result.fold(
       (failure) {
