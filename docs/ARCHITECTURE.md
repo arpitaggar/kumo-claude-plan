@@ -459,6 +459,17 @@ beyond that check: the trigger strips it out of `raw_user_meta_data` before
 the row is written, keeping only a boolean pass/fail fact
 (`profiles.age_verified_at`).
 
+An invite-created account is a narrower case — no DOB exists at `INSERT`
+time (the row is created by the *inviter*), so it's left unverified until
+the invitee calls `confirm_age_and_finish_signup()`. Until 2026-08-15 that
+window was enforced only by the Flutter router's redirect to
+`/confirm-age`, not by Postgres (`docs/SECURITY_AUDIT.md` SEC-033).
+`docs/supabase_migrations/stage46_age_gate_db_enforcement.sql` closed that
+gap with a `require_age_verified()` trigger on every write path that
+matters (trips, messages, posts, likes, follows, comments, expenses,
+ratings, packing items, route segments), so an unverified session can't act
+as an independent data subject even by bypassing the app UI entirely.
+
 Minors — and any adult who'd rather not create an account at all — still
 need to participate in trip planning. That's what **Hitchhiker** is: added
 by a Captain with nothing but a first name, no email/phone/DOB, no

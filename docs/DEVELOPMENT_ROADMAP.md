@@ -281,7 +281,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 
 **Deliberately not built:** Hitchhiker → Crew promotion (no automatic row-conversion path); rate limiting on the Hitchhiker token RPCs (`docs/SECURITY_AUDIT.md` SEC-034 — accepted risk, token entropy + instant revocability judged sufficient for now).
 
-**🔧 Not yet deployed:** `docs/SECURITY_AUDIT.md` SEC-033 — the invite-created-account path's age gate is currently enforced only by the Flutter router redirect, not by any RLS policy or RPC check, flagged for a product decision rather than fixed unilaterally. **SQL migrations:** `docs/supabase_migrations/stage42_trip_email_log_retention.sql` through `stage45_hitchhikers.sql` — **not yet confirmed run against the live database.** `stage43` (private buckets) and the app build depending on it must ship together, or an old client gets a 403 on avatar/attachment URLs.
+**🔧 Not yet deployed:** SEC-033 is now code-resolved — `stage46_age_gate_db_enforcement.sql` (2026-08-15) adds a DB-level `require_age_verified()` trigger, but like every migration below it hasn't been run against the live database yet. **SQL migrations:** `docs/supabase_migrations/stage42_trip_email_log_retention.sql` through `stage46_age_gate_db_enforcement.sql` — **not yet confirmed run against the live database.** `stage43` (private buckets) and the app build depending on it must ship together, or an old client gets a 403 on avatar/attachment URLs.
 
 **Web smoke-test pass (2026-08-13):** with no device/simulator available in this dev environment, actually drove the live web build (headless Chrome + a new reusable Playwright harness, `scripts/web_smoke_test/`) against production Supabase data instead of leaving Work Mode/gamification/Hitchhiker unverified. Found and fixed **5 real bugs**, none caught by `flutter test` alone: a `RenderFlex` overflow on the itinerary detail page's overview pills at real phone widths; a web/CanvasKit-only infinite-width crash on the same page's Publish button; Work Mode trip creation broken for *every* organization (an ambiguous PostgREST embed on `org_cost_field_sources`, live since Stage 21); a Hitchhiker's first chat message permanently crashing the Captain/Crew's group chat (`messages.sender_id` nullability never threaded through `MessageModel`); and a missing delete confirmation on the Home/Trips list (found because a test script's own race condition deleted a real trip — incident and fix both in `docs/Checklist.md`). Full writeup: `docs/Checklist.md`'s three "Real device/simulator smoke test" entries.
 
@@ -304,7 +304,7 @@ Also added a general-purpose, DB-backed premium feature-flag system (`feature_fl
 | Google Maps route rendering (live) | Code-complete behind the map-provider abstraction (Stage 18); needs a real Google Cloud Maps API key dropped into the gitignored `google_maps_api.xml` (Android) / `Secrets.xcconfig` (iOS) — currently builds with a placeholder key so tiles won't render |
 | Masked trip email (live) | Code-complete (Stage 19); needs a domain + inbound-email provider (Cloudflare Email Routing / Postmark / Mailgun) wired to `inbound-trip-email`, plus the `INBOUND_WEBHOOK_SECRET` secret set — see that stage's entry above |
 | SEC-014 (Firebase key rotation) | The one open finding in `docs/SECURITY_AUDIT.md` that can't be closed by a code change — a manual Firebase console action |
-| SEC-033 (invite-path age gate is app-side only) | `docs/SECURITY_AUDIT.md` — a real, verified gap flagged for a product decision on scope (which write paths need a DB-level `age_verified_at` check), not fixed unilaterally |
+| SEC-033 (invite-path age gate is app-side only) | ✅ Resolved 2026-08-15 (`stage46_age_gate_db_enforcement.sql`) — code-complete, not yet deployed. Kept here only because the migration hasn't run against the live database yet; see the deployment-gaps list in `docs/Checklist.md` |
 | Background job/queue infrastructure | `docs/SCALABILITY_AUDIT.md` SCALE-002 — the prerequisite for the *proper* long-term version of the like-counter and for scaling push fan-out past trip-sized groups; not justified until real fan-out traffic shows up |
 | Architecture cleanup backlog | `docs/SOLID_AUDIT.md`'s ranked list — a 2026-08-11 pass is working through all 12 items; check that doc for current status. Incremental, non-blocking, tracked there rather than here |
 
@@ -347,7 +347,7 @@ Jun–Jul 2026
 - `flutter analyze` — zero warnings/errors; 11 info-level style nits tolerated, all deliberate `one_member_abstracts` (down from ~265 after a 2026-08-13 cleanup pass — see `docs/SOLID_AUDIT.md`/`docs/Checklist.md` for what those are) ✅
 - No secrets committed to git (`.env` in `.gitignore`, API keys in Supabase secrets) ✅
 - Supabase RLS enabled on all tables, and independently security-reviewed multiple times (2026-08-05, 2026-08-09, 2026-08-13) — see `docs/SECURITY_AUDIT.md` ✅
-- Every SQL migration through `stage41_gamification_rate_limits.sql` is confirmed live against the production database (2026-08-11); `stage42`–`stage45` (Stage 24, age gate + Hitchhiker) are **not yet confirmed live** — see Outstanding below ⚠️
+- Every SQL migration through `stage41_gamification_rate_limits.sql` is confirmed live against the production database (2026-08-11); `stage42`–`stage46` (Stage 24, age gate + Hitchhiker, plus the 2026-08-15 SEC-033 DB-enforcement follow-up) are **not yet confirmed live** — see Outstanding below ⚠️
 - Clean Architecture layer boundaries respected — audited (`docs/SOLID_AUDIT.md`), no domain-layer framework leaks anywhere including the newest features ✅
 - GDPR right to erasure implemented (account deletion RPC + in-app flow) ✅
 - Privacy Policy and Terms of Service pages in-app and as hosted HTML ✅
@@ -357,8 +357,8 @@ Jun–Jul 2026
 
 Outstanding:
 - SEC-014: rotate the Firebase key via the Firebase console (the one open security finding that isn't a code change)
-- SEC-033: the invite-created-account age gate is enforced only by the Flutter router, not by any RLS/RPC check — flagged for a product decision on scope, see `docs/SECURITY_AUDIT.md`
-- Run `stage42_trip_email_log_retention.sql` through `stage45_hitchhikers.sql` against the live database (Stage 24); `stage43` (private storage buckets) and the app build depending on it must ship together
+- SEC-033: resolved in code 2026-08-15 (`stage46_age_gate_db_enforcement.sql`, see `docs/SECURITY_AUDIT.md`) — just needs the migration run
+- Run `stage42_trip_email_log_retention.sql` through `stage46_age_gate_db_enforcement.sql` against the live database (Stage 24 + the SEC-033 follow-up); `stage43` (private storage buckets) and the app build depending on it must ship together
 - Deploy/redeploy the Edge Functions with their secrets set: `generate-itinerary` (Katha AI, `ANTHROPIC_API_KEY`), `send-message-push` (push notifications, `FIREBASE_SERVICE_ACCOUNT_KEY`), and `invite-email` — all three also still need the `ALLOWED_ORIGIN` secret from SEC-002; ship a Flutter build via `--dart-define-from-file=env.local.json` to go with it
 - Drop a real Google Maps API key into the gitignored native config files to make that map provider actually render (Stage 18)
 - Wire up an inbound-email provider + `INBOUND_WEBHOOK_SECRET`, then deploy `inbound-trip-email`, to make masked trip email actually receive mail (Stage 19)

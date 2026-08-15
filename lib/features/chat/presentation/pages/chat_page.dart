@@ -153,10 +153,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   void dispose() {
     // Deferred (see _activeChatIdController comment above) and uses the
     // cached controller rather than `ref`, since `ref` isn't safe to use
-    // once this State is disposed.
+    // once this State is disposed. By the time this microtask actually
+    // runs, the whole ProviderContainer may itself already be gone (e.g.
+    // app/session teardown racing this page's own dispose) — the write is
+    // then a no-op, not an error, since there's nothing left to clear.
     Future.microtask(() {
-      if (_activeChatIdController.state == widget.itineraryId) {
-        _activeChatIdController.state = null;
+      try {
+        if (_activeChatIdController.state == widget.itineraryId) {
+          _activeChatIdController.state = null;
+        }
+        // ignore: avoid_catching_errors
+      } on StateError {
+        // Container already disposed — state_notifier throws StateError
+        // (not an Exception) for a post-dispose write, and that's the one
+        // specific condition this guards, not errors in general.
       }
     });
     _typingDebounce?.cancel();

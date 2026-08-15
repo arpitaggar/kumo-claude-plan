@@ -32,4 +32,9 @@ if ! flutter analyze --no-fatal-infos; then
   exit 1
 fi
 
+echo "pre-commit: age-gate coverage (SEC-033 future-proofing)"
+if ! "$(git rev-parse --show-toplevel)/scripts/check_age_gate_coverage.sh"; then
+  exit 1
+fi
+
 echo "pre-commit: ok"
