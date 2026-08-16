@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kumo_claude/config/constants.dart';
+import 'package:kumo_claude/core/error/failure.dart';
 import 'package:kumo_claude/core/geocoding/geocoding_providers.dart';
 import 'package:kumo_claude/core/geocoding/geocoding_service.dart';
 import 'package:kumo_claude/features/auth/domain/entities/user.dart';
@@ -12,6 +13,8 @@ import 'package:kumo_claude/features/auth/domain/usecases/login_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/signup_usecase.dart';
 import 'package:kumo_claude/features/auth/presentation/providers/auth_provider.dart';
+import 'package:kumo_claude/features/direct_messages/domain/repositories/direct_message_repository.dart';
+import 'package:kumo_claude/features/direct_messages/presentation/providers/direct_message_provider.dart';
 import 'package:kumo_claude/features/itinerary/domain/entities/travel_itinerary.dart';
 import 'package:kumo_claude/features/itinerary/presentation/pages/itinerary_detail_page.dart';
 import 'package:kumo_claude/features/itinerary/presentation/providers/itinerary_provider.dart';
@@ -44,6 +47,9 @@ class MockSignupUseCase extends Mock implements SignupUseCase {}
 class MockLogoutUseCase extends Mock implements LogoutUseCase {}
 
 class MockDeleteAccountUseCase extends Mock implements DeleteAccountUseCase {}
+
+class MockDirectMessageRepository extends Mock
+    implements DirectMessageRepository {}
 
 const _summary = ExpenseSummary(
   totalSpent: 0,
@@ -115,6 +121,7 @@ Future<void> _pump(
   List<GroupMember> members = const [],
   List<String> accommodationSources = const [],
   GeocodingService? geocodingService,
+  DirectMessageRepository? directMessageRepository,
 }) async {
   final authRepo = MockAuthRepository();
   when(authRepo.getCurrentUser).thenAnswer(
@@ -154,6 +161,10 @@ Future<void> _pump(
         ),
         if (geocodingService != null)
           geocodingServiceProvider.overrideWithValue(geocodingService),
+        if (directMessageRepository != null)
+          directMessageRepositoryProvider.overrideWithValue(
+            directMessageRepository,
+          ),
       ],
       child: const MaterialApp(home: ItineraryDetailPage(id: 'trip-1')),
     ),
@@ -459,6 +470,144 @@ void main() {
           find.textContaining('Could not find a location'),
           findsOneWidget,
         );
+      },
+    );
+  });
+
+  group('member long-press actions', () {
+    // canManage requires the current user to be the owner AND the target
+    // row to not be the owner's own row — _editorMember ('user-1') is an
+    // editor, not the owner, so these tests use an explicit owner member
+    // instead to exercise the manage-gated rows.
+    final ownerMember = GroupMember(
+      userId: 'user-1',
+      userName: 'Arpit',
+      role: GroupMemberRole.owner,
+      joinedAt: DateTime.utc(2026),
+    );
+    final otherMember = GroupMember(
+      userId: 'user-2',
+      userName: 'Bob',
+      role: GroupMemberRole.viewer,
+      joinedAt: DateTime.utc(2026),
+    );
+
+    testWidgets(
+      'owner long-pressing another member sees Message privately, Make '
+      'Editor, and Remove from trip',
+      (tester) async {
+        await _pump(
+          tester,
+          isPublic: false,
+          members: [ownerMember, otherMember],
+        );
+
+        await tester.ensureVisible(find.text('Bob'));
+        await tester.longPress(find.text('Bob'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Message privately'), findsOneWidget);
+        expect(find.text('Make Editor'), findsOneWidget);
+        expect(find.text('Remove from trip'), findsOneWidget);
+      },
+    );
+
+    testWidgets('long-pressing your own row never offers Message privately', (
+      tester,
+    ) async {
+      await _pump(tester, isPublic: false, members: [ownerMember, otherMember]);
+
+      await tester.ensureVisible(find.text('Arpit'));
+      await tester.longPress(find.text('Arpit'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Message privately'), findsNothing);
+    });
+
+    testWidgets('a non-owner long-pressing another member sees only Message '
+        'privately, no manage actions', (tester) async {
+      await _pump(
+        tester,
+        isPublic: false,
+        ownerId: 'someone-else',
+        members: [_editorMember, otherMember],
+      );
+
+      await tester.ensureVisible(find.text('Bob'));
+      await tester.longPress(find.text('Bob'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Message privately'), findsOneWidget);
+      expect(find.text('Make Editor'), findsNothing);
+      expect(find.text('Remove from trip'), findsNothing);
+    });
+
+    testWidgets(
+      'a row with no long-press actions available does not open a sheet',
+      (tester) async {
+        // A non-owner long-pressing their own row: no manage rights, and
+        // "Message privately" is excluded for your own row.
+        await _pump(
+          tester,
+          isPublic: false,
+          ownerId: 'someone-else',
+          members: [_editorMember, otherMember],
+        );
+
+        await tester.ensureVisible(find.text('Arpit'));
+        await tester.longPress(find.text('Arpit'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Message privately'), findsNothing);
+        expect(find.text('Remove from trip'), findsNothing);
+      },
+    );
+
+    testWidgets('tapping "Message privately" resolves a conversation via the '
+        'repository', (tester) async {
+      final dmRepo = MockDirectMessageRepository();
+      when(
+        () => dmRepo.getOrCreateConversation('user-2'),
+      ).thenAnswer((_) async => const Left(ServerFailure('boom')));
+
+      await _pump(
+        tester,
+        isPublic: false,
+        members: [ownerMember, otherMember],
+        directMessageRepository: dmRepo,
+      );
+
+      await tester.ensureVisible(find.text('Bob'));
+      await tester.longPress(find.text('Bob'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Message privately'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      verify(() => dmRepo.getOrCreateConversation('user-2')).called(1);
+      // Left(...) surfaces as a snackbar rather than navigating — this
+      // sidesteps needing a full GoRouter harness just to exercise the
+      // repository call itself.
+      expect(find.text('boom'), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping "Remove from trip" in the sheet opens the confirm dialog',
+      (tester) async {
+        await _pump(
+          tester,
+          isPublic: false,
+          members: [ownerMember, otherMember],
+        );
+
+        await tester.ensureVisible(find.text('Bob'));
+        await tester.longPress(find.text('Bob'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Remove from trip'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Remove member?'), findsOneWidget);
+        expect(find.text('Remove Bob from this trip?'), findsOneWidget);
       },
     );
   });

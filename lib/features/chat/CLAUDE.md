@@ -2,6 +2,13 @@
 
 Migrated from the project root CLAUDE.md (2026-08-03 doctor cleanup) — loads only when working under lib/features/chat/. Push notification delivery is included here since it's chat-triggered, even though some of its code lives under lib/core/notifications/.
 
+### Direct messages (private 1:1 chat) reuses this feature's infrastructure (2026-08-16)
+
+`lib/features/direct_messages/` is a separate, parallel feature (see its own CLAUDE.md) rather than an extension of this one — `Message.itineraryId` is non-nullable and too deeply baked into this feature's models/widgets/tests to safely widen. Two things *in this feature* changed to support it, both worth knowing about if you're working on either side:
+
+- **`inboxHasUnreadProvider`** (`chat_provider.dart`) now also scans `dmConversationListProvider` (imported from `direct_messages`) so the Inbox tab's unread badge covers DMs too, not just trip chats — a small, deliberate cross-feature import kept in this file rather than relocated to a shared location.
+- **`send-message-push`**'s `kind` field gained a `'dm'` branch alongside the existing `'chat'`/`'social'` values (see `lib/core/notifications/push_message_handler.dart`) — the extension point this codebase already established when social notifications were added.
+
 ### Hitchhiker-authored messages (Stage 24 integration point)
 
 `stage45_hitchhikers.sql` (see `lib/features/hitchhiker/CLAUDE.md`) made `messages.sender_id` **nullable** — a Hitchhiker-authored row sets `hitchhiker_id` instead (`messages_sender_xor_hitchhiker` check constraint: exactly one of the two is set). This feature shipped several stages after this doc was originally written and the integration was missed at the time: `MessageModel.fromJson` did `senderId: json['sender_id'] as String` — a hard, non-nullable cast — which meant a Hitchhiker's very first message permanently crashed every Captain/Crew member's group chat (not just that one message — the whole message list failed to parse). Found and fixed 2026-08-13 by actually driving a real Hitchhiker message through the live app rather than assuming the model already handled it; see `docs/Checklist.md`'s "Real device/simulator smoke test, part 2" entry for the full writeup.

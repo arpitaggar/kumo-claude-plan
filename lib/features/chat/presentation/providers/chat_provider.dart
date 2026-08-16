@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/notifications/notification_providers.dart';
 import '../../../../core/notifications/push_config.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../direct_messages/presentation/providers/direct_message_provider.dart';
 import '../../../itinerary/presentation/providers/itinerary_provider.dart';
 import '../../../profile/domain/entities/notification_preference.dart';
 import '../../../profile/presentation/providers/user_profile_provider.dart';
@@ -80,7 +81,11 @@ final messageReadReceiptsProvider =
 /// Initialised to 0; InboxPage updates it from SharedPreferences on mount.
 final inboxLastVisitProvider = StateProvider<int>((_) => 0);
 
-/// True when any trip has a message newer than [inboxLastVisitProvider].
+/// True when any trip or DM conversation has a message newer than
+/// [inboxLastVisitProvider] — the badge is tab-level (Trips + Direct
+/// combined), not sub-tab-level, matching how a single Inbox visit already
+/// clears it for every trip regardless of which trip's chat was actually
+/// read.
 final inboxHasUnreadProvider = Provider<bool>((ref) {
   final lastVisitMs = ref.watch(inboxLastVisitProvider);
   if (lastVisitMs == 0) {
@@ -88,15 +93,28 @@ final inboxHasUnreadProvider = Provider<bool>((ref) {
   }
 
   final listState = ref.watch(itineraryListProvider);
-  if (listState is! ItineraryListLoaded) {
-    return false;
+  if (listState is ItineraryListLoaded) {
+    for (final trip in listState.itineraries) {
+      final msgs = ref.watch(chatStreamProvider(trip.id));
+      final latest = msgs.value?.isNotEmpty == true ? msgs.value!.last : null;
+      if (latest != null &&
+          latest.createdAt.millisecondsSinceEpoch > lastVisitMs) {
+        return true;
+      }
+    }
   }
 
-  for (final trip in listState.itineraries) {
-    final msgs = ref.watch(chatStreamProvider(trip.id));
-    final latest = msgs.value?.isNotEmpty == true ? msgs.value!.last : null;
-    if (latest != null &&
-        latest.createdAt.millisecondsSinceEpoch > lastVisitMs) {
+  final authState = ref.watch(authNotifierProvider);
+  final currentUserId = authState is AuthAuthenticated
+      ? authState.user.id
+      : null;
+  final conversations = ref.watch(dmConversationListProvider).value ?? const [];
+  for (final convo in conversations) {
+    final lastAt = convo.lastMessageAt;
+    if (lastAt == null || convo.lastMessageSenderId == currentUserId) {
+      continue;
+    }
+    if (lastAt.millisecondsSinceEpoch > lastVisitMs) {
       return true;
     }
   }

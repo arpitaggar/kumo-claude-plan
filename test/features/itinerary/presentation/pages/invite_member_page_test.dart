@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kumo_claude/config/constants.dart';
 import 'package:kumo_claude/core/error/failure.dart';
+import 'package:kumo_claude/features/direct_messages/domain/repositories/direct_message_repository.dart';
+import 'package:kumo_claude/features/direct_messages/presentation/providers/direct_message_provider.dart';
 import 'package:kumo_claude/features/hitchhiker/presentation/providers/hitchhiker_provider.dart';
 import 'package:kumo_claude/features/itinerary/domain/entities/profile_result.dart';
 import 'package:kumo_claude/features/itinerary/domain/entities/travel_itinerary.dart';
@@ -30,6 +32,9 @@ class MockCreatePendingInvitationUseCase extends Mock
 
 class MockUpdateItineraryUseCase extends Mock
     implements UpdateItineraryUseCase {}
+
+class MockDirectMessageRepository extends Mock
+    implements DirectMessageRepository {}
 
 const _summary = ExpenseSummary(
   totalSpent: 0,
@@ -65,12 +70,14 @@ class _Mocks {
     required this.findByEmailUseCase,
     required this.createPendingInvitationUseCase,
     required this.updateUseCase,
+    required this.directMessageRepository,
   });
 
   final MockSearchProfilesByNameUseCase searchUseCase;
   final MockFindProfileByEmailUseCase findByEmailUseCase;
   final MockCreatePendingInvitationUseCase createPendingInvitationUseCase;
   final MockUpdateItineraryUseCase updateUseCase;
+  final MockDirectMessageRepository directMessageRepository;
 }
 
 Future<_Mocks> _pump(
@@ -107,6 +114,11 @@ Future<_Mocks> _pump(
     () => updateUseCase(any()),
   ).thenAnswer((_) async => updateResult ?? Right(trip));
 
+  final directMessageRepository = MockDirectMessageRepository();
+  when(
+    () => directMessageRepository.getOrCreateConversation(any()),
+  ).thenAnswer((_) async => const Right('conv-1'));
+
   final overrides = <Override>[
     itineraryStreamProvider(trip.id).overrideWith((ref) => Stream.value(trip)),
     searchProfilesByNameUseCaseProvider.overrideWithValue(searchUseCase),
@@ -116,6 +128,7 @@ Future<_Mocks> _pump(
     ),
     updateItineraryUseCaseProvider.overrideWithValue(updateUseCase),
     hitchhikersForTripProvider(trip.id).overrideWith((ref) async => const []),
+    directMessageRepositoryProvider.overrideWithValue(directMessageRepository),
   ];
 
   tester.view.physicalSize = const Size(800, 1600);
@@ -129,6 +142,12 @@ Future<_Mocks> _pump(
       GoRoute(
         path: '/invite',
         builder: (_, _) => InviteMemberPage(itineraryId: trip.id),
+      ),
+      GoRoute(
+        path: '/dm/:conversationId',
+        builder: (_, state) => Scaffold(
+          body: Text('DM thread ${state.pathParameters['conversationId']}'),
+        ),
       ),
     ],
   );
@@ -148,6 +167,7 @@ Future<_Mocks> _pump(
     findByEmailUseCase: findByEmailUseCase,
     createPendingInvitationUseCase: createPendingInvitationUseCase,
     updateUseCase: updateUseCase,
+    directMessageRepository: directMessageRepository,
   );
 }
 
@@ -268,4 +288,71 @@ void main() {
       ).called(1);
     },
   );
+
+  testWidgets(
+    'search tab: tapping Message resolves a conversation and navigates',
+    (tester) async {
+      final mocks = await _pump(tester);
+
+      await tester.enterText(find.byType(TextField).first, 'Al');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chat_bubble_outline));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mocks.directMessageRepository.getOrCreateConversation('user-2'),
+      ).called(1);
+      expect(find.text('DM thread conv-1'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'email tab: a found account shows a Message action alongside Add to '
+    'Trip',
+    (tester) async {
+      final mocks = await _pump(tester);
+
+      await tester.tap(find.text('Invite by email'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Email address'),
+        'alex@example.com',
+      );
+      await tester.tap(find.widgetWithIcon(FilledButton, Icons.search));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.chat_bubble_outline), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.chat_bubble_outline));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mocks.directMessageRepository.getOrCreateConversation('user-2'),
+      ).called(1);
+    },
+  );
+
+  testWidgets('email tab: the pending-invite (no account) case never shows a '
+      'Message action', (tester) async {
+    await _pump(tester, findByEmailResult: const Right(null));
+
+    await tester.tap(find.text('Invite by email'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Email address'),
+      'nobody@example.com',
+    );
+    await tester.tap(find.widgetWithIcon(FilledButton, Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('No account found for nobody@example.com'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.chat_bubble_outline), findsNothing);
+  });
 }

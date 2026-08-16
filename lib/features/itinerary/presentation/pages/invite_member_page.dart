@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/brand.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
+import '../../../direct_messages/presentation/providers/direct_message_provider.dart';
 import '../../../hitchhiker/presentation/widgets/hitchhiker_tab.dart';
 import '../../domain/entities/profile_result.dart';
 import '../../domain/entities/travel_itinerary.dart';
@@ -81,6 +82,19 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
     );
   }
 
+  Future<void> _messageProfile(ProfileResult profile) async {
+    final result = await ref
+        .read(directMessageRepositoryProvider)
+        .getOrCreateConversation(profile.id);
+    if (!mounted) {
+      return;
+    }
+    result.fold(
+      (failure) => context.showSnackBar(failure.message, isError: true),
+      (conversationId) => context.push('/dm/$conversationId'),
+    );
+  }
+
   Future<void> _createPendingInvite(String email, GroupMemberRole role) async {
     final result = await ref
         .read(createPendingInvitationUseCaseProvider)
@@ -143,12 +157,14 @@ class _InviteMemberPageState extends ConsumerState<InviteMemberPage>
               existingMemberIds: _existingMemberIds,
               searchUseCase: ref.read(searchProfilesByNameUseCaseProvider),
               onAdd: _addMember,
+              onMessage: _messageProfile,
             ),
             _EmailTab(
               existingMemberIds: _existingMemberIds,
               findByEmailUseCase: ref.read(findProfileByEmailUseCaseProvider),
               onAdd: _addMember,
               onPendingInvite: _createPendingInvite,
+              onMessage: _messageProfile,
             ),
             HitchhikerTab(itineraryId: widget.itineraryId),
           ],
@@ -167,11 +183,13 @@ class _SearchTab extends StatefulWidget {
     required this.existingMemberIds,
     required this.searchUseCase,
     required this.onAdd,
+    required this.onMessage,
   });
 
   final List<String> existingMemberIds;
   final SearchProfilesByNameUseCase searchUseCase;
   final Future<void> Function(ProfileResult, GroupMemberRole) onAdd;
+  final Future<void> Function(ProfileResult) onMessage;
 
   @override
   State<_SearchTab> createState() => _SearchTabState();
@@ -294,6 +312,7 @@ class _SearchTabState extends State<_SearchTab> {
           itemBuilder: (_, i) => _ProfileTile(
             profile: _results[i],
             onAdd: (role) => widget.onAdd(_results[i], role),
+            onMessage: () => widget.onMessage(_results[i]),
           ),
         ),
       ),
@@ -311,6 +330,7 @@ class _EmailTab extends StatefulWidget {
     required this.findByEmailUseCase,
     required this.onAdd,
     required this.onPendingInvite,
+    required this.onMessage,
   });
 
   final List<String> existingMemberIds;
@@ -318,6 +338,7 @@ class _EmailTab extends StatefulWidget {
   final Future<void> Function(ProfileResult, GroupMemberRole) onAdd;
   final Future<void> Function(String email, GroupMemberRole role)
   onPendingInvite;
+  final Future<void> Function(ProfileResult) onMessage;
 
   @override
   State<_EmailTab> createState() => _EmailTabState();
@@ -497,7 +518,10 @@ class _EmailTabState extends State<_EmailTab> {
               const SizedBox(height: 16),
 
               if (_userExists == true && _foundProfile != null)
-                _ProfileCard(profile: _foundProfile!)
+                _ProfileCard(
+                  profile: _foundProfile!,
+                  onMessage: () => widget.onMessage(_foundProfile!),
+                )
               else
                 _PendingBanner(email: _emailController.text.trim()),
 
@@ -544,10 +568,15 @@ class _EmailTabState extends State<_EmailTab> {
 // ---------------------------------------------------------------------------
 
 class _ProfileTile extends StatefulWidget {
-  const _ProfileTile({required this.profile, required this.onAdd});
+  const _ProfileTile({
+    required this.profile,
+    required this.onAdd,
+    required this.onMessage,
+  });
 
   final ProfileResult profile;
   final void Function(GroupMemberRole role) onAdd;
+  final VoidCallback onMessage;
 
   @override
   State<_ProfileTile> createState() => _ProfileTileState();
@@ -603,7 +632,13 @@ class _ProfileTileState extends State<_ProfileTile> {
             }
           },
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
+        IconButton.filledTonal(
+          icon: const Icon(Icons.chat_bubble_outline, size: 18),
+          onPressed: widget.onMessage,
+          tooltip: 'Message',
+        ),
+        const SizedBox(width: 4),
         IconButton.filledTonal(
           icon: const Icon(Icons.person_add_outlined, size: 18),
           onPressed: () => widget.onAdd(_role),
@@ -615,9 +650,10 @@ class _ProfileTileState extends State<_ProfileTile> {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.profile});
+  const _ProfileCard({required this.profile, required this.onMessage});
 
   final ProfileResult profile;
+  final VoidCallback onMessage;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -655,6 +691,11 @@ class _ProfileCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      IconButton(
+        icon: const Icon(Icons.chat_bubble_outline, size: 20),
+        onPressed: onMessage,
+        tooltip: 'Message',
       ),
       Icon(Icons.check_circle, color: context.colorScheme.primary, size: 20),
     ],

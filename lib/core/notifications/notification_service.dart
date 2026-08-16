@@ -3,15 +3,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'notification_tap_events.dart';
 
-/// Wraps [FlutterLocalNotificationsPlugin] for the two notification kinds
-/// this app shows: a new chat message, and social activity (likes, follows,
-/// new posts from people you follow). Delivery only happens while the app
-/// process is alive (foreground, or briefly backgrounded) — it is not
-/// OS-level push and will not reach a fully-killed app.
+/// Wraps [FlutterLocalNotificationsPlugin] for the notification kinds this
+/// app shows: a new group-chat message, social activity (likes, follows,
+/// new posts from people you follow), and a new direct message. Delivery
+/// only happens while the app process is alive (foreground, or briefly
+/// backgrounded) — it is not OS-level push and will not reach a
+/// fully-killed app.
 ///
-/// Every notification's `payload` is `'<kind>:<id>'` (`'chat:<tripId>'` or
-/// `'social:<actorId>'`) so [_onTap] can route a tap to the right place
-/// without needing separate tap callbacks per kind.
+/// Every notification's `payload` is `'<kind>:<id>'` (`'chat:<tripId>'`,
+/// `'social:<actorId>'`, or `'dm:<conversationId>'`) so [_onTap] can route a
+/// tap to the right place without needing separate tap callbacks per kind.
 class NotificationService {
   NotificationService(this._prefs)
     : _plugin = FlutterLocalNotificationsPlugin();
@@ -23,6 +24,9 @@ class NotificationService {
   static const _socialChannelName = 'Activity';
   static const _socialChannelDescription =
       'Likes, follows, and new posts from people you follow';
+  static const _dmChannelId = 'dm_messages';
+  static const _dmChannelName = 'Direct Messages';
+  static const _dmChannelDescription = 'New private messages';
   static const _permissionRequestedKey = 'notif_permission_requested';
 
   final FlutterLocalNotificationsPlugin _plugin;
@@ -66,6 +70,14 @@ class NotificationService {
         _socialChannelId,
         _socialChannelName,
         description: _socialChannelDescription,
+        importance: Importance.high,
+      ),
+    );
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _dmChannelId,
+        _dmChannelName,
+        description: _dmChannelDescription,
         importance: Importance.high,
       ),
     );
@@ -146,6 +158,27 @@ class NotificationService {
     payload: 'social:$actorId',
   );
 
+  Future<void> showDmMessageNotification({
+    required String conversationId,
+    required String senderName,
+    required String body,
+  }) => _plugin.show(
+    id: _nextId++,
+    title: senderName,
+    body: body,
+    notificationDetails: const NotificationDetails(
+      android: AndroidNotificationDetails(
+        _dmChannelId,
+        _dmChannelName,
+        channelDescription: _dmChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    ),
+    payload: 'dm:$conversationId',
+  );
+
   void _onTap(NotificationResponse response) {
     final payload = response.payload;
     if (payload == null) {
@@ -160,6 +193,7 @@ class NotificationService {
     final kind = switch (kindStr) {
       'chat' => NotificationTapKind.chat,
       'social' => NotificationTapKind.social,
+      'dm' => NotificationTapKind.dm,
       _ => null,
     };
     if (kind == null) {

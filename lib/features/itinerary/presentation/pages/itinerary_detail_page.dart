@@ -23,6 +23,7 @@ import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/loading_widget.dart';
 import '../../../../shared/widgets/source_toggle_picker.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../direct_messages/presentation/providers/direct_message_provider.dart';
 import '../../../expense_split/domain/entities/expense.dart';
 import '../../../expense_split/presentation/providers/expense_provider.dart';
 import '../../../packing/domain/entities/packing_item.dart';
@@ -2647,6 +2648,23 @@ class _MembersCard extends ConsumerWidget {
     }, (_) {});
   }
 
+  Future<void> _messagePrivately(
+    BuildContext context,
+    WidgetRef ref,
+    GroupMember member,
+  ) async {
+    final result = await ref
+        .read(directMessageRepositoryProvider)
+        .getOrCreateConversation(member.userId);
+    if (!context.mounted) {
+      return;
+    }
+    result.fold(
+      (f) => context.showSnackBar(f.message, isError: true),
+      (conversationId) => context.push('/dm/$conversationId'),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) => Container(
     padding: const EdgeInsets.all(16),
@@ -2665,13 +2683,20 @@ class _MembersCard extends ConsumerWidget {
             onChangeRole: (role) =>
                 _changeRole(context, ref, itinerary.members[i], role),
             onRemove: () => _removeMember(context, ref, itinerary.members[i]),
+            onMessage: itinerary.members[i].userId == currentUserId
+                ? null
+                : () => _messagePrivately(context, ref, itinerary.members[i]),
           ),
       ],
     ),
   );
 }
 
-enum _MemberAction { makeEditor, makeViewer, remove }
+/// Replaces the old tap-triggered three-dot menu — long-pressing the row now
+/// covers both messaging and (for owners) role/removal management in one
+/// consistent interaction, following the same long-press → bottom sheet
+/// convention `chat_page.dart`'s `_MessageBubble` already established.
+enum _MemberSheetAction { message, makeEditor, makeViewer, remove }
 
 class _MemberRow extends StatelessWidget {
   const _MemberRow({
@@ -2680,6 +2705,7 @@ class _MemberRow extends StatelessWidget {
     required this.canManage,
     required this.onChangeRole,
     required this.onRemove,
+    required this.onMessage,
   });
 
   final GroupMember member;
@@ -2688,99 +2714,74 @@ class _MemberRow extends StatelessWidget {
   final void Function(GroupMemberRole) onChangeRole;
   final VoidCallback onRemove;
 
+  /// Null when this row is the current user's own — you can't message
+  /// yourself.
+  final VoidCallback? onMessage;
+
+  bool get _hasActions => canManage || onMessage != null;
+
+  Future<void> _showActions(BuildContext context) async {
+    final action = await showModalBottomSheet<_MemberSheetAction>(
+      context: context,
+      backgroundColor: context.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _MemberActionsSheet(
+        member: member,
+        canManage: canManage,
+        canMessage: onMessage != null,
+      ),
+    );
+    if (action == null) {
+      return;
+    }
+    switch (action) {
+      case _MemberSheetAction.message:
+        onMessage?.call();
+      case _MemberSheetAction.makeEditor:
+        onChangeRole(GroupMemberRole.editor);
+      case _MemberSheetAction.makeViewer:
+        onChangeRole(GroupMemberRole.viewer);
+      case _MemberSheetAction.remove:
+        onRemove();
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Column(
     children: [
-      Row(
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: context.colorScheme.primaryContainer,
-            child: Text(
-              member.userName.isNotEmpty
-                  ? member.userName[0].toUpperCase()
-                  : '?',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: context.colorScheme.primary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              member.userName,
-              style: TextStyle(
-                fontSize: 14,
-                color: context.colorScheme.onSurface,
-              ),
-            ),
-          ),
-          _RoleChip(role: member.role),
-          if (canManage) ...[
-            const SizedBox(width: 4),
-            PopupMenuButton<_MemberAction>(
-              icon: Icon(
-                Icons.more_vert,
-                size: 18,
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-              tooltip: 'Manage member',
-              onSelected: (action) {
-                switch (action) {
-                  case _MemberAction.makeEditor:
-                    onChangeRole(GroupMemberRole.editor);
-                  case _MemberAction.makeViewer:
-                    onChangeRole(GroupMemberRole.viewer);
-                  case _MemberAction.remove:
-                    onRemove();
-                }
-              },
-              itemBuilder: (_) => [
-                if (member.role != GroupMemberRole.editor)
-                  const PopupMenuItem(
-                    value: _MemberAction.makeEditor,
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 18),
-                        SizedBox(width: 8),
-                        Text('Make Editor'),
-                      ],
-                    ),
-                  ),
-                if (member.role != GroupMemberRole.viewer)
-                  const PopupMenuItem(
-                    value: _MemberAction.makeViewer,
-                    child: Row(
-                      children: [
-                        Icon(Icons.visibility_outlined, size: 18),
-                        SizedBox(width: 8),
-                        Text('Make Viewer'),
-                      ],
-                    ),
-                  ),
-                PopupMenuItem(
-                  value: _MemberAction.remove,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.person_remove_outlined,
-                        size: 18,
-                        color: context.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Remove',
-                        style: TextStyle(color: context.colorScheme.primary),
-                      ),
-                    ],
-                  ),
+      GestureDetector(
+        onLongPress: _hasActions ? () => _showActions(context) : null,
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: context.colorScheme.primaryContainer,
+              child: Text(
+                member.userName.isNotEmpty
+                    ? member.userName[0].toUpperCase()
+                    : '?',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.colorScheme.primary,
                 ),
-              ],
+              ),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                member.userName,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            _RoleChip(role: member.role),
           ],
-        ],
+        ),
       ),
       if (!isLast) ...[
         const SizedBox(height: 10),
@@ -2788,6 +2789,88 @@ class _MemberRow extends StatelessWidget {
         const SizedBox(height: 10),
       ],
     ],
+  );
+}
+
+class _MemberActionsSheet extends StatelessWidget {
+  const _MemberActionsSheet({
+    required this.member,
+    required this.canManage,
+    required this.canMessage,
+  });
+
+  final GroupMember member;
+  final bool canManage;
+  final bool canMessage;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 4),
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: context.colorScheme.outlineVariant,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                member.userName,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          if (canMessage)
+            ListTile(
+              leading: const Icon(Icons.chat_bubble_outline),
+              title: const Text('Message privately'),
+              onTap: () =>
+                  Navigator.of(context).pop(_MemberSheetAction.message),
+            ),
+          if (canManage) ...[
+            if (member.role != GroupMemberRole.editor)
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Make Editor'),
+                onTap: () =>
+                    Navigator.of(context).pop(_MemberSheetAction.makeEditor),
+              ),
+            if (member.role != GroupMemberRole.viewer)
+              ListTile(
+                leading: const Icon(Icons.visibility_outlined),
+                title: const Text('Make Viewer'),
+                onTap: () =>
+                    Navigator.of(context).pop(_MemberSheetAction.makeViewer),
+              ),
+            ListTile(
+              leading: Icon(
+                Icons.person_remove_outlined,
+                color: context.colorScheme.error,
+              ),
+              title: Text(
+                'Remove from trip',
+                style: TextStyle(color: context.colorScheme.error),
+              ),
+              onTap: () => Navigator.of(context).pop(_MemberSheetAction.remove),
+            ),
+          ],
+          const SizedBox(height: 4),
+        ],
+      ),
+    ),
   );
 }
 

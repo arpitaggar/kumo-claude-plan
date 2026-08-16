@@ -11,6 +11,8 @@ import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:kumo_claude/features/auth/domain/usecases/signup_usecase.dart';
 import 'package:kumo_claude/features/auth/presentation/providers/auth_provider.dart';
 import 'package:kumo_claude/features/chat/presentation/providers/chat_provider.dart';
+import 'package:kumo_claude/features/direct_messages/domain/entities/dm_conversation.dart';
+import 'package:kumo_claude/features/direct_messages/presentation/providers/direct_message_provider.dart';
 import 'package:kumo_claude/features/itinerary/domain/entities/travel_itinerary.dart';
 import 'package:kumo_claude/features/itinerary/domain/usecases/fetch_itineraries_usecase.dart';
 import 'package:kumo_claude/features/itinerary/presentation/providers/itinerary_provider.dart';
@@ -67,6 +69,7 @@ Future<void> _pump(
   WidgetTester tester, {
   required List<TravelItinerary> allTrips,
   required bool workModeActive,
+  List<DmConversation> conversations = const [],
 }) async {
   final authRepo = MockAuthRepository();
   when(authRepo.getCurrentUser).thenAnswer(
@@ -97,6 +100,9 @@ Future<void> _pump(
         ),
         fetchItinerariesUseCaseProvider.overrideWithValue(fetchUseCase),
         isWorkModeActiveProvider.overrideWithValue(workModeActive),
+        dmConversationListProvider.overrideWith(
+          (ref) => Stream.value(conversations),
+        ),
         for (final t in allTrips)
           chatStreamProvider(t.id).overrideWith((ref) => const Stream.empty()),
       ],
@@ -167,5 +173,39 @@ void main() {
 
     expect(find.text('Tokyo'), findsOneWidget);
     expect(find.text('Bali'), findsOneWidget);
+  });
+
+  testWidgets('Direct tab shows the empty state with no DM conversations', (
+    tester,
+  ) async {
+    await _pump(tester, allTrips: [], workModeActive: false);
+
+    await tester.tap(find.text('Direct'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No direct messages yet'), findsOneWidget);
+  });
+
+  testWidgets('Direct tab lists DM conversation previews', (tester) async {
+    await _pump(
+      tester,
+      allTrips: [],
+      workModeActive: false,
+      conversations: const [
+        DmConversation(
+          id: 'conv-1',
+          otherUserId: 'user-2',
+          otherUserName: 'Bob',
+          lastMessagePreview: 'See you there!',
+          lastMessageSenderId: 'user-2',
+        ),
+      ],
+    );
+
+    await tester.tap(find.text('Direct'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bob'), findsOneWidget);
+    expect(find.text('See you there!'), findsOneWidget);
   });
 }

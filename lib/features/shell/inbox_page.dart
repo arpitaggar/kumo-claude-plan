@@ -7,9 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/chat/domain/entities/message.dart';
 import '../../features/chat/presentation/providers/chat_provider.dart';
+import '../../features/direct_messages/domain/entities/dm_conversation.dart';
+import '../../features/direct_messages/presentation/providers/direct_message_provider.dart';
 import '../../features/itinerary/domain/entities/travel_itinerary.dart';
 import '../../features/itinerary/presentation/providers/itinerary_provider.dart';
 import '../../shared/extensions/context_extensions.dart';
+import '../../shared/widgets/kumo_avatar.dart';
 
 class InboxPage extends ConsumerStatefulWidget {
   const InboxPage({super.key});
@@ -18,8 +21,13 @@ class InboxPage extends ConsumerStatefulWidget {
   ConsumerState<InboxPage> createState() => _InboxPageState();
 }
 
-class _InboxPageState extends ConsumerState<InboxPage> {
+class _InboxPageState extends ConsumerState<InboxPage>
+    with SingleTickerProviderStateMixin {
   ProviderSubscription<AuthState>? _authSub;
+  late final TabController _tabController = TabController(
+    length: 2,
+    vsync: this,
+  );
 
   @override
   void initState() {
@@ -50,6 +58,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
   @override
   void dispose() {
     _authSub?.close();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -73,76 +82,93 @@ class _InboxPageState extends ConsumerState<InboxPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    appBar: AppBar(
+      title: Text(
+        'Inbox',
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 22,
+          color: context.colorScheme.onSurface,
+        ),
+      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      bottom: TabBar(
+        controller: _tabController,
+        tabs: const [
+          Tab(text: 'Trips'),
+          Tab(text: 'Direct'),
+        ],
+      ),
+    ),
+    body: TabBarView(
+      controller: _tabController,
+      children: const [_TripsTab(), _DirectTab()],
+    ),
+  );
+}
+
+class _TripsTab extends ConsumerWidget {
+  const _TripsTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final listState = ref.watch(itineraryListProvider);
     final visibleItineraries = ref.watch(visibleItinerariesProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Inbox',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 22,
-            color: context.colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    return switch (listState) {
+      ItineraryListInitial() || ItineraryListLoading() => Center(
+        child: CircularProgressIndicator(color: context.colorScheme.primary),
       ),
-      body: switch (listState) {
-        ItineraryListInitial() || ItineraryListLoading() => Center(
-          child: CircularProgressIndicator(color: context.colorScheme.primary),
+      ItineraryListError(:final message) => Center(
+        child: Text(
+          'Error: $message',
+          style: TextStyle(color: context.colorScheme.onSurfaceVariant),
         ),
-        ItineraryListError(:final message) => Center(
-          child: Text(
-            'Error: $message',
-            style: TextStyle(color: context.colorScheme.onSurfaceVariant),
-          ),
-        ),
-        ItineraryListLoaded() when visibleItineraries.isEmpty => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.chat_bubble_outline,
-                size: 56,
-                color: context.colorScheme.outlineVariant,
+      ),
+      ItineraryListLoaded() when visibleItineraries.isEmpty => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 56,
+              color: context.colorScheme.outlineVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No trip chats yet',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'No trip chats yet',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Create or join a trip to start chatting',
+              style: TextStyle(
+                fontSize: 13,
+                color: context.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Create or join a trip to start chatting',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
-        ItineraryListLoaded() => ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          itemCount: visibleItineraries.length,
-          separatorBuilder: (_, _) => Divider(
-            height: 1,
-            indent: 80,
-            color: context.colorScheme.outlineVariant,
-          ),
-          itemBuilder: (context, i) =>
-              _ChatPreviewTile(itinerary: visibleItineraries[i]),
+      ),
+      ItineraryListLoaded() => ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        itemCount: visibleItineraries.length,
+        separatorBuilder: (_, _) => Divider(
+          height: 1,
+          indent: 80,
+          color: context.colorScheme.outlineVariant,
         ),
-      },
-    );
+        itemBuilder: (context, i) =>
+            _ChatPreviewTile(itinerary: visibleItineraries[i]),
+      ),
+    };
   }
 }
 
@@ -299,6 +325,177 @@ class _PreviewText extends StatelessWidget {
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+// ── Direct-message tab ────────────────────────────────────────────────────
+
+class _DirectTab extends ConsumerWidget {
+  const _DirectTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final conversationsAsync = ref.watch(dmConversationListProvider);
+
+    return conversationsAsync.when(
+      loading: () => Center(
+        child: CircularProgressIndicator(color: context.colorScheme.primary),
+      ),
+      error: (e, _) => Center(
+        child: Text(
+          'Error: $e',
+          style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+        ),
+      ),
+      data: (conversations) {
+        if (conversations.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.mail_outline,
+                  size: 56,
+                  color: context.colorScheme.outlineVariant,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No direct messages yet',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Message a trip member to start a conversation',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          itemCount: conversations.length,
+          separatorBuilder: (_, _) => Divider(
+            height: 1,
+            indent: 80,
+            color: context.colorScheme.outlineVariant,
+          ),
+          itemBuilder: (context, i) =>
+              _DmPreviewTile(conversation: conversations[i]),
+        );
+      },
+    );
+  }
+}
+
+class _DmPreviewTile extends ConsumerWidget {
+  const _DmPreviewTile({required this.conversation});
+
+  final DmConversation conversation;
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final local = dt.toLocal();
+    final diff = now.difference(local);
+    if (diff.inDays == 0) {
+      return DateFormat('h:mm a').format(local);
+    }
+    if (diff.inDays < 7) {
+      return DateFormat('EEE').format(local);
+    }
+    return DateFormat('MMM d').format(local);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+    final currentUserId = authState is AuthAuthenticated
+        ? authState.user.id
+        : '';
+    final lastAt = conversation.lastMessageAt;
+    final preview = conversation.lastMessagePreview;
+    final name = conversation.otherUserName.isNotEmpty
+        ? conversation.otherUserName
+        : 'Unknown';
+
+    return InkWell(
+      onTap: () => context.push('/dm/${conversation.id}'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            KumoAvatar(
+              sourceUrl: conversation.otherUserAvatarUrl,
+              radius: 26,
+              fallback: Text(name[0].toUpperCase()),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: context.colorScheme.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (lastAt != null)
+                        Text(
+                          _formatTime(lastAt),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    preview == null || preview.isEmpty
+                        ? 'No messages yet — say hello!'
+                        : (conversation.lastMessageSenderId == currentUserId
+                              ? 'You: $preview'
+                              : preview),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.colorScheme.onSurfaceVariant,
+                      fontStyle: preview == null || preview.isEmpty
+                          ? FontStyle.italic
+                          : FontStyle.normal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right,
+              color: context.colorScheme.outlineVariant,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

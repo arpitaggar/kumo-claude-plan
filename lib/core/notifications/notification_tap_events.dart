@@ -1,7 +1,7 @@
 import 'dart:async';
 
 /// Which kind of screen a notification tap should open.
-enum NotificationTapKind { chat, social }
+enum NotificationTapKind { chat, social, dm }
 
 /// A user tapped a notification — decoupled from *how* it was shown
 /// (`flutter_local_notifications`' tap callback, or iOS's FCM open-app
@@ -12,7 +12,8 @@ class NotificationTapEvent {
   final NotificationTapKind kind;
 
   /// `tripId` for [NotificationTapKind.chat], `actorId` for
-  /// [NotificationTapKind.social].
+  /// [NotificationTapKind.social], `conversationId` for
+  /// [NotificationTapKind.dm].
   final String id;
 }
 

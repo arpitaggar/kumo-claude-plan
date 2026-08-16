@@ -1,10 +1,21 @@
 // Supabase Edge Function: send-message-push
 //
 // Sends a push notification (FCM HTTP v1 API) to every other member of a
-// trip when a chat message is sent. Invoked directly by the client right
-// after a successful `messages` insert (see
-// ChatRemoteDataSourceImpl.sendMessage) — best-effort, the message itself
-// has already landed regardless of whether this succeeds.
+// trip when a chat message is sent, or to the other participant of a DM
+// conversation when a direct message is sent. Invoked directly by the
+// client right after a successful `messages` insert (see
+// ChatRemoteDataSourceImpl.sendMessage / DirectMessageRemoteDataSourceImpl.
+// sendMessage) — best-effort, the message itself has already landed
+// regardless of whether this succeeds.
+//
+// Branches once, right after loading the message row, on whether
+// itinerary_id or dm_conversation_id is set (see stage48_direct_messages.sql
+// — exactly one of the two is always set). Only the recipient-resolution
+// step actually differs (a members-array scan vs. a single dm_conversations
+// lookup) — the FCM-send/OAuth2/stale-token machinery below is fully
+// shared, one code path for both kinds. DM push reuses the chat_messages
+// preference category rather than a separate one (v1 scope decision, see
+// lib/features/direct_messages/CLAUDE.md).
 //
 // Android tokens get a data-only payload (no top-level FCM "notification"
 // field) so the Flutter app has full, consistent control over how the
@@ -76,7 +87,7 @@ serve(async (req) => {
 
     const { data: message, error: msgErr } = await supabase
       .from('messages')
-      .select('id, itinerary_id, sender_id, sender_name, content')
+      .select('id, itinerary_id, dm_conversation_id, sender_id, sender_name, content')
       .eq('id', message_id)
       .single()
     if (msgErr || !message) {
@@ -88,34 +99,59 @@ serve(async (req) => {
       return json({ error: 'Forbidden' }, 403)
     }
 
-    const { data: itinerary, error: itinErr } = await supabase
-      .from('itineraries')
-      .select('title, owner_id, members')
-      .eq('id', message.itinerary_id)
-      .single()
-    if (itinErr || !itinerary) {
-      return json({ error: 'Itinerary not found' }, 404)
+    const isDm = !!message.dm_conversation_id
+    let recipientIds: string[] = []
+    let tripTitle = ''
+
+    if (!isDm) {
+      const { data: itinerary, error: itinErr } = await supabase
+        .from('itineraries')
+        .select('title, owner_id, members')
+        .eq('id', message.itinerary_id)
+        .single()
+      if (itinErr || !itinerary) {
+        return json({ error: 'Itinerary not found' }, 404)
+      }
+      tripTitle = itinerary.title ?? ''
+
+      // ── Recipients: itinerary owner + members, excluding the sender ───────
+      // The members JSONB array mixes key casing depending on how the entry
+      // was written: the `handle_new_user` trigger uses `userId`, the
+      // Flutter client's invite flow uses `user_id` (see stage11/stage13
+      // migrations) — both must be checked or client-invited members
+      // silently get no push.
+      const memberIds: string[] = (itinerary.members ?? [])
+        .map((m: { userId?: string; user_id?: string }) => m.userId ?? m.user_id)
+        .filter((id: string | undefined): id is string => !!id)
+      recipientIds = [...new Set([itinerary.owner_id, ...memberIds])]
+        .filter((id) => id !== message.sender_id)
+    } else {
+      // ── Recipient: the conversation's other participant ───────────────────
+      // A single-row lookup, no member-array scan needed — a DM conversation
+      // only ever has two participants (see dm_conversations' user_a/user_b
+      // in stage48_direct_messages.sql).
+      const { data: conversation, error: convErr } = await supabase
+        .from('dm_conversations')
+        .select('user_a, user_b')
+        .eq('id', message.dm_conversation_id)
+        .single()
+      if (convErr || !conversation) {
+        return json({ error: 'Conversation not found' }, 404)
+      }
+      const otherId = conversation.user_a === message.sender_id
+        ? conversation.user_b
+        : conversation.user_a
+      recipientIds = [otherId]
+    }
+
+    if (recipientIds.length === 0) {
+      return json({ sent: 0, recipients: 0 })
     }
 
     const { data: attachments } = await supabase
       .from('message_attachments')
       .select('kind')
       .eq('message_id', message_id)
-
-    // ── Recipients: itinerary owner + members, excluding the sender ─────────
-    // The members JSONB array mixes key casing depending on how the entry was
-    // written: the `handle_new_user` trigger uses `userId`, the Flutter
-    // client's invite flow uses `user_id` (see stage11/stage13 migrations) —
-    // both must be checked or client-invited members silently get no push.
-    const memberIds: string[] = (itinerary.members ?? [])
-      .map((m: { userId?: string; user_id?: string }) => m.userId ?? m.user_id)
-      .filter((id: string | undefined): id is string => !!id)
-    const recipientIds = [...new Set([itinerary.owner_id, ...memberIds])]
-      .filter((id) => id !== message.sender_id)
-
-    if (recipientIds.length === 0) {
-      return json({ sent: 0, recipients: 0 })
-    }
 
     // ── Filter by the chat_messages push preference (default enabled) ───────
     const { data: prefs } = await supabase
@@ -180,13 +216,25 @@ serve(async (req) => {
     let sent = 0
 
     await Promise.all(tokenRows.map(async (row) => {
-      const data = {
-        kind: 'chat',
-        tripId: message.itinerary_id,
-        tripTitle: itinerary.title ?? '',
-        senderName: message.sender_name ?? '',
-        body: bodyFor(row.user_id),
-      }
+      const senderName = message.sender_name ?? ''
+      const body = bodyFor(row.user_id)
+      const data = isDm
+        ? {
+          kind: 'dm',
+          conversationId: message.dm_conversation_id,
+          senderName,
+          body,
+        }
+        : {
+          kind: 'chat',
+          tripId: message.itinerary_id,
+          tripTitle,
+          senderName,
+          body,
+        }
+      const alertTitle = isDm
+        ? senderName
+        : (tripTitle ? `${senderName} · ${tripTitle}` : senderName)
       const fcmMessage = row.platform === 'ios'
         ? {
           token: row.token,
@@ -195,7 +243,7 @@ serve(async (req) => {
             headers: { 'apns-priority': '10' },
             payload: {
               aps: {
-                alert: { title: data.tripTitle ? `${data.senderName} · ${data.tripTitle}` : data.senderName, body: data.body },
+                alert: { title: alertTitle, body },
                 sound: 'default',
               },
             },

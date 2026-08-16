@@ -10,6 +10,7 @@ import '../features/auth/presentation/pages/update_password_page.dart';
 import '../features/auth/presentation/providers/age_gate_provider.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/chat/presentation/pages/chat_page.dart';
+import '../features/direct_messages/presentation/pages/dm_thread_page.dart';
 import '../features/expense_split/presentation/pages/add_expense_page.dart';
 import '../features/gamification/presentation/pages/achievements_page.dart';
 import '../features/hitchhiker/presentation/pages/hitchhiker_screen.dart';
@@ -186,6 +187,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/u/:userId',
         pageBuilder: (context, state) => _slidePage(
           PublicProfilePage(userId: state.pathParameters['userId']!),
+          state,
+        ),
+      ),
+      GoRoute(
+        path: '/dm/:conversationId',
+        pageBuilder: (context, state) => _slidePage(
+          DmThreadPage(conversationId: state.pathParameters['conversationId']!),
           state,
         ),
       ),

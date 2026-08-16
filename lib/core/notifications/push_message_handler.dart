@@ -11,6 +11,9 @@ const _socialChannelId = 'social_activity';
 const _socialChannelName = 'Activity';
 const _socialChannelDescription =
     'Likes, follows, and new posts from people you follow';
+const _dmChannelId = 'dm_messages';
+const _dmChannelName = 'Direct Messages';
+const _dmChannelDescription = 'New private messages';
 
 /// Runs in a separate background isolate when a data message arrives while
 /// the app is backgrounded or fully killed (Android only for now — this is
@@ -58,11 +61,22 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       importance: Importance.high,
     ),
   );
+  await androidPlugin?.createNotificationChannel(
+    const AndroidNotificationChannel(
+      _dmChannelId,
+      _dmChannelName,
+      description: _dmChannelDescription,
+      importance: Importance.high,
+    ),
+  );
 
-  if (message.data['kind'] == 'social') {
-    await _showSocialBackgroundNotification(plugin, message);
-  } else {
-    await _showChatBackgroundNotification(plugin, message);
+  switch (message.data['kind']) {
+    case 'social':
+      await _showSocialBackgroundNotification(plugin, message);
+    case 'dm':
+      await _showDmBackgroundNotification(plugin, message);
+    default:
+      await _showChatBackgroundNotification(plugin, message);
   }
 }
 
@@ -123,6 +137,34 @@ Future<void> _showSocialBackgroundNotification(
   );
 }
 
+Future<void> _showDmBackgroundNotification(
+  FlutterLocalNotificationsPlugin plugin,
+  RemoteMessage message,
+) async {
+  final conversationId = message.data['conversationId'] as String?;
+  final senderName = message.data['senderName'] as String?;
+  final body = message.data['body'] as String?;
+  if (conversationId == null || senderName == null || body == null) {
+    return;
+  }
+
+  await plugin.show(
+    id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+    title: senderName,
+    body: body,
+    notificationDetails: const NotificationDetails(
+      android: AndroidNotificationDetails(
+        _dmChannelId,
+        _dmChannelName,
+        channelDescription: _dmChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+    ),
+    payload: 'dm:$conversationId',
+  );
+}
+
 /// Emits a [NotificationTapEvent] when the user taps an iOS push
 /// notification — whether that opened the app from backgrounded
 /// (`FirebaseMessaging.onMessageOpenedApp`) or fully killed
@@ -140,6 +182,17 @@ void handleIosPushTap(RemoteMessage message) {
     }
     emitNotificationTap(
       NotificationTapEvent(kind: NotificationTapKind.social, id: actorId),
+    );
+    return;
+  }
+
+  if (message.data['kind'] == 'dm') {
+    final conversationId = message.data['conversationId'] as String?;
+    if (conversationId == null) {
+      return;
+    }
+    emitNotificationTap(
+      NotificationTapEvent(kind: NotificationTapKind.dm, id: conversationId),
     );
     return;
   }

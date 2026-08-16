@@ -4,8 +4,17 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kumo_claude/core/error/failure.dart';
+import 'package:kumo_claude/features/auth/domain/entities/user.dart';
+import 'package:kumo_claude/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kumo_claude/features/auth/domain/usecases/delete_account_usecase.dart';
+import 'package:kumo_claude/features/auth/domain/usecases/login_usecase.dart';
+import 'package:kumo_claude/features/auth/domain/usecases/logout_usecase.dart';
+import 'package:kumo_claude/features/auth/domain/usecases/signup_usecase.dart';
+import 'package:kumo_claude/features/auth/presentation/providers/auth_provider.dart';
 import 'package:kumo_claude/features/chat/domain/entities/message.dart';
 import 'package:kumo_claude/features/chat/presentation/providers/chat_provider.dart';
+import 'package:kumo_claude/features/direct_messages/domain/entities/dm_conversation.dart';
+import 'package:kumo_claude/features/direct_messages/presentation/providers/direct_message_provider.dart';
 import 'package:kumo_claude/features/itinerary/domain/entities/travel_itinerary.dart';
 import 'package:kumo_claude/features/itinerary/domain/usecases/create_itinerary_usecase.dart';
 import 'package:kumo_claude/features/itinerary/domain/usecases/delete_itinerary_usecase.dart';
@@ -13,6 +22,48 @@ import 'package:kumo_claude/features/itinerary/domain/usecases/fetch_itineraries
 import 'package:kumo_claude/features/itinerary/domain/usecases/update_itinerary_usecase.dart';
 import 'package:kumo_claude/features/itinerary/presentation/providers/itinerary_provider.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../../helpers/test_helpers.dart';
+
+// dmConversationListProvider must always be overridden in these tests
+// (with a no-op stream, unless a test cares about its contents) — it's
+// watched by inboxHasUnreadProvider since the DM-aware extension below, and
+// the real provider chain reaches KumoSupabaseClient.client, which isn't
+// initialised without initTestSupabase (see setUpAll below).
+//
+// authNotifierProvider is watched for the same reason (to exclude the
+// caller's own outgoing DMs from the unread check) and needs the same
+// treatment — a real AuthNotifier backed by a MockAuthRepository, not the
+// default provider, which would otherwise try to reach a real backend.
+const _noConversations = <DmConversation>[];
+
+class MockAuthRepository extends Mock implements AuthRepository {}
+
+class MockLoginUseCase extends Mock implements LoginUseCase {}
+
+class MockSignupUseCase extends Mock implements SignupUseCase {}
+
+class MockLogoutUseCase extends Mock implements LogoutUseCase {}
+
+class MockDeleteAccountUseCase extends Mock implements DeleteAccountUseCase {}
+
+Override _authOverride(String userId) {
+  final authRepo = MockAuthRepository();
+  when(authRepo.getCurrentUser).thenAnswer(
+    (_) async => Right(
+      User(id: userId, email: '$userId@x.com', createdAt: DateTime.utc(2026)),
+    ),
+  );
+  return authNotifierProvider.overrideWith(
+    (ref) => AuthNotifier(
+      loginUseCase: MockLoginUseCase(),
+      signupUseCase: MockSignupUseCase(),
+      logoutUseCase: MockLogoutUseCase(),
+      deleteAccountUseCase: MockDeleteAccountUseCase(),
+      repository: authRepo,
+    ),
+  );
+}
 
 // inboxLastVisitProvider/inboxHasUnreadProvider (chat_provider.dart) had no
 // test coverage at all — found during a docs/test audit pass. Both
@@ -99,6 +150,10 @@ Future<ProviderContainer> _harness({required List<String> tripIds}) async {
     itineraryListProvider.overrideWith((ref) => itineraryNotifier),
     for (final id in tripIds)
       chatStreamProvider(id).overrideWith((ref) => Stream.value(const [])),
+    dmConversationListProvider.overrideWith(
+      (ref) => Stream.value(_noConversations),
+    ),
+    _authOverride('user-1'),
   ];
 
   final container = ProviderContainer(overrides: overrides);
@@ -108,6 +163,8 @@ Future<ProviderContainer> _harness({required List<String> tripIds}) async {
 }
 
 void main() {
+  setUpAll(initTestSupabase);
+
   group('inboxHasUnreadProvider', () {
     test('is false when the inbox has never been visited (lastVisit == 0), '
         'even with a brand-new message', () async {
@@ -130,6 +187,10 @@ void main() {
               _msg(tripId: 't1', id: 'm1', createdAt: DateTime.now()),
             ]),
           ),
+          dmConversationListProvider.overrideWith(
+            (ref) => Stream.value(_noConversations),
+          ),
+          _authOverride('user-1'),
         ],
       );
       addTearDown(container.dispose);
@@ -155,7 +216,13 @@ void main() {
         deleteUseCase: MockDeleteItineraryUseCase(),
       );
       final container = ProviderContainer(
-        overrides: [itineraryListProvider.overrideWith((ref) => notifier)],
+        overrides: [
+          itineraryListProvider.overrideWith((ref) => notifier),
+          dmConversationListProvider.overrideWith(
+            (ref) => Stream.value(_noConversations),
+          ),
+          _authOverride('user-1'),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -202,6 +269,10 @@ void main() {
               ),
             ]),
           ),
+          dmConversationListProvider.overrideWith(
+            (ref) => Stream.value(_noConversations),
+          ),
+          _authOverride('user-1'),
         ],
       );
       addTearDown(container.dispose);
@@ -246,6 +317,10 @@ void main() {
               ),
             ]),
           ),
+          dmConversationListProvider.overrideWith(
+            (ref) => Stream.value(_noConversations),
+          ),
+          _authOverride('user-1'),
         ],
       );
       addTearDown(container.dispose);
@@ -285,6 +360,10 @@ void main() {
               ),
             ]),
           ),
+          dmConversationListProvider.overrideWith(
+            (ref) => Stream.value(_noConversations),
+          ),
+          _authOverride('user-1'),
         ],
       );
       addTearDown(container.dispose);
@@ -296,5 +375,139 @@ void main() {
 
       expect(container.read(inboxHasUnreadProvider), isTrue);
     });
+
+    test('is true when a DM conversation has a message newer than lastVisit, '
+        'from someone else', () async {
+      final container = ProviderContainer(
+        overrides: [
+          itineraryListProvider.overrideWith((ref) {
+            final fetchUseCase = MockFetchItinerariesUseCase();
+            when(
+              () => fetchUseCase(any()),
+            ).thenAnswer((_) async => const Right([]));
+            return ItineraryListNotifier(
+              fetchUseCase: fetchUseCase,
+              createUseCase: MockCreateItineraryUseCase(),
+              updateUseCase: MockUpdateItineraryUseCase(),
+              deleteUseCase: MockDeleteItineraryUseCase(),
+            );
+          }),
+          dmConversationListProvider.overrideWith(
+            (ref) => Stream.value([
+              DmConversation(
+                id: 'conv-1',
+                otherUserId: 'user-2',
+                otherUserName: 'Bob',
+                lastMessageAt: DateTime.fromMillisecondsSinceEpoch(5000),
+                lastMessagePreview: 'Hey',
+                lastMessageSenderId: 'user-2',
+              ),
+            ]),
+          ),
+          _authOverride('user-1'),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container
+          .read(itineraryListProvider.notifier)
+          .loadItineraries('user-1');
+      container
+        ..listen(dmConversationListProvider, (_, _) {})
+        ..read(authNotifierProvider);
+      await Future<void>.delayed(Duration.zero);
+      container.read(inboxLastVisitProvider.notifier).state = 1000;
+
+      expect(container.read(inboxHasUnreadProvider), isTrue);
+    });
+
+    test('is false when the DM\'s latest message is the caller\'s own outgoing '
+        'message', () async {
+      final container = ProviderContainer(
+        overrides: [
+          itineraryListProvider.overrideWith((ref) {
+            final fetchUseCase = MockFetchItinerariesUseCase();
+            when(
+              () => fetchUseCase(any()),
+            ).thenAnswer((_) async => const Right([]));
+            return ItineraryListNotifier(
+              fetchUseCase: fetchUseCase,
+              createUseCase: MockCreateItineraryUseCase(),
+              updateUseCase: MockUpdateItineraryUseCase(),
+              deleteUseCase: MockDeleteItineraryUseCase(),
+            );
+          }),
+          dmConversationListProvider.overrideWith(
+            (ref) => Stream.value([
+              DmConversation(
+                id: 'conv-1',
+                otherUserId: 'user-2',
+                otherUserName: 'Bob',
+                lastMessageAt: DateTime.fromMillisecondsSinceEpoch(5000),
+                lastMessagePreview: 'Hey',
+                lastMessageSenderId: 'user-1',
+              ),
+            ]),
+          ),
+          _authOverride('user-1'),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container
+          .read(itineraryListProvider.notifier)
+          .loadItineraries('user-1');
+      container
+        ..listen(dmConversationListProvider, (_, _) {})
+        ..read(authNotifierProvider);
+      await Future<void>.delayed(Duration.zero);
+      container.read(inboxLastVisitProvider.notifier).state = 1000;
+
+      expect(container.read(inboxHasUnreadProvider), isFalse);
+    });
+
+    test(
+      'is false when no DM conversation has a message newer than lastVisit',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            itineraryListProvider.overrideWith((ref) {
+              final fetchUseCase = MockFetchItinerariesUseCase();
+              when(
+                () => fetchUseCase(any()),
+              ).thenAnswer((_) async => const Right([]));
+              return ItineraryListNotifier(
+                fetchUseCase: fetchUseCase,
+                createUseCase: MockCreateItineraryUseCase(),
+                updateUseCase: MockUpdateItineraryUseCase(),
+                deleteUseCase: MockDeleteItineraryUseCase(),
+              );
+            }),
+            dmConversationListProvider.overrideWith(
+              (ref) => Stream.value([
+                DmConversation(
+                  id: 'conv-1',
+                  otherUserId: 'user-2',
+                  otherUserName: 'Bob',
+                  lastMessageAt: DateTime.fromMillisecondsSinceEpoch(500),
+                  lastMessagePreview: 'Hey',
+                  lastMessageSenderId: 'user-2',
+                ),
+              ]),
+            ),
+            _authOverride('user-1'),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container
+            .read(itineraryListProvider.notifier)
+            .loadItineraries('user-1');
+        container
+          ..listen(dmConversationListProvider, (_, _) {})
+          ..read(authNotifierProvider);
+        await Future<void>.delayed(Duration.zero);
+        container.read(inboxLastVisitProvider.notifier).state = 1000;
+
+        expect(container.read(inboxHasUnreadProvider), isFalse);
+      },
+    );
   });
 }

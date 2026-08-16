@@ -37,6 +37,8 @@ void _navigateForNotificationTap(NotificationTapEvent event) {
       GoRouter.of(context).go('/trip/${event.id}/chat');
     case NotificationTapKind.social:
       GoRouter.of(context).go('/u/${event.id}');
+    case NotificationTapKind.dm:
+      GoRouter.of(context).go('/dm/${event.id}');
   }
 }
 
