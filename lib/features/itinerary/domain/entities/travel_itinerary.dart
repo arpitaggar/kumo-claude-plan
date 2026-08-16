@@ -400,6 +400,8 @@ class ItineraryItem extends Equatable {
     this.location,
     this.latitude,
     this.longitude,
+    this.isBooked = false,
+    this.bookingListingKey,
   });
 
   /// Unique identifier for this item (UUID format).
@@ -431,6 +433,18 @@ class ItineraryItem extends Equatable {
   /// Longitude for map display (optional).
   final double? longitude;
 
+  /// Whether this item is a confirmed booking (vs. just a planned entry).
+  /// Drives the "Booked" badge on this item and, for accommodation, whether
+  /// it sorts to the top of the Stay tab's listing results.
+  final bool isBooked;
+
+  /// `'$sourceKey:$id'` of the accommodation listing this item was booked
+  /// from, if it was created via the Stay tab's "Mark as booked" action —
+  /// null for manually-added items (including manually-booked activities).
+  /// Used only to correlate this item back to its source listing so the
+  /// Stay tab can flag/sort already-booked listings; not shown anywhere.
+  final String? bookingListingKey;
+
   @override
   List<Object?> get props => [
     id,
@@ -441,5 +455,7 @@ class ItineraryItem extends Equatable {
     location,
     latitude,
     longitude,
+    isBooked,
+    bookingListingKey,
   ];
 }

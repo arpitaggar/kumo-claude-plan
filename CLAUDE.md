@@ -134,6 +134,9 @@ A: Not recommended; BLoC adds boilerplate. Riverpod is simpler for this project.
 **Q: How do I handle real-time updates?**  
 A: Use Riverpod's `StreamProvider` with Supabase realtime subscriptions.
 
+**Q: How do I generate an API reference from in-code doc comments (the Doxygen equivalent)?**  
+A: `dart doc .` → `doc/api/index.html` (gitignored — regenerate locally, not committed). Config is in `dartdoc_options.yaml`. This is a mechanically-derived API reference only — it doesn't replace `docs/Checklist.md` (dated history of what shipped and why) or the per-feature `CLAUDE.md` files (design rationale); see README.md's "Documentation" section for how the three fit together. `dart doc --dry-run .` catches broken `[SquareBracket]` doc references without writing any output — worth running after editing a `///` comment that references another symbol.
+
 ---
 
 **End of CLAUDE.md**

@@ -45,6 +45,7 @@ import '../widgets/cost_field_picker.dart';
 import '../widgets/segment_actions_sheet.dart';
 import '../widgets/segment_card.dart';
 import '../widgets/trip_theme_picker.dart';
+import 'add_edit_item_page.dart' show AddItemPrefill;
 
 class ItineraryDetailPage extends ConsumerWidget {
   const ItineraryDetailPage({required this.id, super.key});
@@ -1035,6 +1036,30 @@ class _AccommodationTabState extends ConsumerState<_AccommodationTab> {
   double _radiusKm = 5;
   RangeValues _priceRange = const RangeValues(0, 500);
 
+  /// Opens the Add Activity form pre-filled from [listing] — name, location,
+  /// and coordinates carry over so the user only has to confirm/adjust the
+  /// check-in/check-out date and time rather than retype everything. Default
+  /// times (3pm/11am) are the conventional hotel check-in/check-out times,
+  /// not this listing's own — no source reports a specific time, only dates.
+  void _markAsBooked(BuildContext context, AccommodationListing listing) {
+    final start = widget.itinerary.startDate;
+    final end = widget.itinerary.endDate;
+    context.push(
+      '/trip/${widget.itinerary.id}/item',
+      extra: AddItemPrefill(
+        title: listing.name,
+        itemType: 'hotel',
+        location: listing.name,
+        latitude: listing.latitude,
+        longitude: listing.longitude,
+        startTime: DateTime.utc(start.year, start.month, start.day, 15),
+        endTime: DateTime.utc(end.year, end.month, end.day, 11),
+        isBooked: true,
+        bookingListingKey: '${listing.sourceKey}:${listing.id}',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final centerAsync = ref.watch(
@@ -1148,6 +1173,26 @@ class _AccommodationTabState extends ConsumerState<_AccommodationTab> {
                     'No listings match your filters.',
                   );
                 }
+                // Every item this trip already has a booking-listing key
+                // for — i.e. was created via this tab's "Mark as booked"
+                // action for some listing. Correlating on `sourceKey:id`
+                // (not the item's own id, which is freshly generated) is
+                // what lets a listing know it's already been booked.
+                final bookedKeys = widget.itinerary.items
+                    .map((i) => i.bookingListingKey)
+                    .whereType<String>()
+                    .toSet();
+                // Partition instead of `List.sort` (not guaranteed stable)
+                // so booked listings float to the top without disturbing
+                // the relative order of everything else.
+                final booked = <AccommodationListing>[];
+                final unbooked = <AccommodationListing>[];
+                for (final listing in result.listings) {
+                  (bookedKeys.contains('${listing.sourceKey}:${listing.id}')
+                          ? booked
+                          : unbooked)
+                      .add(listing);
+                }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -1155,10 +1200,16 @@ class _AccommodationTabState extends ConsumerState<_AccommodationTab> {
                       _SourceFailureBanner(
                         failedSourceKeys: result.failedSourceKeys,
                       ),
-                    for (final listing in result.listings)
+                    for (final listing in [...booked, ...unbooked])
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: _AccommodationListingCard(listing: listing),
+                        child: _AccommodationListingCard(
+                          listing: listing,
+                          isBooked: bookedKeys.contains(
+                            '${listing.sourceKey}:${listing.id}',
+                          ),
+                          onMarkBooked: () => _markAsBooked(context, listing),
+                        ),
                       ),
                   ],
                 );
@@ -1223,9 +1274,15 @@ class _SourceFailureBanner extends StatelessWidget {
 }
 
 class _AccommodationListingCard extends StatelessWidget {
-  const _AccommodationListingCard({required this.listing});
+  const _AccommodationListingCard({
+    required this.listing,
+    required this.isBooked,
+    required this.onMarkBooked,
+  });
 
   final AccommodationListing listing;
+  final bool isBooked;
+  final VoidCallback onMarkBooked;
 
   IconData get _propertyIcon => switch (listing.propertyType) {
     PropertyType.hotel => Icons.hotel_outlined,
@@ -1293,14 +1350,19 @@ class _AccommodationListingCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      meta?.displayName ?? listing.sourceKey,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: context.colorScheme.onSurfaceVariant,
+                    Expanded(
+                      child: Text(
+                        meta?.displayName ?? listing.sourceKey,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
+                    if (isBooked) const _BookedBadge(),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -1383,6 +1445,22 @@ class _AccommodationListingCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (!isBooked) ...[
+                  const SizedBox(height: 8),
+                  // A full-width row of its own, not squeezed alongside the
+                  // price/"View on X" row above — this card's already been
+                  // caught overflowing once at phone width (see the class
+                  // doc on the price row above) with fewer children than
+                  // this would add if crammed in beside them.
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onMarkBooked,
+                      icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                      label: const Text('Mark as booked'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -3090,13 +3168,25 @@ class _ScheduleItem extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        item.title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: context.colorScheme.onSurface,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: context.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          if (item.isBooked) ...[
+                            const SizedBox(width: 6),
+                            const _BookedBadge(),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -3180,6 +3270,44 @@ class _ScheduleItem extends StatelessWidget {
 }
 
 enum _Action { edit, delete }
+
+/// A small "Booked" pill shown on any [ItineraryItem] with `isBooked: true`
+/// — a schedule item confirmed via the Stay tab's "Mark as booked" action or
+/// the Add/Edit Activity form's own toggle. Deliberately doesn't reorder the
+/// schedule (unlike the Stay tab's booked-first sort) — items here are a
+/// chronological timeline, and moving booked ones to the top would break
+/// that ordering rather than clarify anything.
+class _BookedBadge extends StatelessWidget {
+  const _BookedBadge();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: context.colorScheme.primaryContainer,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.check_circle,
+          size: 11,
+          color: context.colorScheme.onPrimaryContainer,
+        ),
+        const SizedBox(width: 3),
+        Text(
+          'Booked',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: context.colorScheme.onPrimaryContainer,
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
 // ── Status row ────────────────────────────────────────────────────────────────
 

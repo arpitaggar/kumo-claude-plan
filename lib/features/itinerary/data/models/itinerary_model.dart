@@ -161,6 +161,8 @@ class ItineraryItemModel extends ItineraryItem {
     super.location,
     super.latitude,
     super.longitude,
+    super.isBooked,
+    super.bookingListingKey,
   });
 
   factory ItineraryItemModel.fromJson(Map<String, dynamic> json) =>
@@ -175,6 +177,10 @@ class ItineraryItemModel extends ItineraryItem {
         location: json['location'] as String?,
         latitude: (json['latitude'] as num?)?.toDouble(),
         longitude: (json['longitude'] as num?)?.toDouble(),
+        // Absent on every item persisted before this field existed —
+        // defaults to false/null rather than failing to parse.
+        isBooked: json['is_booked'] as bool? ?? false,
+        bookingListingKey: json['booking_listing_key'] as String?,
       );
 
   factory ItineraryItemModel.fromEntity(ItineraryItem e) => ItineraryItemModel(
@@ -186,6 +192,8 @@ class ItineraryItemModel extends ItineraryItem {
     location: e.location,
     latitude: e.latitude,
     longitude: e.longitude,
+    isBooked: e.isBooked,
+    bookingListingKey: e.bookingListingKey,
   );
 
   Map<String, dynamic> toJson() => {
@@ -197,6 +205,8 @@ class ItineraryItemModel extends ItineraryItem {
     'location': location,
     'latitude': latitude,
     'longitude': longitude,
+    'is_booked': isBooked,
+    'booking_listing_key': bookingListingKey,
   };
 }
 

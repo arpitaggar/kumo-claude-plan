@@ -1,7 +1,7 @@
 import 'entities/trip_segment.dart';
 
-/// Orders legs by when they actually happen rather than by [TripSegment.
-/// orderIndex] — deleting a segment must never shuffle the rest of the
+/// Orders legs by when they actually happen rather than by
+/// [TripSegment.orderIndex] — deleting a segment must never shuffle the rest of the
 /// route, and `orderIndex` is otherwise just an insertion-order bookkeeping
 /// field (see `ReorderTripSegmentsUseCase`'s doc comment). Segments with a
 /// date sort chronologically by `departureTime` (falling back to

@@ -42,6 +42,7 @@ Future<MockUpdateItineraryUseCase> _pump(
   WidgetTester tester, {
   required TravelItinerary itinerary,
   String? itemId,
+  AddItemPrefill? prefill,
   Either<Failure, TravelItinerary>? submitResult,
 }) async {
   final updateUseCase = MockUpdateItineraryUseCase();
@@ -66,8 +67,11 @@ Future<MockUpdateItineraryUseCase> _pump(
       GoRoute(path: '/', builder: (_, _) => const SizedBox.shrink()),
       GoRoute(
         path: '/add-edit-item',
-        builder: (_, _) =>
-            AddEditItemPage(itineraryId: itinerary.id, itemId: itemId),
+        builder: (_, _) => AddEditItemPage(
+          itineraryId: itinerary.id,
+          itemId: itemId,
+          prefill: prefill,
+        ),
       ),
     ],
   );
@@ -226,4 +230,158 @@ void main() {
 
     expect(find.text('Could not save activity'), findsOneWidget);
   });
+
+  testWidgets(
+    'a booking prefill shows "Confirm Booking" and pre-fills name/location, '
+    'with the booked switch already on',
+    (tester) async {
+      await _pump(
+        tester,
+        itinerary: _trip(),
+        prefill: AddItemPrefill(
+          title: 'Grand Plaza Hotel',
+          itemType: 'hotel',
+          location: 'Grand Plaza Hotel',
+          latitude: 45.44,
+          longitude: 12.31,
+          startTime: DateTime.utc(2026, 6, 10, 15),
+          endTime: DateTime.utc(2026, 6, 15, 11),
+          isBooked: true,
+          bookingListingKey: 'expedia:listing-42',
+        ),
+      );
+
+      expect(find.text('Confirm Booking'), findsWidgets);
+      expect(find.text('Grand Plaza Hotel'), findsWidgets);
+      expect(find.text('Save Booking'), findsOneWidget);
+
+      final bookedSwitch = tester.widget<SwitchListTile>(
+        find.byType(SwitchListTile),
+      );
+      expect(bookedSwitch.value, isTrue);
+    },
+  );
+
+  testWidgets('submitting a booking prefill carries isBooked/bookingListingKey/'
+      'coordinates through to the saved item', (tester) async {
+    final trip = _trip();
+    final updateUseCase = await _pump(
+      tester,
+      itinerary: trip,
+      prefill: AddItemPrefill(
+        title: 'Grand Plaza Hotel',
+        itemType: 'hotel',
+        location: 'Grand Plaza Hotel',
+        latitude: 45.44,
+        longitude: 12.31,
+        startTime: DateTime.utc(2026, 6, 10, 15),
+        endTime: DateTime.utc(2026, 6, 15, 11),
+        isBooked: true,
+        bookingListingKey: 'expedia:listing-42',
+      ),
+    );
+
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Save Booking'));
+    await tester.pumpAndSettle();
+
+    final captured = verify(() => updateUseCase(captureAny())).captured;
+    final updated = captured.single as TravelItinerary;
+    final saved = updated.items.single;
+    expect(saved.title, 'Grand Plaza Hotel');
+    expect(saved.isBooked, isTrue);
+    expect(saved.bookingListingKey, 'expedia:listing-42');
+    expect(saved.latitude, 45.44);
+    expect(saved.longitude, 12.31);
+  });
+
+  testWidgets(
+    'manually toggling "Mark as booked" on a plain new activity persists '
+    'isBooked without a bookingListingKey',
+    (tester) async {
+      final updateUseCase = await _pump(tester, itinerary: _trip());
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Activity name'),
+        'Senso-ji Temple',
+      );
+      await _pickStart(tester);
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Save Booking'));
+      await tester.pumpAndSettle();
+
+      final captured = verify(() => updateUseCase(captureAny())).captured;
+      final saved = (captured.single as TravelItinerary).items.single;
+      expect(saved.isBooked, isTrue);
+      expect(saved.bookingListingKey, isNull);
+    },
+  );
+
+  testWidgets(
+    'editing an already-booked item shows the switch on and keeps its '
+    'bookingListingKey when saved without re-toggling',
+    (tester) async {
+      final item = ItineraryItem(
+        id: 'item-1',
+        itemType: 'hotel',
+        title: 'Grand Plaza Hotel',
+        startTime: DateTime.utc(2026, 6, 10, 15),
+        endTime: DateTime.utc(2026, 6, 15, 11),
+        location: 'Grand Plaza Hotel',
+        latitude: 45.44,
+        longitude: 12.31,
+        isBooked: true,
+        bookingListingKey: 'expedia:expedia-0',
+      );
+      final updateUseCase = await _pump(
+        tester,
+        itinerary: _trip(items: [item]),
+        itemId: 'item-1',
+      );
+
+      final bookedSwitch = tester.widget<SwitchListTile>(
+        find.byType(SwitchListTile),
+      );
+      expect(bookedSwitch.value, isTrue);
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Save Changes'));
+      await tester.pumpAndSettle();
+
+      final captured = verify(() => updateUseCase(captureAny())).captured;
+      final saved = (captured.single as TravelItinerary).items.single;
+      expect(saved.isBooked, isTrue);
+      expect(saved.bookingListingKey, 'expedia:expedia-0');
+      expect(saved.latitude, 45.44);
+      expect(saved.longitude, 12.31);
+    },
+  );
+
+  testWidgets(
+    'toggling "Mark as booked" off on an already-booked item persists '
+    'isBooked: false',
+    (tester) async {
+      final item = ItineraryItem(
+        id: 'item-1',
+        itemType: 'hotel',
+        title: 'Grand Plaza Hotel',
+        startTime: DateTime.utc(2026, 6, 10, 15),
+        isBooked: true,
+        bookingListingKey: 'expedia:expedia-0',
+      );
+      final updateUseCase = await _pump(
+        tester,
+        itinerary: _trip(items: [item]),
+        itemId: 'item-1',
+      );
+
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Save Changes'));
+      await tester.pumpAndSettle();
+
+      final captured = verify(() => updateUseCase(captureAny())).captured;
+      final saved = (captured.single as TravelItinerary).items.single;
+      expect(saved.isBooked, isFalse);
+    },
+  );
 }

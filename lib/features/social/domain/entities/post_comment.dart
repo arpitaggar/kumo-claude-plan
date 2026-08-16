@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
 
-/// One comment on a published [ItineraryPost][../entities/itinerary_post.dart].
-/// Flat, non-threaded — no reply-to-a-comment structure.
+/// One comment on a published `ItineraryPost` (see `itinerary_post.dart` in
+/// this same directory). Flat, non-threaded — no reply-to-a-comment
+/// structure.
 class PostComment extends Equatable {
   const PostComment({
     required this.id,

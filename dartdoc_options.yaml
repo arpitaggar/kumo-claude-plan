@@ -1,0 +1,12 @@
+dartdoc:
+  # Generated via `dart doc .` -> doc/api/. This is a mechanically-derived
+  # API reference from in-code `///` comments — not a substitute for
+  # docs/Checklist.md (what shipped and why) or the per-feature CLAUDE.md
+  # files (design rationale). See README.md's "Documentation" section for
+  # how the three fit together.
+  #
+  # This is a solo-dev, unpublished app (`publish_to: none`) — there's no
+  # external consumer to warn on behalf of, so skip the noisy "missing doc
+  # comment" category rather than chase 100% coverage on files this
+  # generator was never gating before.
+  showUndocumentedCategories: false

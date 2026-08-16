@@ -97,8 +97,10 @@ final deletePostCommentUseCaseProvider = Provider<DeletePostCommentUseCase>(
 /// need to tap "Load more" 10+ times in one session before eviction ever
 /// kicks in. Once it does, scrolling back up past the evicted window shows a
 /// fresh reload from the top rather than the exact posts scrolled past
-/// earlier — an accepted product trade-off (see the audit entry), not an
-/// oversight.
+/// earlier — an accepted product trade-off, not an oversight. See the
+/// SCALE-014 entry's 2026-08-16 addendum in `docs/SCALABILITY_AUDIT.md` for
+/// why this one-directional trim was chosen over Instagram/Facebook's fuller
+/// bidirectional-windowing-plus-re-serve technique, and when to revisit.
 const kMaxFeedWindowPosts = kSocialFeedPageSize * 10;
 
 /// A page of posts plus enough state to drive "load more" — see

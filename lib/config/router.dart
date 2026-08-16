@@ -274,7 +274,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'item',
             pageBuilder: (context, state) => _slidePage(
-              AddEditItemPage(itineraryId: state.pathParameters['id']!),
+              AddEditItemPage(
+                itineraryId: state.pathParameters['id']!,
+                prefill: state.extra as AddItemPrefill?,
+              ),
               state,
             ),
           ),

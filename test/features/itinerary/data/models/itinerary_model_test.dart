@@ -262,4 +262,54 @@ void main() {
       expect(model.accommodationSources, ['airbnb']);
     });
   });
+
+  group('ItineraryItemModel — isBooked / bookingListingKey', () {
+    Map<String, dynamic> baseJson() => {
+      'id': 'item-1',
+      'item_type': 'hotel',
+      'title': 'Grand Plaza Hotel',
+      'start_time': '2026-06-10T15:00:00.000Z',
+      'end_time': '2026-06-15T11:00:00.000Z',
+      'location': 'Grand Plaza Hotel',
+      'latitude': 45.4408,
+      'longitude': 12.3155,
+    };
+
+    test('reads is_booked and booking_listing_key from JSON', () {
+      final json = baseJson()
+        ..['is_booked'] = true
+        ..['booking_listing_key'] = 'expedia:listing-42';
+      final model = ItineraryItemModel.fromJson(json);
+      expect(model.isBooked, isTrue);
+      expect(model.bookingListingKey, 'expedia:listing-42');
+    });
+
+    test('defaults isBooked to false and bookingListingKey to null when '
+        'absent — every item persisted before this field existed', () {
+      final model = ItineraryItemModel.fromJson(baseJson());
+      expect(model.isBooked, isFalse);
+      expect(model.bookingListingKey, isNull);
+    });
+
+    test('toJson always includes is_booked and booking_listing_key', () {
+      final model = ItineraryItemModel.fromJson(baseJson());
+      final json = model.toJson();
+      expect(json['is_booked'], isFalse);
+      expect(json['booking_listing_key'], isNull);
+    });
+
+    test('fromEntity preserves isBooked and bookingListingKey', () {
+      final entity = ItineraryItem(
+        id: 'item-2',
+        itemType: 'hotel',
+        title: 'City Tour',
+        startTime: DateTime.utc(2026, 6, 11, 10),
+        isBooked: true,
+        bookingListingKey: 'airbnb:listing-7',
+      );
+      final model = ItineraryItemModel.fromEntity(entity);
+      expect(model.isBooked, isTrue);
+      expect(model.bookingListingKey, 'airbnb:listing-7');
+    });
+  });
 }

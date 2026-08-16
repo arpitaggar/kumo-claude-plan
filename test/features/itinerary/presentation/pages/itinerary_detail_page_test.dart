@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kumo_claude/config/constants.dart';
 import 'package:kumo_claude/core/error/failure.dart';
 import 'package:kumo_claude/core/geocoding/geocoding_providers.dart';
@@ -16,6 +17,7 @@ import 'package:kumo_claude/features/auth/presentation/providers/auth_provider.d
 import 'package:kumo_claude/features/direct_messages/domain/repositories/direct_message_repository.dart';
 import 'package:kumo_claude/features/direct_messages/presentation/providers/direct_message_provider.dart';
 import 'package:kumo_claude/features/itinerary/domain/entities/travel_itinerary.dart';
+import 'package:kumo_claude/features/itinerary/presentation/pages/add_edit_item_page.dart';
 import 'package:kumo_claude/features/itinerary/presentation/pages/itinerary_detail_page.dart';
 import 'package:kumo_claude/features/itinerary/presentation/providers/itinerary_provider.dart';
 import 'package:mocktail/mocktail.dart';
@@ -63,6 +65,7 @@ TravelItinerary _trip({
   ItineraryStatusEnum status = ItineraryStatusEnum.draft,
   List<GroupMember> members = const [],
   List<String> accommodationSources = const [],
+  List<ItineraryItem> items = const [],
 }) => TravelItinerary(
   id: 'trip-1',
   title: 'KumoTest',
@@ -72,7 +75,7 @@ TravelItinerary _trip({
   totalBudget: 9000,
   currencyCode: AppConstants.defaultCurrency,
   members: members,
-  items: const [],
+  items: items,
   expenseSummary: _summary,
   createdAt: DateTime.utc(2026),
   updatedAt: DateTime.utc(2026),
@@ -120,6 +123,7 @@ Future<void> _pump(
   ItineraryStatusEnum status = ItineraryStatusEnum.draft,
   List<GroupMember> members = const [],
   List<String> accommodationSources = const [],
+  List<ItineraryItem> items = const [],
   GeocodingService? geocodingService,
   DirectMessageRepository? directMessageRepository,
 }) async {
@@ -156,6 +160,7 @@ Future<void> _pump(
               status: status,
               members: members,
               accommodationSources: accommodationSources,
+              items: items,
             ),
           ),
         ),
@@ -167,6 +172,82 @@ Future<void> _pump(
           ),
       ],
       child: const MaterialApp(home: ItineraryDetailPage(id: 'trip-1')),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+/// Like [_pump], but wraps the page in a real `GoRouter` with the same
+/// nested `/trip/:id/item` route `config/router.dart` registers, so a test
+/// can actually exercise `context.push` calls (e.g. the Stay tab's "Mark as
+/// booked" button) instead of just asserting they'd be reachable. `_pump`
+/// deliberately doesn't do this for every test — see the "Message privately"
+/// test's own comment on why most navigation here is left unexercised.
+Future<void> _pumpWithRouter(
+  WidgetTester tester, {
+  List<GroupMember> members = const [],
+  List<String> accommodationSources = const [],
+  List<ItineraryItem> items = const [],
+  GeocodingService? geocodingService,
+}) async {
+  final authRepo = MockAuthRepository();
+  when(authRepo.getCurrentUser).thenAnswer(
+    (_) async => Right(
+      User(id: 'user-1', email: 'u@example.com', createdAt: DateTime.utc(2026)),
+    ),
+  );
+
+  tester.view.physicalSize = const Size(430, 932);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
+  final router = GoRouter(
+    initialLocation: '/trip/trip-1',
+    routes: [
+      GoRoute(
+        path: '/trip/:id',
+        builder: (context, state) =>
+            ItineraryDetailPage(id: state.pathParameters['id']!),
+        routes: [
+          GoRoute(
+            path: 'item',
+            builder: (context, state) => AddEditItemPage(
+              itineraryId: state.pathParameters['id']!,
+              prefill: state.extra as AddItemPrefill?,
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          (ref) => AuthNotifier(
+            loginUseCase: MockLoginUseCase(),
+            signupUseCase: MockSignupUseCase(),
+            logoutUseCase: MockLogoutUseCase(),
+            deleteAccountUseCase: MockDeleteAccountUseCase(),
+            repository: authRepo,
+          ),
+        ),
+        itineraryStreamProvider('trip-1').overrideWith(
+          (ref) => Stream.value(
+            _trip(
+              isPublic: false,
+              members: members,
+              accommodationSources: accommodationSources,
+              items: items,
+            ),
+          ),
+        ),
+        if (geocodingService != null)
+          geocodingServiceProvider.overrideWithValue(geocodingService),
+      ],
+      child: MaterialApp.router(routerConfig: router),
     ),
   );
   await tester.pump();
@@ -424,6 +505,116 @@ void main() {
         isTrue,
       );
     });
+  });
+
+  group('booked items', () {
+    testWidgets(
+      'a booked schedule item shows the Booked badge; an unbooked one does '
+      'not',
+      (tester) async {
+        final booked = ItineraryItem(
+          id: 'item-1',
+          itemType: 'hotel',
+          title: 'Grand Plaza Hotel',
+          startTime: DateTime.utc(2026, 6, 10, 15),
+          isBooked: true,
+          bookingListingKey: 'expedia:expedia-0',
+        );
+        final unbooked = ItineraryItem(
+          id: 'item-2',
+          itemType: 'activity',
+          title: 'City Walking Tour',
+          startTime: DateTime.utc(2026, 6, 11, 10),
+        );
+        await _pump(tester, isPublic: false, items: [booked, unbooked]);
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Grand Plaza Hotel'), findsOneWidget);
+        expect(find.text('City Walking Tour'), findsOneWidget);
+        expect(find.text('Booked'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the Stay tab flags an already-booked listing and sorts it first, '
+      'hiding its "Mark as booked" button',
+      (tester) async {
+        // 'expedia-0' is MockExpediaSource's deterministic id for its first
+        // fixture listing ("Grand Plaza Hotel") — see
+        // lib/core/accommodation/mock_expedia_source.dart. Restricted to a
+        // single source so there's no ambiguity from MockBookingSource's
+        // deliberate reuse of the same hotel name.
+        final bookedItem = ItineraryItem(
+          id: 'item-1',
+          itemType: 'hotel',
+          title: 'Grand Plaza Hotel',
+          startTime: DateTime.utc(2026, 6, 10, 15),
+          isBooked: true,
+          bookingListingKey: 'expedia:expedia-0',
+        );
+        await _pump(
+          tester,
+          isPublic: false,
+          members: [_editorMember],
+          accommodationSources: const ['expedia'],
+          items: [bookedItem],
+          geocodingService: _FakeGeocodingService(),
+        );
+
+        await tester.tap(find.text('Stay'));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(tester.takeException(), isNull);
+        // One badge for the booked listing card — the schedule badge above
+        // isn't present here since this trip's items aren't shown on this
+        // tab.
+        expect(find.text('Booked'), findsOneWidget);
+        // 5 fixture listings from MockExpediaSource, only 4 still unbooked.
+        expect(find.text('Mark as booked'), findsNWidgets(4));
+
+        // The booked card (containing both "Grand Plaza Hotel" and
+        // "Booked") appears before an unbooked one in paint order.
+        final bookedCardTop = tester.getTopLeft(find.text('Booked')).dy;
+        final firstUnbookedButtonTop = tester
+            .getTopLeft(find.text('Mark as booked').first)
+            .dy;
+        expect(bookedCardTop, lessThan(firstUnbookedButtonTop));
+      },
+    );
+
+    testWidgets(
+      'tapping "Mark as booked" navigates to the Confirm Booking form '
+      'pre-filled from the listing',
+      (tester) async {
+        await _pumpWithRouter(
+          tester,
+          members: [_editorMember],
+          accommodationSources: const ['expedia'],
+          geocodingService: _FakeGeocodingService(),
+        );
+
+        await tester.tap(find.text('Stay'));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        await tester.tap(
+          find.widgetWithText(OutlinedButton, 'Mark as booked').first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Confirm Booking'), findsWidgets);
+        expect(find.text('Save Booking'), findsOneWidget);
+        // The listing's own name — carried over as the pre-filled activity
+        // name/location — is MockExpediaSource's first fixture,
+        // deterministic regardless of the randomized price/rating.
+        expect(find.text('Grand Plaza Hotel'), findsWidgets);
+
+        final bookedSwitch = tester.widget<SwitchListTile>(
+          find.byType(SwitchListTile),
+        );
+        expect(bookedSwitch.value, isTrue);
+      },
+    );
   });
 
   group('Stay tab', () {

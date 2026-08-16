@@ -9,11 +9,46 @@ import '../../domain/entities/travel_itinerary.dart';
 import '../providers/itinerary_provider.dart';
 import '../widgets/date_time_picker_field.dart';
 
+/// Optional prefill for creating a new item — e.g. the Stay tab's "Mark as
+/// booked" action hands over a listing's name/coordinates so the user only
+/// has to confirm dates rather than retype everything. Ignored when editing
+/// an existing item (`itemId != null`), since that item already has its own
+/// saved values.
+class AddItemPrefill {
+  const AddItemPrefill({
+    required this.title,
+    required this.itemType,
+    this.location,
+    this.latitude,
+    this.longitude,
+    this.startTime,
+    this.endTime,
+    this.isBooked = false,
+    this.bookingListingKey,
+  });
+
+  final String title;
+  final String itemType;
+  final String? location;
+  final double? latitude;
+  final double? longitude;
+  final DateTime? startTime;
+  final DateTime? endTime;
+  final bool isBooked;
+  final String? bookingListingKey;
+}
+
 class AddEditItemPage extends ConsumerStatefulWidget {
-  const AddEditItemPage({required this.itineraryId, this.itemId, super.key});
+  const AddEditItemPage({
+    required this.itineraryId,
+    this.itemId,
+    this.prefill,
+    super.key,
+  });
 
   final String itineraryId;
   final String? itemId;
+  final AddItemPrefill? prefill;
 
   @override
   ConsumerState<AddEditItemPage> createState() => _AddEditItemPageState();
@@ -36,8 +71,33 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
   String _itemType = 'activity';
   DateTime? _startDateTime;
   DateTime? _endDateTime;
+  double? _latitude;
+  double? _longitude;
+  bool _isBooked = false;
+  String? _bookingListingKey;
   bool _isSubmitting = false;
   bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Only applies to a brand-new item — an existing one's own saved values
+    // (via _initFromItem) always take precedence and are applied later,
+    // once the itinerary stream resolves.
+    final prefill = widget.prefill;
+    if (widget.itemId == null && prefill != null) {
+      _initialized = true;
+      _titleController.text = prefill.title;
+      _locationController.text = prefill.location ?? '';
+      _itemType = prefill.itemType;
+      _startDateTime = prefill.startTime;
+      _endDateTime = prefill.endTime;
+      _latitude = prefill.latitude;
+      _longitude = prefill.longitude;
+      _isBooked = prefill.isBooked;
+      _bookingListingKey = prefill.bookingListingKey;
+    }
+  }
 
   @override
   void dispose() {
@@ -56,6 +116,10 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
     _itemType = item.itemType;
     _startDateTime = item.startTime;
     _endDateTime = item.endTime;
+    _latitude = item.latitude;
+    _longitude = item.longitude;
+    _isBooked = item.isBooked;
+    _bookingListingKey = item.bookingListingKey;
   }
 
   Future<void> _pickDateTime({required bool isStart}) async {
@@ -125,6 +189,10 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
       location: _locationController.text.trim().isEmpty
           ? null
           : _locationController.text.trim(),
+      latitude: _latitude,
+      longitude: _longitude,
+      isBooked: _isBooked,
+      bookingListingKey: _bookingListingKey,
     );
 
     final updatedItems = widget.itemId != null
@@ -164,6 +232,13 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
     );
   }
 
+  /// True only for a brand-new item created from a "Mark as booked" prefill
+  /// (e.g. the Stay tab) — drives the confirm-flavored copy below instead of
+  /// the generic "Add Activity" one, since the user is confirming a booking
+  /// they already made elsewhere, not planning a new activity from scratch.
+  bool get _isConfirmingBooking =>
+      widget.itemId == null && (widget.prefill?.isBooked ?? false);
+
   Widget _buildForm(BuildContext context, TravelItinerary itinerary) {
     if (widget.itemId != null) {
       final item = itinerary.items
@@ -177,16 +252,22 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
     if (_isSubmitting) {
       return Scaffold(
         body: LoadingWidget(
-          message: widget.itemId != null
-              ? 'Saving activity…'
-              : 'Adding activity…',
+          message: switch ((widget.itemId != null, _isConfirmingBooking)) {
+            (true, _) => 'Saving activity…',
+            (false, true) => 'Saving booking…',
+            (false, false) => 'Adding activity…',
+          },
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.itemId != null ? 'Edit Activity' : 'Add Activity'),
+        title: Text(switch ((widget.itemId != null, _isConfirmingBooking)) {
+          (true, _) => 'Edit Activity',
+          (false, true) => 'Confirm Booking',
+          (false, false) => 'Add Activity',
+        }),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -254,12 +335,28 @@ class _AddEditItemPageState extends ConsumerState<AddEditItemPage> {
                     prefixIcon: Icon(Icons.location_on_outlined),
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _isBooked,
+                  onChanged: (v) => setState(() => _isBooked = v),
+                  secondary: Icon(
+                    Icons.check_circle_outline,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  title: const Text('Mark as booked'),
+                  subtitle: const Text(
+                    'Shows a "Booked" badge on this item once saved',
+                  ),
+                ),
+                const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () => _submit(itinerary),
-                  child: Text(
-                    widget.itemId != null ? 'Save Changes' : 'Add Activity',
-                  ),
+                  child: Text(switch ((widget.itemId != null, _isBooked)) {
+                    (true, _) => 'Save Changes',
+                    (false, true) => 'Save Booking',
+                    (false, false) => 'Add Activity',
+                  }),
                 ),
               ],
             ),

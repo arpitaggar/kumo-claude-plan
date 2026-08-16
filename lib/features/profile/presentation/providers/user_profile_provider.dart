@@ -47,7 +47,7 @@ final avatarRepositoryProvider = Provider<AvatarRepository>(
 // ── Own profile ─────────────────────────────────────────────────────────────
 
 /// Full profile row for the authenticated user.
-/// Invalidate with [ref.invalidate(userProfileProvider)] after any update.
+/// Invalidate with `ref.invalidate(userProfileProvider)` after any update.
 final userProfileProvider = FutureProvider.autoDispose<UserProfile?>((
   ref,
 ) async {
