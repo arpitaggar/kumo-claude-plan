@@ -333,6 +333,37 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// Pure parsing logic for the `kumo://join?joinCode=XYZ` deep link,
+/// extracted from [_RouterNotifier.redirect] so it's unit-testable without
+/// standing up a full `GoRouterState`/Riverpod harness — this app has no
+/// router tests otherwise, since `_RouterNotifier` itself is private.
+///
+/// Returns the internal route to redirect to, or `null` if [uri] isn't a
+/// join deep link at all (the caller should fall through to its other
+/// checks in that case) — note this is different from "no code was in the
+/// link," which still returns a non-null redirect (to the bare
+/// `/organizations/join`, letting the manual-entry screen handle it).
+///
+/// See [_RouterNotifier.redirect]'s own comment on why the external query
+/// param is `joinCode`, not `code` (a real supabase_flutter collision,
+/// confirmed via a real simulator smoke test — docs/Checklist.md,
+/// 2026-08-17) — this function is also this app's regression guard against
+/// that rename silently reverting.
+String? resolveJoinDeepLink(
+  Uri uri, {
+  required bool isAuthenticated,
+  required bool needsAgeConfirmation,
+}) {
+  final isJoinLink = uri.host == 'join' || uri.path == '/join';
+  if (!isAuthenticated || needsAgeConfirmation || !isJoinLink) {
+    return null;
+  }
+  final code = uri.queryParameters['joinCode'];
+  return code != null && code.isNotEmpty
+      ? '/organizations/join?code=${Uri.encodeQueryComponent(code)}'
+      : '/organizations/join';
+}
+
 // Listens to auth + onboarding state and notifies GoRouter to re-run redirect
 // without recreating the router (which would reset to initialLocation).
 class _RouterNotifier extends ChangeNotifier {
@@ -410,13 +441,16 @@ class _RouterNotifier extends ChangeNotifier {
     // preserved across the auth gate: doing that cleanly needs either a
     // provider write from inside redirect() or threading a query param
     // through every intermediate redirect hop (onboarding, etc.).
-    if (isAuthenticated &&
-        !needsAgeConfirmation &&
-        (state.uri.host == 'join' || state.uri.path == '/join')) {
-      final code = state.uri.queryParameters['joinCode'];
-      return code != null && code.isNotEmpty
-          ? '/organizations/join?code=${Uri.encodeQueryComponent(code)}'
-          : '/organizations/join';
+    //
+    // Parsing itself lives in the top-level resolveJoinDeepLink() above,
+    // unit-tested directly in router_test.dart.
+    final joinRedirect = resolveJoinDeepLink(
+      state.uri,
+      isAuthenticated: isAuthenticated,
+      needsAgeConfirmation: needsAgeConfirmation,
+    );
+    if (joinRedirect != null) {
+      return joinRedirect;
     }
 
     final isOnAuthRoute =
