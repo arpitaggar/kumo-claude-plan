@@ -36,7 +36,7 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- kumo://join?code=XYZ — org self-serve join-code deep link
+            <!-- kumo://join?joinCode=XYZ — org self-serve join-code deep link
                  (stage35's QR/manual-entry flow already covers the primary
                  use case; this is a scan-free alternative for links shared
                  by email/Slack). Handled in lib/config/router.dart's

@@ -12,7 +12,7 @@ import '../../domain/entities/hitchhiker.dart';
 import '../providers/hitchhiker_provider.dart';
 
 /// Same `kumo://` custom-scheme convention already used for org join codes
-/// (`kumo://join?code=...` — see lib/config/router.dart) — a Hitchhiker
+/// (`kumo://join?joinCode=...` — see lib/config/router.dart) — a Hitchhiker
 /// link is unauthenticated and needs no account, so it carries the access
 /// token directly rather than a short code.
 String hitchhikerJoinLink(String token) => 'kumo://hitchhiker?token=$token';

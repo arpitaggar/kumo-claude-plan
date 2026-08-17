@@ -16,7 +16,7 @@ class JoinOrganizationPage extends ConsumerStatefulWidget {
   const JoinOrganizationPage({this.initialCode, super.key});
 
   /// Pre-fills the manual-entry field — set when arriving via a
-  /// `kumo://join?code=XYZ` deep link (see `lib/config/router.dart`'s
+  /// `kumo://join?joinCode=XYZ` deep link (see `lib/config/router.dart`'s
   /// redirect()) rather than the in-app "Join with code" action.
   final String? initialCode;
 

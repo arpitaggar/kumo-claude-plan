@@ -383,25 +383,37 @@ class _RouterNotifier extends ChangeNotifier {
       return token != null && token.isNotEmpty ? '/hitchhiker/$token' : null;
     }
 
-    // kumo://join?code=XYZ — org self-serve join-code deep link (stage35's
-    // QR/manual-entry flow is the primary UX; this is a scan-free
-    // alternative for a link shared by email/Slack). Not a plain GoRoute
-    // path pattern: a custom-scheme URI's authority (`join`) surfaces as
-    // `state.uri.host`, not `.path`, on at least one platform, so both are
-    // checked defensively rather than assuming one shape.
+    // kumo://join?joinCode=XYZ — org self-serve join-code deep link
+    // (stage35's QR/manual-entry flow is the primary UX; this is a
+    // scan-free alternative for a link shared by email/Slack). Not a plain
+    // GoRoute path pattern: a custom-scheme URI's authority (`join`)
+    // surfaces as `state.uri.host`, not `.path`, on at least one platform,
+    // so both are checked defensively rather than assuming one shape.
+    //
+    // The external query param is `joinCode`, deliberately NOT `code` —
+    // confirmed via a real simulator smoke test (docs/Checklist.md,
+    // 2026-08-17), not by inspection: supabase_flutter's deep-link
+    // listener (`SupabaseAuth._isAuthCallbackDeeplink`) treats ANY
+    // incoming URI with a `code` query parameter as a PKCE auth callback,
+    // regardless of host/path — this package version has no
+    // host-scoping escape hatch for it. `kumo://join?code=XYZ` was
+    // silently swallowed by that listener (threw "Code verifier could not
+    // be found in local storage" and never reached this redirect at all)
+    // before this rename. The internal `/organizations/join?code=...`
+    // route below is unaffected and keeps its own `code` param name —
+    // that's a plain in-process GoRouter navigation, never delivered
+    // through the platform deep-link channel supabase_flutter listens on.
     //
     // Only handled here when already signed in. An unauthenticated tap
     // falls through to the normal /login gate below and the code is lost —
     // the user re-enters/re-scans it after logging in. Deliberately not
     // preserved across the auth gate: doing that cleanly needs either a
     // provider write from inside redirect() or threading a query param
-    // through every intermediate redirect hop (onboarding, etc.), and this
-    // whole deep-link path has no device/simulator available to verify
-    // against in this environment — see docs/Checklist.md.
+    // through every intermediate redirect hop (onboarding, etc.).
     if (isAuthenticated &&
         !needsAgeConfirmation &&
         (state.uri.host == 'join' || state.uri.path == '/join')) {
-      final code = state.uri.queryParameters['code'];
+      final code = state.uri.queryParameters['joinCode'];
       return code != null && code.isNotEmpty
           ? '/organizations/join?code=${Uri.encodeQueryComponent(code)}'
           : '/organizations/join';
