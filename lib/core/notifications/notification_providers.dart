@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../network/supabase_client.dart';
 import '../utils/logger.dart';
 import 'notification_service.dart';
 import 'push_config.dart';
@@ -52,6 +53,29 @@ final fcmTokenSyncProvider = Provider<void>((ref) {
 
   Future<void> register(String token) async {
     try {
+      // Defensive guard against the same session-attachment race already
+      // fixed once for AuthRepositoryImpl.getCurrentUser() (2026-08-14):
+      // authState reaching AuthAuthenticated only proves the *local*
+      // in-memory session was populated at the moment _checkCurrentUser()
+      // last read it, not that it's still there (or that this specific
+      // request will carry a valid Authorization header) by the time this
+      // async chain — permission prompt, then getToken(), then this upsert
+      // — actually runs. Confirmed via a real-device integration test
+      // (2026-08-17): upsert_push_token's `auth.uid()` resolved to null
+      // server-side and the insert failed its NOT NULL constraint on
+      // user_id, right after a fresh login. Poll briefly for the live
+      // client before giving up, same idiom as that earlier fix, rather
+      // than assuming AuthAuthenticated alone is sufficient proof.
+      for (var i = 0; i < 10 && KumoSupabaseClient.currentUser == null; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+      if (KumoSupabaseClient.currentUser == null) {
+        AppLogger.warning(
+          'Skipping FCM token registration — no live Supabase session '
+          'after waiting; onTokenRefresh will retry later.',
+        );
+        return;
+      }
       await ref
           .read(pushTokenDataSourceProvider)
           .upsertPushToken(token: token, platform: isIos ? 'ios' : 'android');
