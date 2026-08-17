@@ -81,8 +81,26 @@ Future<void> main() async {
 Future<void> _runApp() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Chain to whatever handler was already installed rather than blindly
+  // replacing it — found the hard way via a real integration_test run:
+  // IntegrationTestWidgetsFlutterBinding installs its own FlutterError.onError
+  // before app.main() runs (from the test file's own
+  // IntegrationTestWidgetsFlutterBinding.ensureInitialized()), to track
+  // whether a test's widget tree threw. Overwriting it outright — as this
+  // code did before — makes that tracking see no handler at all, which
+  // surfaces as a wholly unrelated-looking crash: 'A test overrode
+  // FlutterError.onError but either failed to return it to its original
+  // state...'. That failure masked the *real* originating error every
+  // time, in both directions this bit: it was mistaken for a symptom of
+  // the kumo://join `code` vs `joinCode` collision (docs/Checklist.md,
+  // 2026-08-17) before this fix showed it's a separate, systemic problem
+  // that would have obscured any other test-time framework error the same
+  // way. Outside a test harness the "previous" handler is just Flutter's
+  // own default (dumps to console), so chaining to it is always safe, not
+  // only useful under `integration_test`.
+  final previousOnError = FlutterError.onError;
   FlutterError.onError = (details) {
-    FlutterError.presentError(details);
+    previousOnError?.call(details);
     unawaited(
       _crashReporter.recordError(
         details.exception,
@@ -92,7 +110,9 @@ Future<void> _runApp() async {
       ),
     );
   };
+  final previousPlatformOnError = PlatformDispatcher.instance.onError;
   PlatformDispatcher.instance.onError = (error, stackTrace) {
+    previousPlatformOnError?.call(error, stackTrace);
     unawaited(
       _crashReporter.recordError(
         error,

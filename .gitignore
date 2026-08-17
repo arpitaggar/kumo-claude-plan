@@ -35,6 +35,7 @@ env.*.json
 # coverage (see integration_test/README.md's safety section) — never the
 # developer's own account, never committed.
 integration_test/test_account.json
+integration_test/cross_platform_accounts.json
 
 # Firebase platform config — contains a per-app API key. Not a traditional
 # secret (Google's own guidance is that these are safe to ship in a client
