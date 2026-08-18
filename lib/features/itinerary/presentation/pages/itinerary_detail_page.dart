@@ -301,57 +301,28 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
               shadowColor: context.colorScheme.onSurface.withValues(
                 alpha: 0.08,
               ),
-              actions: [
-                if (canEdit)
-                  IconButton(
-                    icon: const Icon(Icons.palette_outlined),
-                    tooltip: 'Change theme',
-                    onPressed: _changeTheme,
-                  ),
-                if (canEdit)
-                  IconButton(
-                    icon: const Icon(Icons.hotel_outlined),
-                    tooltip: 'Accommodation sources',
-                    onPressed: _changeAccommodationSources,
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.share_outlined),
-                  tooltip: 'Share trip',
-                  onPressed: _shareTrip,
+              // A plain SliverAppBar `title` (unlike FlexibleSpaceBar's own
+              // `title`, used below only for its `background`) is laid out
+              // through the same toolbar row as `leading`, so with `actions`
+              // now moved into their own row in `bottom` (below), it gets
+              // the toolbar row's full remaining width — no icons competing
+              // for it. Previously the title shared this row with up to 6
+              // action icons: real captured screenshots showed the title
+              // rendering straight through them when centered, and — after
+              // a first fix attempt that only corrected alignment — showing
+              // nothing at all, since 6 icons plus the back button left
+              // only a few genuinely unusable points of width either way.
+              title: Text(
+                it.title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: context.colorScheme.onSurface,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.file_download_outlined),
-                  tooltip: 'Export trip file',
-                  onPressed: _exportTripFile,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  tooltip: 'Trip chat',
-                  onPressed: () => context.push('/trip/${it.id}/chat'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Delete trip',
-                  onPressed: _confirmDelete,
-                ),
-              ],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsetsDirectional.fromSTEB(
-                  20,
-                  0,
-                  16,
-                  56,
-                ),
-                title: Text(
-                  it.title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: context.colorScheme.onSurface,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
                 background: Hero(
                   tag: 'trip-header-${it.id}',
                   child: Container(
@@ -362,33 +333,82 @@ class _DetailScaffoldState extends ConsumerState<_DetailScaffold>
                 ),
               ),
               bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(46),
+                preferredSize: const Size.fromHeight(46 + 48),
                 child: Container(
                   color: context.colorScheme.surface,
-                  child: TabBar(
-                    controller: _tabs,
-                    labelColor: tripTheme.primary,
-                    unselectedLabelColor: context.colorScheme.onSurfaceVariant,
-                    indicatorColor: tripTheme.primary,
-                    labelStyle: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
-                    ),
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    tabs: const [
-                      Tab(text: 'Itinerary'),
-                      Tab(text: 'Route'),
-                      Tab(text: 'Stay'),
-                      Tab(text: 'Notes'),
-                      Tab(text: 'Expenses'),
-                      Tab(text: 'Reviews'),
-                      Tab(text: 'Packing'),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Actions row — previously the SliverAppBar's own
+                      // `actions`, sharing the title's row and colliding
+                      // with it on any trip whose title didn't fit the
+                      // sliver of space 6 icons plus a back button left.
+                      // Its own row gets the full width instead.
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (canEdit)
+                            IconButton(
+                              icon: const Icon(Icons.palette_outlined),
+                              tooltip: 'Change theme',
+                              onPressed: _changeTheme,
+                            ),
+                          if (canEdit)
+                            IconButton(
+                              icon: const Icon(Icons.hotel_outlined),
+                              tooltip: 'Accommodation sources',
+                              onPressed: _changeAccommodationSources,
+                            ),
+                          IconButton(
+                            icon: const Icon(Icons.share_outlined),
+                            tooltip: 'Share trip',
+                            onPressed: _shareTrip,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.file_download_outlined),
+                            tooltip: 'Export trip file',
+                            onPressed: _exportTripFile,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.chat_bubble_outline),
+                            tooltip: 'Trip chat',
+                            onPressed: () =>
+                                context.push('/trip/${it.id}/chat'),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            tooltip: 'Delete trip',
+                            onPressed: _confirmDelete,
+                          ),
+                        ],
+                      ),
+                      TabBar(
+                        controller: _tabs,
+                        labelColor: tripTheme.primary,
+                        unselectedLabelColor:
+                            context.colorScheme.onSurfaceVariant,
+                        indicatorColor: tripTheme.primary,
+                        labelStyle: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        unselectedLabelStyle: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                        ),
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        tabs: const [
+                          Tab(text: 'Itinerary'),
+                          Tab(text: 'Route'),
+                          Tab(text: 'Stay'),
+                          Tab(text: 'Notes'),
+                          Tab(text: 'Expenses'),
+                          Tab(text: 'Reviews'),
+                          Tab(text: 'Packing'),
+                        ],
+                      ),
                     ],
                   ),
                 ),
